@@ -34,3 +34,28 @@ tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition&& lh
     lhs.m_constant += rhs;
     return std::move(lhs);
 }
+
+tsplp::LinearVariableComposition tsplp::operator-(LinearVariableComposition&& operand)
+{
+    for (auto&& [var, coef] : operand.m_coefficientMap)
+        operand.m_coefficientMap[var] *= -1.0;
+
+    operand.m_constant *= -1.0;
+
+    return std::move(operand);
+}
+
+tsplp::LinearVariableComposition tsplp::operator-(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs)
+{
+    return std::move(lhs) + (-std::move(rhs));
+}
+
+tsplp::LinearVariableComposition::LinearVariableComposition(double constant)
+    : m_constant(constant)
+{
+}
+
+tsplp::LinearVariableComposition::LinearVariableComposition(const Variable& variable)
+    : m_coefficientMap{ {variable, 1} }
+{
+}

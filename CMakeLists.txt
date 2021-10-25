@@ -12,7 +12,8 @@ target_link_libraries(conan-trial PRIVATE ${CONAN_LIBS})
 
 add_library(tsplp OBJECT
 	Model.hpp Model.cpp
-	Variable.hpp Variable.cpp)
+	Variable.hpp Variable.cpp
+	LinearVariableComposition.hpp LinearVariableComposition.cpp)
 
 target_link_libraries(tsplp PRIVATE ${CONAN_LIBS_COIN-CLP})
 

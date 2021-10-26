@@ -16,13 +16,8 @@ namespace tsplp
         int GetId() const;
     };
 
-
-
     struct VariableLess
     {
-        bool operator()(const Variable& lhs, const Variable& rhs) const
-        {
-            return lhs.GetId() < rhs.GetId();
-        }
+        bool operator()(const Variable& lhs, const Variable& rhs) const;
     };
 }

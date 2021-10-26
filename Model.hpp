@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <span>
+
+class ClpSimplex;
 
 namespace tsplp
 {
@@ -11,6 +14,9 @@ namespace tsplp
 
     class Model
     {
+    private:
+        std::unique_ptr<ClpSimplex> m_spSimplexModel;
+
     public:
         explicit Model(size_t numberOfBinaryVariables);
         std::span<const Variable> GetVariables() const;

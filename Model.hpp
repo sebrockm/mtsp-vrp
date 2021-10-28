@@ -21,7 +21,7 @@ namespace tsplp
         explicit Model(size_t numberOfBinaryVariables);
         std::span<const Variable> GetVariables() const;
         void SetObjective(const LinearVariableComposition&);
-        void AddConstraints(std::span<const LinearConstraint>);
+        void AddConstraints(std::span<const LinearConstraint> constraints);
         Status Solve();
     };
 }

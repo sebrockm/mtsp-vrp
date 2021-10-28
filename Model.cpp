@@ -41,7 +41,7 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
         lowerBounds.push_back(c.GetLowerBound());
         upperBounds.push_back(c.GetUpperBound());
 
-        rowStarts.push_back(c.GetCoefficientMap().size());
+        rowStarts.push_back(rowStarts.back() + c.GetCoefficientMap().size());
         for (auto const& [var, coef] : c.GetCoefficientMap())
         {
             columns.push_back(var.GetId());

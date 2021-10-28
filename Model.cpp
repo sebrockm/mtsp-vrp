@@ -1,5 +1,6 @@
 #include "Model.hpp"
 #include "LinearConstraint.hpp"
+#include "LinearVariableComposition.hpp"
 
 #include <ClpSimplex.hpp>
 
@@ -12,6 +13,14 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     std::vector<double> upperBounds(1.0, numberOfBinaryVariables);
 
     m_spSimplexModel->addColumns(numberOfBinaryVariables, lowerBounds.data(), upperBounds.data(), nullptr, nullptr, nullptr, nullptr);
+}
+
+void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
+{
+    m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
+
+    for (auto const& [var, coef] : objective.GetCoefficientMap())
+        m_spSimplexModel->setObjectiveCoefficient(var.GetId(), coef);
 }
 
 void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)

@@ -27,5 +27,8 @@ namespace tsplp
         LinearVariableComposition() = default;
         LinearVariableComposition(double constant);
         LinearVariableComposition(const Variable& variable);
+
+        auto const& GetCoefficientMap() const { return m_coefficientMap; }
+        double GetConstant() const { return m_constant; }
     };
 }

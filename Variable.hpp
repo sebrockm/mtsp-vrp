@@ -8,6 +8,10 @@ namespace tsplp
 {
     class Variable
     {
+    private:
+        ClpSimplex* m_pModel;
+        int m_id;
+
     public:
         explicit Variable(ClpSimplex& model, int id);
         double GetUpperBound() const;

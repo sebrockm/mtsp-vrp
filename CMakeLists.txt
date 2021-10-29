@@ -14,7 +14,8 @@ add_library(tsplp OBJECT
 	Model.hpp Model.cpp
 	Variable.hpp Variable.cpp
 	LinearConstraint.hpp LinearConstraint.cpp
-	LinearVariableComposition.hpp LinearVariableComposition.cpp)
+	LinearVariableComposition.hpp LinearVariableComposition.cpp
+	Status.hpp)
 
 target_link_libraries(tsplp PRIVATE ${CONAN_LIBS_COIN-CLP})
 

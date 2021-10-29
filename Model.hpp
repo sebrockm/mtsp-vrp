@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Status.hpp"
+
 #include <memory>
 #include <span>
 
@@ -10,7 +12,6 @@ namespace tsplp
     class Variable;
     class LinearVariableComposition;
     class LinearConstraint;
-    enum class Status;
 
     class Model
     {

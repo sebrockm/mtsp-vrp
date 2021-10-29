@@ -51,3 +51,17 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
 
     m_spSimplexModel->addRows(std::ssize(constraints), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
 }
+
+tsplp::Status tsplp::Model::Solve()
+{
+    m_spSimplexModel->primal();
+    const auto status = m_spSimplexModel->status();
+
+    switch (status)
+    {
+    case 0: return Status::Optimal;
+    case 1: return Status::Infeasible;
+    case 2: return Status::Unbounded;
+    default: return Status::Error;
+    }
+}

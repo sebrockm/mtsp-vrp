@@ -15,9 +15,17 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_spSimplexModel->addColumns(numberOfBinaryVariables, lowerBounds.data(), upperBounds.data(), nullptr, nullptr, nullptr, nullptr);
 }
 
-tsplp::Variables tsplp::Model::GetVariables() const
+size_t tsplp::Model::GetNumberOfVariables() const
 {
-    return Variables(*m_spSimplexModel);
+    return static_cast<size_t>(m_spSimplexModel->getNumCols());
+}
+
+tsplp::Variable tsplp::Model::GetVariable(int id) const
+{
+    if (id < 0 || id >= GetNumberOfVariables())
+        throw std::runtime_error("Invalid id");
+
+    return Variable(*m_spSimplexModel, id);
 }
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)

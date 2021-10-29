@@ -27,6 +27,11 @@ void tsplp::Variable::SetLowerBound(double lowerBound)
     m_pModel->setColumnLower(m_id, lowerBound);
 }
 
+double tsplp::Variable::GetObjectiveValue() const
+{
+    return m_pModel->primalColumnSolution()[m_id];
+}
+
 int tsplp::Variable::GetId() const
 {
     return m_id;

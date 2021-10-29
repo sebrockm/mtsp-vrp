@@ -59,3 +59,12 @@ tsplp::LinearVariableComposition::LinearVariableComposition(const Variable& vari
     : m_coefficientMap{ {variable, 1} }
 {
 }
+
+double tsplp::LinearVariableComposition::Evaluate() const
+{
+    double result = m_constant;
+    for (auto const& [var, coef] : m_coefficientMap)
+        result += coef * var.GetObjectiveValue();
+
+    return result;
+}

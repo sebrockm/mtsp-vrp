@@ -18,6 +18,7 @@ namespace tsplp
         double GetLowerBound() const;
         void SetUpperBound(double upperBound);
         void SetLowerBound(double lowerBound);
+        double GetObjectiveValue() const;
         int GetId() const;
     };
 

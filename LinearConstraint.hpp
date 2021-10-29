@@ -26,5 +26,7 @@ namespace tsplp
         double GetUpperBound() const { return m_upperBound; }
         double GetLowerBound() const { return m_lowerBound; }
         auto const& GetCoefficientMap() const { return m_coefficientMap; }
+
+        bool Evaluate(double tolerance = 1.e-10) const;
     };
 }

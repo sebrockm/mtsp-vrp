@@ -30,5 +30,7 @@ namespace tsplp
 
         auto const& GetCoefficientMap() const { return m_coefficientMap; }
         double GetConstant() const { return m_constant; }
+
+        double Evaluate() const;
     };
 }

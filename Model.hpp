@@ -9,7 +9,7 @@ class ClpSimplex;
 
 namespace tsplp
 {
-    class Variable;
+    class Variables;
     class LinearVariableComposition;
     class LinearConstraint;
 
@@ -20,7 +20,7 @@ namespace tsplp
 
     public:
         explicit Model(size_t numberOfBinaryVariables);
-        std::span<const Variable> GetVariables() const;
+        Variables GetVariables() const;
         void SetObjective(const LinearVariableComposition& objective);
         void AddConstraints(std::span<const LinearConstraint> constraints);
         Status Solve();

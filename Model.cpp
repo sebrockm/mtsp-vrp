@@ -15,6 +15,11 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_spSimplexModel->addColumns(numberOfBinaryVariables, lowerBounds.data(), upperBounds.data(), nullptr, nullptr, nullptr, nullptr);
 }
 
+tsplp::Variables tsplp::Model::GetVariables() const
+{
+    return Variables(*m_spSimplexModel);
+}
+
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative

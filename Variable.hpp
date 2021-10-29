@@ -2,14 +2,16 @@
 
 #include <span>
 
+class ClpSimplex;
+
 namespace tsplp
 {
-    class Model;
-
     class Variable
     {
     public:
-        explicit Variable(Model& model, int id);
+        explicit Variable(ClpSimplex& model, int id);
+        double GetUpperBound() const;
+        double GetLowerBound() const;
         void SetUpperBound(double upperBound);
         void SetLowerBound(double lowerBound);
         int GetId() const;
@@ -17,12 +19,14 @@ namespace tsplp
 
     class Variables
     {
+    private:
+        ClpSimplex* m_pModel;
+
     public:
-        explicit Variables(Model& model);
-        std::span<double> GetObjectiveValues() const;
-        std::span<double> GetUpperBounds() const;
-        std::span<double> GetLowerBounds() const;
+        explicit Variables(ClpSimplex& model);
+        size_t GetSize() const;
         Variable operator[](int id) const;
+        std::span<const double> GetObjectiveValues() const;
     };
 
     struct VariableLess

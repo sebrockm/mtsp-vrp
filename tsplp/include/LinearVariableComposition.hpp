@@ -8,7 +8,6 @@ namespace tsplp
 {
     class LinearVariableComposition
     {
-        friend LinearVariableComposition operator*(double coef, const Variable& var);
         friend LinearVariableComposition operator*(double factor, LinearVariableComposition&& linearComp);
 
         friend LinearVariableComposition operator+(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
@@ -34,7 +33,6 @@ namespace tsplp
         double Evaluate() const;
     };
 
-    LinearVariableComposition operator*(double coef, const Variable& var);
     LinearVariableComposition operator*(double factor, LinearVariableComposition&& linearComp);
 
     LinearVariableComposition operator+(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);

@@ -1,13 +1,6 @@
 #include "LinearVariableComposition.hpp"
 #include "Variable.hpp"
 
-tsplp::LinearVariableComposition tsplp::operator*(double coef, Variable const& var)
-{
-    LinearVariableComposition result;
-    result.m_coefficientMap[var] = coef;
-    return result;
-}
-
 tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableComposition&& linearComp)
 {
     for (auto&& [var, coef] : linearComp.m_coefficientMap)

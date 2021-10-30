@@ -11,5 +11,3 @@ add_executable(conan-trial conan-trial.cpp)
 target_link_libraries(conan-trial PRIVATE ${CONAN_LIBS})
 
 add_subdirectory(tsplp)
-
-message(STATUS ${CONAN_LIBS})

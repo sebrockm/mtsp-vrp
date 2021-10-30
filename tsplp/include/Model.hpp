@@ -20,6 +20,7 @@ namespace tsplp
 
     public:
         explicit Model(size_t numberOfBinaryVariables);
+        ~Model();
 
         size_t GetNumberOfVariables() const;
         Variable GetVariable(int id) const;

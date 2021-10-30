@@ -15,6 +15,11 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_spSimplexModel->addColumns(numberOfBinaryVariables, lowerBounds.data(), upperBounds.data(), nullptr, nullptr, nullptr, nullptr);
 }
 
+tsplp::Model::~Model()
+{
+    // ClpSimplex gets destroyed here so that it can stay forward declared in header file
+}
+
 size_t tsplp::Model::GetNumberOfVariables() const
 {
     return static_cast<size_t>(m_spSimplexModel->getNumCols());

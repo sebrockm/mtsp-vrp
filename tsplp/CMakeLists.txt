@@ -7,4 +7,6 @@ add_library(tsplp OBJECT ${headers} ${sources})
 
 target_include_directories(tsplp PUBLIC include)
 
-target_link_libraries(tsplp PRIVATE ${CONAN_LIBS_COIN-CLP})
+target_link_libraries(tsplp PRIVATE ${CONAN_LIBS})
+
+add_subdirectory(test)

@@ -29,4 +29,8 @@ namespace tsplp
 
         bool Evaluate(double tolerance = 1.e-10) const;
     };
+
+    LinearConstraint operator<=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
+    LinearConstraint operator>=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
+    LinearConstraint operator==(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
 }

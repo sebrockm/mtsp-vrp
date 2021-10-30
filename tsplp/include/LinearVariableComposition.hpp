@@ -33,4 +33,13 @@ namespace tsplp
 
         double Evaluate() const;
     };
+
+    LinearVariableComposition operator*(double coef, const Variable& var);
+    LinearVariableComposition operator*(double factor, LinearVariableComposition&& linearComp);
+
+    LinearVariableComposition operator+(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
+    LinearVariableComposition operator+(LinearVariableComposition&& lhs, double rhs);
+
+    LinearVariableComposition operator-(LinearVariableComposition&& operand);
+    LinearVariableComposition operator-(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
 }

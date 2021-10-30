@@ -4,4 +4,4 @@ file(GLOB tests *.cpp)
 
 add_executable(tsplp-test ${tests})
 
-target_link_libraries(tsplp-test PRIVATE tsplp)
+target_link_libraries(tsplp-test PRIVATE tsplp ${CONAN_LIBS_CATCH2})

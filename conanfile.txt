@@ -1,6 +1,7 @@
 [requires]
 boost/1.77.0
 coin-clp/1.17.6
+catch2/2.13.7
 
 [generators]
 cmake

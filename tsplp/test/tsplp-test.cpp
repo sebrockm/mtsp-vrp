@@ -5,9 +5,9 @@
 #include "Status.hpp"
 
 #include <vector>
-#include <cassert>
+#include <catch2/catch.hpp>
 
-int main()
+TEST_CASE("3 variables, 3 constraints", "[lp]") 
 {
     tsplp::Model model(3);
 
@@ -35,9 +35,9 @@ int main()
 
     auto status = model.Solve();
 
-    assert(status == tsplp::Status::Optimal);
-    assert(c1.Evaluate());
-    assert(c2.Evaluate());
-    assert(c3.Evaluate());
-    assert(objective.Evaluate() == 44);
+    REQUIRE(status == tsplp::Status::Optimal);
+    REQUIRE(c1.Evaluate());
+    REQUIRE(c2.Evaluate());
+    REQUIRE(c3.Evaluate());
+    REQUIRE(objective.Evaluate() == Approx(44));
 }

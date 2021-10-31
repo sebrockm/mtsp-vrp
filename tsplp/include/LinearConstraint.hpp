@@ -10,9 +10,9 @@ namespace tsplp
 
     class LinearConstraint
     {
-        friend LinearConstraint operator<=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
-        friend LinearConstraint operator>=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
-        friend LinearConstraint operator==(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
+        friend LinearConstraint operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs);
+        friend LinearConstraint operator>=(LinearVariableComposition lhs, LinearVariableComposition rhs);
+        friend LinearConstraint operator==(LinearVariableComposition lhs, LinearVariableComposition rhs);
 
     private:
         std::map<Variable, double, VariableLess> m_coefficientMap;
@@ -30,7 +30,7 @@ namespace tsplp
         bool Evaluate(double tolerance = 1.e-10) const;
     };
 
-    LinearConstraint operator<=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
-    LinearConstraint operator>=(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
-    LinearConstraint operator==(LinearVariableComposition&& lhs, LinearVariableComposition&& rhs);
+    LinearConstraint operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs);
+    LinearConstraint operator>=(LinearVariableComposition lhs, LinearVariableComposition rhs);
+    LinearConstraint operator==(LinearVariableComposition lhs, LinearVariableComposition rhs);
 }

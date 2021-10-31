@@ -1,7 +1,5 @@
 #pragma once
 
-#include <span>
-
 class ClpSimplex;
 
 namespace tsplp
@@ -13,6 +11,7 @@ namespace tsplp
         int m_id;
 
     public:
+        Variable() = default;
         explicit Variable(ClpSimplex& model, int id);
         double GetUpperBound() const;
         double GetLowerBound() const;

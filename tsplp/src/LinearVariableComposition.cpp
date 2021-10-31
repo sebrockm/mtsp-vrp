@@ -6,6 +6,8 @@ tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableC
     for (auto&& [var, coef] : linearComp.m_coefficientMap)
         coef *= factor;
 
+    linearComp.m_constant *= factor;
+
     return std::move(linearComp);
 }
 

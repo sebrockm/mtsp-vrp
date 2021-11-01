@@ -10,6 +10,6 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 add_executable(conan-trial conan-trial.cpp)
-target_link_libraries(conan-trial PRIVATE ${CONAN_LIBS})
+target_link_libraries(conan-trial PRIVATE ${CONAN_LIBS} tsplp)
 
 add_subdirectory(tsplp)

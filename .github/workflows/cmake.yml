@@ -16,6 +16,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: Get GCC-10
+      run: sudo apt install g++-10
+    
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.0
     

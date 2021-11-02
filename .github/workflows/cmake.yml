@@ -22,8 +22,14 @@ jobs:
     - name: Create default profile
       run: conan profile new default --detect
       
-    - name: Update profile
-      run: conan profile update settings.compiler=gcc settings.compiler.version=11 default
+    - name: Update profile compiler
+      run: conan profile update settings.compiler=gcc default
+      
+    - name: Update profile compiler version
+      run: conan profile update settings.compiler.version=11 default
+
+    - name: Update profile libstd
+      run: conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies
       run: conan install . -if ${{github.workspace}}/build -s build_type=${{env.BUILD_TYPE}}

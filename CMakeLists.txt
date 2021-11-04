@@ -4,6 +4,8 @@ project(mtsp-vpr)
 
 enable_testing()
 
+set( CMAKE_VERBOSE_MAKEFILE on )
+
 set(CMAKE_CXX_STANDARD 20)
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)

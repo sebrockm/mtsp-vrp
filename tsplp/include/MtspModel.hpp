@@ -12,7 +12,7 @@ namespace tsplp
 {
     struct MtspResult
     {
-        xt::xtensor<int, 2> Paths{};
+        std::vector<std::vector<int>> Paths{};
         double lowerBound = -std::numeric_limits<double>::max();
         double upperBound = std::numeric_limits<double>::max();
     };
@@ -38,5 +38,8 @@ namespace tsplp
 
     public:
         MtspResult BranchAndCutSolve();
+
+    private:
+        std::vector<std::vector<int>> CreatePathsFromVariables() const;
     };
 }

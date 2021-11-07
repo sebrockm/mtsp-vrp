@@ -1,6 +1,7 @@
 #include "MtspModel.hpp"
 #include "LinearConstraint.hpp"
 
+#include <cassert>
 #include <cmath>
 #include <optional>
 #include <queue>
@@ -154,7 +155,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
         if (!fractionalVar.has_value())
         {
             bestResult.upperBound = currentLowerBound;
-            // create paths from variables
+            bestResult.Paths = CreatePathsFromVariables();
 
             if (bestResult.lowerBound >= bestResult.upperBound)
                 break;
@@ -176,4 +177,31 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
         bestResult.lowerBound = bestResult.upperBound;
 
     return bestResult;
+}
+
+std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
+{
+    std::vector<std::vector<int>> paths(A);
+
+    for (int a = 0; a < A; ++a)
+    {
+        for (auto i = m_startPositions[a]; i != m_endPositions[a];)
+        {
+            paths[a].push_back(i);
+            int j = 0;
+            for (; j < N; ++j)
+            {
+                if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
+                {
+                    paths[a].push_back(j);
+                    break;
+                }
+            }
+            assert(j < N);
+            i = j;
+        }
+        paths[a].push_back(m_endPositions[a]);
+    }
+
+    return paths;
 }

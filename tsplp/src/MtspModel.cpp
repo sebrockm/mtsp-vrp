@@ -50,13 +50,13 @@ namespace
     }
 }
 
-tsplp::MtspModel::MtspModel(std::vector<int> startPositions, std::vector<int> endPositions, std::vector<double> weights)
-    : m_startPositions(xt::adapt(std::move(startPositions))),
-    m_endPositions(xt::adapt(std::move(endPositions))),
-    A(std::size(startPositions)),
-    N(static_cast<size_t>(std::sqrt(std::size(weights)))),
+tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights)
+    : m_startPositions(std::move(startPositions)),
+    m_endPositions(std::move(endPositions)),
+    A(std::size(m_startPositions)),
+    N(static_cast<size_t>(weights.shape(0))),
     m_model(A * N * N),
-    W(xt::adapt(std::move(weights), { N, N })),
+    W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(W* X)())
 {

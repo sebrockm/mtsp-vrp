@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(mtsp-vpr)
+project(mtsp-vrp)
 
 enable_testing()
 

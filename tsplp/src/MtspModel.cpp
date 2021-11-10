@@ -58,17 +58,24 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_model(A * N * N),
     W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
-    m_objective(xt::sum(W* X)())
+    m_objective(xt::sum(W * X)())
 {
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
-    constraints.reserve(A * N + 3 * A + N * (N - 1) / 2);
+    constraints.reserve(A * N + 2 * N + 3 * A + N * (N - 1) / 2);
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)
         for (size_t n = 0; n < N; ++n)
             constraints.emplace_back(X(a, n, n) == 0);
+
+    // degree inequalities
+    for (size_t n = 0; n < N; ++n)
+    {
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
+    }
 
     // special inequalities for start and end nodes
     for (size_t a = 0; a < A; ++a)
@@ -185,22 +192,20 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 
     for (int a = 0; a < A; ++a)
     {
+        paths[a].push_back(m_startPositions[a]);
         for (auto i = m_startPositions[a]; i != m_endPositions[a];)
         {
-            paths[a].push_back(i);
             int j = 0;
             for (; j < N; ++j)
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
-                {
-                    paths[a].push_back(j);
                     break;
-                }
             }
             assert(j < N);
+            paths[a].push_back(j);
             i = j;
         }
-        paths[a].push_back(m_endPositions[a]);
+        assert(paths[a].back() == m_endPositions[a]);
     }
 
     return paths;

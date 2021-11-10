@@ -23,7 +23,7 @@ tsplp::LinearConstraint tsplp::operator==(LinearVariableComposition lhs, LinearV
 {
     LinearConstraint result = lhs - rhs;
     result.m_upperBound *= -1;
-    result.m_lowerBound = result.m_lowerBound;
+    result.m_lowerBound = result.m_upperBound;
     return result;
 }
 

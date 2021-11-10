@@ -1,29 +1,81 @@
 #include "MtspModel.hpp"
 #include "LinearConstraint.hpp"
-#include "LinearVariableComposition.hpp"
 
+#include <cassert>
 #include <cmath>
+#include <optional>
+#include <queue>
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xview.hpp>
 
-tsplp::MtspModel::MtspModel(std::vector<int> startPositions, std::vector<int> endPositions, std::vector<double> weights)
-    : m_startPositions(xt::adapt(std::move(startPositions))),
-    m_endPositions(xt::adapt(std::move(endPositions))),
-    A(std::size(startPositions)),
-    N(static_cast<size_t>(std::sqrt(std::size(weights)))),
-    m_model(A * N * N),
-    W(xt::adapt(std::move(weights), { N, N })),
-    X(xt::adapt(m_model.GetVariables(), { A, N, N }))
+namespace
 {
-    m_model.SetObjective(xt::sum(W * X)());
+    void FixVariables(std::span<tsplp::Variable> variables, double value)
+    {
+        for (auto v : variables)
+        {
+            v.SetLowerBound(value);
+            v.SetUpperBound(value);
+        }
+    }
+
+    void UnfixVariables(std::span<tsplp::Variable> variables)
+    {
+        for (auto v : variables)
+        {
+            v.SetLowerBound(0.0);
+            v.SetUpperBound(1.0);
+        }
+    }
+
+    std::optional<tsplp::Variable> FindFractionalVariable(std::span<const tsplp::Variable> variables, double epsilon = 1.e-10)
+    {
+        std::optional<tsplp::Variable> closest = std::nullopt;
+        double minAbs = 1.0;
+        for (auto v : variables)
+        {
+            if (epsilon <= v.GetObjectiveValue() && v.GetObjectiveValue() <= 1.0 - epsilon)
+            {
+                if (std::abs(v.GetObjectiveValue() - 0.5) < minAbs)
+                {
+                    minAbs = std::abs(v.GetObjectiveValue() - 0.5);
+                    closest = v;
+                    if (minAbs < epsilon)
+                        break;
+                }
+            }
+        }
+
+        return closest;
+    }
+}
+
+tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights)
+    : m_startPositions(std::move(startPositions)),
+    m_endPositions(std::move(endPositions)),
+    A(std::size(m_startPositions)),
+    N(static_cast<size_t>(weights.shape(0))),
+    m_model(A * N * N),
+    W(std::move(weights)),
+    X(xt::adapt(m_model.GetVariables(), { A, N, N })),
+    m_objective(xt::sum(W * X)())
+{
+    m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
-    constraints.reserve(A * N + 3 * A + N * (N - 1) / 2);
+    constraints.reserve(A * N + 2 * N + 3 * A + N * (N - 1) / 2);
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)
         for (size_t n = 0; n < N; ++n)
             constraints.emplace_back(X(a, n, n) == 0);
+
+    // degree inequalities
+    for (size_t n = 0; n < N; ++n)
+    {
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
+    }
 
     // special inequalities for start and end nodes
     for (size_t a = 0; a < A; ++a)
@@ -42,4 +94,119 @@ tsplp::MtspModel::MtspModel(std::vector<int> startPositions, std::vector<int> en
             constraints.emplace_back((xt::sum(xt::view(X + 0, xt::all(), u, v)) + xt::sum(xt::view(X + 0, xt::all(), v, u)))() <= 1);
 
     m_model.AddConstraints(constraints);
+}
+
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
+{
+    MtspResult bestResult{};
+    if (m_model.Solve() != Status::Optimal)
+        return bestResult;
+
+    bestResult.lowerBound = m_objective.Evaluate();
+    std::vector<Variable> fixedVariables0{};
+    std::vector<Variable> fixedVariables1{};
+
+    struct SData
+    {
+        double lowerBound = -std::numeric_limits<double>::max();
+        std::vector<Variable> fixedVariables0{};
+        std::vector<Variable> fixedVariables1{};
+        bool operator>(SData const& sd) const { return lowerBound > sd.lowerBound; }
+    };
+
+    std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
+    queue.emplace(bestResult.lowerBound, fixedVariables0, fixedVariables1);
+
+    while (!queue.empty())
+    {
+        UnfixVariables(fixedVariables0);
+        UnfixVariables(fixedVariables1);
+
+        bestResult.lowerBound = queue.top().lowerBound;
+        fixedVariables0 = queue.top().fixedVariables0;
+        fixedVariables1 = queue.top().fixedVariables1;
+        queue.pop();
+
+        FixVariables(fixedVariables0, 0.0);
+        FixVariables(fixedVariables1, 1.0);
+
+        if (m_model.Solve() != Status::Optimal)
+            continue;
+
+        auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
+
+        // do exploiting here
+
+        bestResult.lowerBound = std::min(bestResult.upperBound, currentLowerBound);
+        if (!queue.empty())
+            bestResult.lowerBound = std::min(currentLowerBound, queue.top().lowerBound);
+
+        if (bestResult.lowerBound >= bestResult.upperBound)
+            break;
+
+        if (currentLowerBound >= bestResult.upperBound)
+            continue;
+
+        // fix variables according to reduced costs (dj)
+
+        std::vector<LinearConstraint> violatedConstraints; // find violated constraints here
+        if (!violatedConstraints.empty())
+        {
+            m_model.AddConstraints(violatedConstraints);
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
+
+        if (!fractionalVar.has_value())
+        {
+            bestResult.upperBound = currentLowerBound;
+            bestResult.Paths = CreatePathsFromVariables();
+
+            if (bestResult.lowerBound >= bestResult.upperBound)
+                break;
+            else
+                continue;
+        }
+
+        auto newFixedVariables0 = fixedVariables0;
+        newFixedVariables0.push_back(fractionalVar.value());
+
+        auto newFixedVariables1 = fixedVariables1;
+        newFixedVariables1.push_back(fractionalVar.value());
+
+        queue.emplace(currentLowerBound, std::move(newFixedVariables0), fixedVariables1);
+        queue.emplace(currentLowerBound, fixedVariables0, std::move(newFixedVariables1));
+    }
+
+    if (queue.empty())
+        bestResult.lowerBound = bestResult.upperBound;
+
+    return bestResult;
+}
+
+std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
+{
+    std::vector<std::vector<int>> paths(A);
+
+    for (int a = 0; a < A; ++a)
+    {
+        paths[a].push_back(m_startPositions[a]);
+        for (auto i = m_startPositions[a]; i != m_endPositions[a];)
+        {
+            int j = 0;
+            for (; j < N; ++j)
+            {
+                if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
+                    break;
+            }
+            assert(j < N);
+            paths[a].push_back(j);
+            i = j;
+        }
+        assert(paths[a].back() == m_endPositions[a]);
+    }
+
+    return paths;
 }

@@ -12,7 +12,7 @@ if (MSVC)
 else()
     add_compile_options(-Werror -pedantic -Wall -Wextra
         -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion -Wmisleading-indentation
-        -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2 -Wlifetime)
+        -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2)
 endif()
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)

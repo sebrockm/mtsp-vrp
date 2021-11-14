@@ -3,14 +3,19 @@
 #include "LinearVariableComposition.hpp"
 
 #include <ClpSimplex.hpp>
+#include <limits>
+#include <stdexcept>
 
-tsplp::Model::Model(int numberOfBinaryVariables)
+tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
 {
-    m_spSimplexModel->addColumns(numberOfBinaryVariables, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    if (numberOfBinaryVariables > std::numeric_limits<int>::max())
+        throw std::runtime_error("Too many variables");
+
+    m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);
-    for (int i = 0; i < numberOfBinaryVariables; ++i)
+    for (int i = 0; i < static_cast<int>(numberOfBinaryVariables); ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
         m_variables.back().SetLowerBound(0.0);
@@ -33,6 +38,9 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 
 void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
 {
+    if (std::ssize(constraints) > std::numeric_limits<int>::max())
+        throw std::runtime_error("Too many constraints");
+
     std::vector<double> lowerBounds, upperBounds;
     lowerBounds.reserve(constraints.size());
     upperBounds.reserve(constraints.size());

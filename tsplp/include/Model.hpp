@@ -21,7 +21,7 @@ namespace tsplp
         std::vector<Variable> m_variables;
 
     public:
-        explicit Model(int numberOfBinaryVariables);
+        explicit Model(size_t numberOfBinaryVariables);
         ~Model();
 
         const std::vector<Variable>& GetVariables() const { return m_variables; }

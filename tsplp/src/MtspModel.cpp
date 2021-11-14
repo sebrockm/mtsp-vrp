@@ -5,6 +5,7 @@
 #include <cmath>
 #include <optional>
 #include <queue>
+#include <stdexcept>
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xview.hpp>
 
@@ -53,17 +54,24 @@ namespace
 tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights)
     : m_startPositions(std::move(startPositions)),
     m_endPositions(std::move(endPositions)),
-    A(static_cast<int>(std::ssize(m_startPositions))),
-    N(static_cast<int>(weights.shape(0))),
+    A(m_startPositions.size()),
+    N(weights.shape(0)),
     m_model(A * N * N),
     W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(W * X)())
 {
+    if (m_startPositions.size() != m_endPositions.size())
+        throw std::runtime_error("Start end end positions must have the same size.");
+
+    if (W.shape(0) != W.shape(1))
+        throw std::runtime_error("The weights must have shape (N, N).");
+
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
-    constraints.reserve(A * N + 2 * N + 3 * A + N * (N - 1) / 2);
+    const auto numberOfConstraints = A * N + 2 * N + 3 * A + N * (N - 1) / 2;
+    constraints.reserve(numberOfConstraints);
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)
@@ -190,20 +198,20 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 {
     std::vector<std::vector<int>> paths(A);
 
-    for (int a = 0; a < A; ++a)
+    for (size_t a = 0; a < A; ++a)
     {
         paths[a].push_back(m_startPositions[a]);
         for (auto i = m_startPositions[a]; i != m_endPositions[a];)
         {
-            int j = 0;
+            size_t j = 0;
             for (; j < N; ++j)
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
                     break;
             }
             assert(j < N);
-            paths[a].push_back(j);
-            i = j;
+            paths[a].push_back(static_cast<int>(j));
+            i = static_cast<decltype(i)>(j);
         }
         assert(paths[a].back() == m_endPositions[a]);
     }

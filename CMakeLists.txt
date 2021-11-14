@@ -26,7 +26,7 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 # disable warnings as errors for xtensor as it yields too many warnings
-# maybe declare the include files as SYSTEM?
+# apparently this is only an issue on MSVC
 if (MSVC)
     target_compile_options(CONAN_PKG::xtensor INTERFACE ${no_warnings_as_erros_flag})
 endif()

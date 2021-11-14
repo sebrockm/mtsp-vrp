@@ -56,7 +56,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_endPositions(std::move(endPositions)),
     A(m_startPositions.size()),
     N(weights.shape(0)),
-    m_model(static_cast<int>(A * N * N)),
+    m_model(A * N * N),
     W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(W * X)())
@@ -196,22 +196,22 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
 std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 {
-    std::vector<std::vector<int>> paths(static_cast<size_t>(A));
+    std::vector<std::vector<int>> paths(A);
 
     for (size_t a = 0; a < A; ++a)
     {
         paths[a].push_back(m_startPositions[a]);
         for (auto i = m_startPositions[a]; i != m_endPositions[a];)
         {
-            int j = 0;
+            size_t j = 0;
             for (; j < N; ++j)
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
                     break;
             }
             assert(j < N);
-            paths[a].push_back(j);
-            i = j;
+            paths[a].push_back(static_cast<int>(j));
+            i = static_cast<decltype(i)>(j);
         }
         assert(paths[a].back() == m_endPositions[a]);
     }

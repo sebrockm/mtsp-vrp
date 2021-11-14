@@ -53,8 +53,8 @@ namespace
 tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights)
     : m_startPositions(std::move(startPositions)),
     m_endPositions(std::move(endPositions)),
-    A(std::size(m_startPositions)),
-    N(static_cast<size_t>(weights.shape(0))),
+    A(static_cast<int>(std::ssize(m_startPositions))),
+    N(static_cast<int>(weights.shape(0))),
     m_model(A * N * N),
     W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),

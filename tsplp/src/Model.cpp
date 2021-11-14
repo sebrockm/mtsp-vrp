@@ -4,13 +4,13 @@
 
 #include <ClpSimplex.hpp>
 
-tsplp::Model::Model(size_t numberOfBinaryVariables)
+tsplp::Model::Model(int numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
 {
     m_spSimplexModel->addColumns(numberOfBinaryVariables, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);
-    for (size_t i = 0; i < numberOfBinaryVariables; ++i)
+    for (int i = 0; i < numberOfBinaryVariables; ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
         m_variables.back().SetLowerBound(0.0);
@@ -49,7 +49,7 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
         lowerBounds.push_back(c.GetLowerBound());
         upperBounds.push_back(c.GetUpperBound());
 
-        rowStarts.push_back(rowStarts.back() + c.GetCoefficientMap().size());
+        rowStarts.push_back(rowStarts.back() + static_cast<int>(std::ssize(c.GetCoefficientMap())));
         for (auto const& [var, coef] : c.GetCoefficientMap())
         {
             columns.push_back(var.GetId());
@@ -57,7 +57,7 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
         }
     }
 
-    m_spSimplexModel->addRows(std::ssize(constraints), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
+    m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
 }
 
 tsplp::Status tsplp::Model::Solve()

@@ -60,25 +60,32 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(W * X)())
 {
+    if (m_startPositions.size() != m_endPositions.size())
+        throw std::runtime_error("Start end end positions must have the same size.");
+
+    if (W.shape(0) != W.shape(1))
+        throw std::runtime_error("The weights must have shape (N, N).");
+
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
-    constraints.reserve(A * N + 2 * N + 3 * A + N * (N - 1) / 2);
+    const auto numberOfConstraints = A * N + 2 * N + 3 * A + N * (N - 1) / 2;
+    constraints.reserve(static_cast<size_t>(numberOfConstraints));
 
     // don't use self referring arcs (entries on diagonal)
-    for (size_t a = 0; a < A; ++a)
-        for (size_t n = 0; n < N; ++n)
+    for (int a = 0; a < A; ++a)
+        for (int n = 0; n < N; ++n)
             constraints.emplace_back(X(a, n, n) == 0);
 
     // degree inequalities
-    for (size_t n = 0; n < N; ++n)
+    for (int n = 0; n < N; ++n)
     {
         constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
         constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
     }
 
     // special inequalities for start and end nodes
-    for (size_t a = 0; a < A; ++a)
+    for (int a = 0; a < A; ++a)
     {
         // We write X + 0 instead of X to turn summed up type from Variable to LinearVariableComposition.
         // That is necessary because xtensor initializes the sum with a conversion from 0 to ResultType and we
@@ -89,8 +96,8 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     }
 
     // inequalities to disallow cycles of length 2
-    for (size_t u = 0; u < N; ++u)
-        for (size_t v = u + 1; v < N; ++v)
+    for (int u = 0; u < N; ++u)
+        for (int v = u + 1; v < N; ++v)
             constraints.emplace_back((xt::sum(xt::view(X + 0, xt::all(), u, v)) + xt::sum(xt::view(X + 0, xt::all(), v, u)))() <= 1);
 
     m_model.AddConstraints(constraints);
@@ -188,12 +195,13 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
 std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 {
-    std::vector<std::vector<int>> paths(A);
+    std::vector<std::vector<int>> paths(static_cast<size_t>(A));
 
     for (int a = 0; a < A; ++a)
     {
-        paths[a].push_back(m_startPositions[a]);
-        for (auto i = m_startPositions[a]; i != m_endPositions[a];)
+        const auto ua = static_cast<unsigned int>(a);
+        paths[ua].push_back(m_startPositions[ua]);
+        for (auto i = m_startPositions[ua]; i != m_endPositions[ua];)
         {
             int j = 0;
             for (; j < N; ++j)
@@ -205,7 +213,7 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
             paths[a].push_back(j);
             i = j;
         }
-        assert(paths[a].back() == m_endPositions[a]);
+        assert(paths[ua].back() == m_endPositions[ua]);
     }
 
     return paths;

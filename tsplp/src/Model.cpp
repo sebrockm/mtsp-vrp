@@ -3,13 +3,17 @@
 #include "LinearVariableComposition.hpp"
 
 #include <ClpSimplex.hpp>
+#include <exception>
 
 tsplp::Model::Model(int numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
 {
+    if (numberOfBinaryVariables < 0)
+        throw std::runtime_error("Number of variables cannot be negative");
+
     m_spSimplexModel->addColumns(numberOfBinaryVariables, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-    m_variables.reserve(numberOfBinaryVariables);
+    m_variables.reserve(static_cast<size_t>(numberOfBinaryVariables));
     for (int i = 0; i < numberOfBinaryVariables; ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
@@ -33,6 +37,9 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 
 void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
 {
+    if (std::ssize(constraints) > std::numeric_limits<int>::max())
+        throw std::runtime_error("Too many constraints");
+
     std::vector<double> lowerBounds, upperBounds;
     lowerBounds.reserve(constraints.size());
     upperBounds.reserve(constraints.size());

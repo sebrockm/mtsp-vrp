@@ -7,23 +7,26 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 20)
 
 if (MSVC)
-    add_compile_options(/WX /permissive- /W4
-        /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
+    set(warning_flags
+        /permissive- /W4 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
+    set(warnings_as_erros_flag /WX)
+    set(no_warnings_as_erros_flag /WX-)
 else()
-    add_compile_options(-Werror -pedantic -Wall -Wextra
+    set(warning_flags
+        -pedantic -Wall -Wextra
         -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion -Wmisleading-indentation
         -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2)
+    set(warnings_as_erros_flag -Werror)
+    set(no_warnings_as_erros_flag -Wno-error)
 endif()
+
+add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 # disable warnings as errors for xtensor as it yields too many warnings
 # maybe declare the include files as SYSTEM?
-if (MSVC)
-    target_compile_options(CONAN_PKG::xtensor INTERFACE /WX-)
-else()
-    target_compile_options(CONAN_PKG::xtensor INTERFACE -Wno-error)
-endif()
+target_compile_options(CONAN_PKG::xtensor INTERFACE ${no_warnings_as_erros_flag})
 
 add_subdirectory(tsplp)

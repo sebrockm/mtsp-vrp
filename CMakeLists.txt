@@ -27,6 +27,8 @@ conan_basic_setup(TARGETS)
 
 # disable warnings as errors for xtensor as it yields too many warnings
 # maybe declare the include files as SYSTEM?
-target_compile_options(CONAN_PKG::xtensor INTERFACE ${no_warnings_as_erros_flag})
+if (MSVC)
+    target_compile_options(CONAN_PKG::xtensor INTERFACE ${no_warnings_as_erros_flag})
+endif()
 
 add_subdirectory(tsplp)

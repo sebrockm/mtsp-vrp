@@ -23,8 +23,8 @@ namespace tsplp
         xt::xtensor<int, 1> m_startPositions;
         xt::xtensor<int, 1> m_endPositions;
 
-        int A;
-        int N;
+        size_t A;
+        size_t N;
 
         Model m_model;
 

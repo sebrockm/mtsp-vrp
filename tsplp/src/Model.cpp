@@ -3,18 +3,19 @@
 #include "LinearVariableComposition.hpp"
 
 #include <ClpSimplex.hpp>
-#include <exception>
+#include <limits>
+#include <stdexcept>
 
-tsplp::Model::Model(int numberOfBinaryVariables)
+tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
 {
-    if (numberOfBinaryVariables < 0)
-        throw std::runtime_error("Number of variables cannot be negative");
+    if (numberOfBinaryVariables > std::numeric_limits<int>::max())
+        throw std::runtime_error("Too many variables");
 
-    m_spSimplexModel->addColumns(numberOfBinaryVariables, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
-    m_variables.reserve(static_cast<size_t>(numberOfBinaryVariables));
-    for (int i = 0; i < numberOfBinaryVariables; ++i)
+    m_variables.reserve(numberOfBinaryVariables);
+    for (int i = 0; i < static_cast<int>(numberOfBinaryVariables); ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
         m_variables.back().SetLowerBound(0.0);

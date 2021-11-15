@@ -1,5 +1,6 @@
 #include "MtspModel.hpp"
 #include "LinearConstraint.hpp"
+#include "SeparationAlgorithms.hpp"
 
 #include <cassert>
 #include <cmath>
@@ -157,10 +158,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
         // fix variables according to reduced costs (dj)
 
-        std::vector<LinearConstraint> violatedConstraints; // find violated constraints here
-        if (!violatedConstraints.empty())
+        graph::Separator separator(X);
+        if (const auto ucut = separator.Ucut(); ucut.has_value())
         {
-            m_model.AddConstraints(violatedConstraints);
+            m_model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
             queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
             continue;
         }

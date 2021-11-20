@@ -31,4 +31,5 @@ if (MSVC)
     target_compile_options(CONAN_PKG::xtensor INTERFACE ${no_warnings_as_erros_flag})
 endif()
 
+add_subdirectory(mtsp-vrp-c)
 add_subdirectory(tsplp)

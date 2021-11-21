@@ -7,6 +7,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON) # -fPIC
 
 if (MSVC)
     set(warning_flags

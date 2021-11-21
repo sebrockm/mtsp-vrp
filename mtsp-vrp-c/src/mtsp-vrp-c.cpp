@@ -8,18 +8,17 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     double* lowerBound, double* upperBound, int* paths, size_t* pathOffsets)
 {
     if (numberOfAgents == 0 || numberOfNodes < 2 || numberOfAgents * 2 > numberOfNodes)
-        return -2;
+        return MTSP_VRP_C_RESULT_INVALID_INPUT_SIZE;
 
     if (start_positions == nullptr || end_positions == nullptr || weights == nullptr ||
         lowerBound == nullptr || upperBound == nullptr || paths == nullptr || pathOffsets == nullptr)
-        return -1;
+        return MTSP_VRP_C_RESULT_INVALID_INPUT_POINTER;
 
-
-    const std::vector<size_t> positionsShape = { numberOfAgents };
+    const std::array positionsShape = { numberOfAgents };
     const auto startPositions = xt::adapt(start_positions, numberOfAgents, xt::no_ownership{}, positionsShape);
     const auto endPositions = xt::adapt(end_positions, numberOfAgents, xt::no_ownership{}, positionsShape);
 
-    const std::vector<size_t> weightsShape = { numberOfNodes, numberOfNodes };
+    const std::array weightsShape = { numberOfNodes, numberOfNodes };
     const auto weights_ = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership{}, weightsShape);
 
     tsplp::MtspModel model(startPositions, endPositions, weights_);
@@ -29,7 +28,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     *upperBound = result.upperBound;
 
     if (result.lowerBound == -std::numeric_limits<double>::max() || result.upperBound == std::numeric_limits<double>::max())
-        return 1;
+        return MTSP_VRP_C_RESULT_INFEASIBLE;
 
     size_t offset = 0;
     for (size_t a = 0; a < numberOfAgents; ++a)
@@ -39,5 +38,8 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
         offset += result.Paths[a].size();
     }
 
-    return 0;
+    if (result.lowerBound == result.upperBound)
+        return MTSP_VRP_C_RESULT_SOLVED;
+    else
+        return MTSP_VRP_C_RESULT_TIMEOUT;
 }

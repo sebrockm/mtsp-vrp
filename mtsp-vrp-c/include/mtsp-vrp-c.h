@@ -1,6 +1,8 @@
 #ifndef MTSP_VRP_C_H
 #define MTSP_VRP_C_H
 
+#include <stddef.h>
+
 #include "mtsp-vrp-c_export.h"
 
 #define MTSP_VRP_C_RESULT_SOLVED 0

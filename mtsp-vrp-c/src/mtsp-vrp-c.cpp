@@ -2,9 +2,10 @@
 #include <MtspModel.hpp>
 
 #include <array>
+#include <chrono>
 #include <xtensor/xadapt.hpp>
 
-int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start_positions, const int* end_positions, const double* weights,
+int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start_positions, const int* end_positions, const double* weights, int timeout,
     double* lowerBound, double* upperBound, int* paths, size_t* pathOffsets)
 {
     if (numberOfAgents == 0 || numberOfNodes < 2 || numberOfAgents * 2 > numberOfNodes)
@@ -22,7 +23,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     const auto weights_ = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership{}, weightsShape);
 
     tsplp::MtspModel model(startPositions, endPositions, weights_);
-    auto const result = model.BranchAndCutSolve();
+    auto const result = model.BranchAndCutSolve(std::chrono::milliseconds{ timeout });
 
     *lowerBound = result.lowerBound;
     *upperBound = result.upperBound;
@@ -40,6 +41,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
 
     if (result.lowerBound == result.upperBound)
         return MTSP_VRP_C_RESULT_SOLVED;
-    else
-        return MTSP_VRP_C_RESULT_TIMEOUT;
+
+    assert(result.timeout);
+    return MTSP_VRP_C_RESULT_TIMEOUT;
 }

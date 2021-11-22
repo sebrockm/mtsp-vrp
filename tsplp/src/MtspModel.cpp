@@ -105,8 +105,10 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout)
 {
+    const auto startTime = std::chrono::steady_clock::now();
+
     MtspResult bestResult{};
     if (m_model.Solve() != Status::Optimal)
         return bestResult;
@@ -126,7 +128,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
     std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
     queue.emplace(bestResult.lowerBound, fixedVariables0, fixedVariables1);
 
-    while (!queue.empty())
+    while (!queue.empty() && std::chrono::steady_clock::now() < startTime + timeout)
     {
         UnfixVariables(fixedVariables0);
         UnfixVariables(fixedVariables1);
@@ -191,6 +193,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
     if (queue.empty())
         bestResult.lowerBound = bestResult.upperBound;
+    else if (std::chrono::steady_clock::now() >= startTime + timeout)
+        bestResult.timeout = true;
 
     return bestResult;
 }

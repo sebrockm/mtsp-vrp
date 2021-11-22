@@ -4,6 +4,7 @@
 #include "Model.hpp"
 #include "Variable.hpp"
 
+#include <chrono>
 #include <limits>
 #include <vector>
 #include <xtensor/xtensor.hpp>
@@ -15,6 +16,7 @@ namespace tsplp
         std::vector<std::vector<int>> Paths{};
         double lowerBound = -std::numeric_limits<double>::max();
         double upperBound = std::numeric_limits<double>::max();
+        bool timeout = false;
     };
 
     class MtspModel
@@ -37,7 +39,7 @@ namespace tsplp
         MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights);
 
     public:
-        MtspResult BranchAndCutSolve();
+        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
 
     private:
         std::vector<std::vector<int>> CreatePathsFromVariables() const;

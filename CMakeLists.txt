@@ -35,4 +35,5 @@ if (MSVC)
 endif()
 
 add_subdirectory(mtsp-vrp-c)
+add_subdirectory(tsplib)
 add_subdirectory(tsplp)

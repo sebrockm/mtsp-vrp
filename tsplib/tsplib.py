@@ -18,7 +18,7 @@ def timing(f):
     return wrap
 
 @timing
-def solve_mtsp(start_positions, end_positions, weights):
+def solve_mtsp(start_positions, end_positions, weights, timeout):
     A = len(start_positions)
     N = len(weights)
     pStarts = np.array(start_positions).astype(c_int).ctypes.data_as(POINTER(c_int))
@@ -29,9 +29,9 @@ def solve_mtsp(start_positions, end_positions, weights):
     pPaths = np.zeros(shape=(N,)).astype(c_int).ctypes.data_as(POINTER(c_int))
     pOffsets = np.zeros(shape=(A,)).astype(c_size_t).ctypes.data_as(POINTER(c_size_t))
 
-    result = mtsp_vrp_dll.solve_mtsp_vrp(c_size_t(A), c_size_t(N), pStarts, pEnds, W, byref(lb), byref(ub), pPaths, pOffsets)
+    result = mtsp_vrp_dll.solve_mtsp_vrp(c_size_t(A), c_size_t(N), pStarts, pEnds, W, c_int(timeout), byref(lb), byref(ub), pPaths, pOffsets)
     if result < 0:
-        return None, None, float('inf')
+        return None, None, result
 
     paths = []
     lengths = []
@@ -78,12 +78,12 @@ def main(dll_path, tsplib_path):
                 continue # dependencies are not supported yet
 
             print(f'starting solving {f} ...')
-            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[1], weights=weights) # TODO: change to end_positions=[0] once supported
+            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[1], weights=weights, timeout=60*1000) # TODO: change to end_positions=[0] once supported
             if paths is None:
-                print('error:', result)
-                break
-        
-            result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time={seconds:>6.3f}s result={lengths[0]:>7d} gap={gap:>7.2%}\n'
+                print('solve_mtsp error:', gap)
+                result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
+            else:
+                result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time={seconds:>6.3f}s result={lengths[0]:>7d} gap={gap:>7.2%}\n'
         else:
             result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
     

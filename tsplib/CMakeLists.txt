@@ -22,8 +22,7 @@ endif()
 add_custom_target(tsplib-bench ALL
 	COMMENT "setting up python environment and running tsplib.py"
 	COMMAND "${Python3_EXECUTABLE}" -m venv "${testenv}"
-	COMMAND ls ${testenv}/bin
-	COMMAND ${activate_command}
+	COMMAND source ${testenv}/bin/activate
 	COMMAND pip install -r "${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt"
 	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMAND deactivate

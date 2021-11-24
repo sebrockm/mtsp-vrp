@@ -12,7 +12,7 @@ if (${Python3_VERSION} VERSION_LESS 3.4)
 	message(FATAL_ERROR "python 3.4 or higher is required")
 endif()
 
-set(testenv "${CMAKE_CURRENT_BINARY_DIR}/testenv")
+set(testenv "testenv")
 if (WIN32)
 	set(activate_command "${testenv}/Scripts/activate.bat")
 else()

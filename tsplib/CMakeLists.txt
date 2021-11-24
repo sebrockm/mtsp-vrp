@@ -16,7 +16,7 @@ set(testenv "${CMAKE_CURRENT_BINARY_DIR}/testenv")
 if (WIN32)
 	set(activate_command "${testenv}/Scripts/activate.bat")
 else()
-	set(activate_command source "${testenv}/bin/activate")
+	set(activate_command ". ${testenv}/bin/activate")
 endif()
 
 add_custom_target(tsplib-bench ALL

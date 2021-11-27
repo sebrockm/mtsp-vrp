@@ -30,6 +30,7 @@ add_custom_target(tsplib-bench ALL
 	#COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 10
 	COMMAND ${CMAKE_COMMAND} -E echo deactivating...
 	COMMAND ${CMAKE_COMMAND} -E echo "virtual env: $VIRTUAL_ENV"
+	COMMAND ls ${testenv}/bin/
 	COMMAND deactivate
 	COMMAND ${CMAKE_COMMAND} -E echo deactivated
 	#VERBATIM

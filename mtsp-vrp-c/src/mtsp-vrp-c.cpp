@@ -9,11 +9,11 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     double* lowerBound, double* upperBound, int* paths, size_t* pathOffsets)
 {
     if (numberOfAgents == 0 || numberOfNodes < 2 || numberOfAgents * 2 > numberOfNodes)
-        return MTSP_VRP_C_RESULT_INVALID_INPUT_SIZE;
+        return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_SIZE;
 
     if (start_positions == nullptr || end_positions == nullptr || weights == nullptr ||
         lowerBound == nullptr || upperBound == nullptr || paths == nullptr || pathOffsets == nullptr)
-        return MTSP_VRP_C_RESULT_INVALID_INPUT_POINTER;
+        return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_POINTER;
 
     const std::array positionsShape = { numberOfAgents };
     const auto startPositions = xt::adapt(start_positions, numberOfAgents, xt::no_ownership{}, positionsShape);
@@ -25,11 +25,14 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     tsplp::MtspModel model(startPositions, endPositions, weights_);
     auto const result = model.BranchAndCutSolve(std::chrono::milliseconds{ timeout });
 
-    *lowerBound = result.lowerBound;
-    *upperBound = result.upperBound;
+    *lowerBound = result.LowerBound;
+    *upperBound = result.UpperBound;
 
-    if (result.lowerBound == -std::numeric_limits<double>::max() || result.upperBound == std::numeric_limits<double>::max())
-        return MTSP_VRP_C_RESULT_INFEASIBLE;
+    if (!result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
+        return MTSP_VRP_C_NO_RESULT_INFEASIBLE;
+
+    if (result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
+        return MTSP_VRP_C_NO_RESULT_TIMEOUT;
 
     size_t offset = 0;
     for (size_t a = 0; a < numberOfAgents; ++a)
@@ -39,7 +42,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
         offset += result.Paths[a].size();
     }
 
-    if (result.lowerBound == result.upperBound)
+    if (result.LowerBound >= result.UpperBound)
         return MTSP_VRP_C_RESULT_SOLVED;
 
     assert(result.timeout);

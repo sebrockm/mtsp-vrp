@@ -12,6 +12,7 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
 
+    m_spSimplexModel->setLogLevel(0);
     m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);

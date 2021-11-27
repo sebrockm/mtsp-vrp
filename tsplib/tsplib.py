@@ -46,11 +46,11 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     gap = ub.value / lb.value - 1
     return paths, lengths, gap
 
-def main(dll_path, tsplib_path):
+def main(dll_path, timeout_ms):
     global mtsp_vrp_dll
     mtsp_vrp_dll = cdll.LoadLibrary(dll_path)
 
-    base = os.path.join(tsplib_path, 'tsplib')
+    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tsplib')
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]
 
     for f in files:
@@ -78,7 +78,7 @@ def main(dll_path, tsplib_path):
                 continue # dependencies are not supported yet
 
             print(f'starting solving {f} ...')
-            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[1], weights=weights, timeout=60*1000) # TODO: change to end_positions=[0] once supported
+            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[1], weights=weights, timeout=timeout_ms) # TODO: change to end_positions=[0] once supported
             if paths is None:
                 print('solve_mtsp error:', gap)
                 result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
@@ -93,4 +93,4 @@ def main(dll_path, tsplib_path):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], int(sys.argv[2]))

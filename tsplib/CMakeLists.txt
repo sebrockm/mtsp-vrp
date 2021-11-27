@@ -15,17 +15,22 @@ endif()
 set(testenv "${CMAKE_CURRENT_BINARY_DIR}/testenv")
 if (WIN32)
 	set(activate_command "${testenv}/Scripts/activate.bat")
+	set(deactivate_command "${testenv}/Scripts/deactivate.bat")
 else()
 	set(activate_command . "${testenv}/bin/activate")
+	set(deactivate_command . "${testenv}/bin/deactivate")
 endif()
 
 add_custom_target(tsplib-bench ALL
-	COMMENT "setting up python environment and running tsplib.py"
+	COMMENT "setting up virtual python environment and running tsplib.py"
 	COMMAND "${Python3_EXECUTABLE}" -m venv "${testenv}"
 	COMMAND ${activate_command}
 	COMMAND pip install -r "${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt"
-	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" "${CMAKE_CURRENT_SOURCE_DIR}"
-	COMMAND deactivate
+	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 10
+	COMMAND ${CMAKE_COMMAND} -E echo deactivating...
+	COMMAND ${deactivate_command}
+	COMMAND ${CMAKE_COMMAND} -E echo deactivated
 	VERBATIM
 	USES_TERMINAL
-	SOURCES tsplib.py requirements.txt)
+	SOURCES tsplib.py requirements.txt
+)

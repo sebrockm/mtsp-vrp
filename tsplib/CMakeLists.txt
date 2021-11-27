@@ -25,12 +25,12 @@ add_custom_target(tsplib-bench ALL
 	COMMENT "setting up virtual python environment and running tsplib.py"
 	COMMAND "${Python3_EXECUTABLE}" -m venv "${testenv}"
 	COMMAND ${activate_command}
-	COMMAND ${CMAKE_COMMAND} -E echo "virtual env: $(VIRTUAL_ENV)"
+	COMMAND ${CMAKE_COMMAND} -E echo "virtual env: $VIRTUAL_ENV"
 	COMMAND pip install -r "${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt"
 	#COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 10
 	COMMAND ${CMAKE_COMMAND} -E echo deactivating...
-	COMMAND ${CMAKE_COMMAND} -E echo "virtual env: $(VIRTUAL_ENV)"
-	COMMAND ${deactivate_command}
+	COMMAND ${CMAKE_COMMAND} -E echo "virtual env: $VIRTUAL_ENV"
+	COMMAND deactivate
 	COMMAND ${CMAKE_COMMAND} -E echo deactivated
 	#VERBATIM
 	USES_TERMINAL

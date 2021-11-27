@@ -14,9 +14,9 @@ namespace tsplp
     struct MtspResult
     {
         std::vector<std::vector<int>> Paths{};
-        double lowerBound = -std::numeric_limits<double>::max();
-        double upperBound = std::numeric_limits<double>::max();
-        bool timeout = false;
+        double LowerBound = -std::numeric_limits<double>::max();
+        double UpperBound = std::numeric_limits<double>::max();
+        bool IsTimeoutHit = false;
     };
 
     class MtspModel

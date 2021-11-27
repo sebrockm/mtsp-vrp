@@ -25,13 +25,13 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     tsplp::MtspModel model(startPositions, endPositions, weights_);
     auto const result = model.BranchAndCutSolve(std::chrono::milliseconds{ timeout });
 
-    *lowerBound = result.lowerBound;
-    *upperBound = result.upperBound;
+    *lowerBound = result.LowerBound;
+    *upperBound = result.UpperBound;
 
-    if (!result.timeout && result.upperBound == std::numeric_limits<double>::max())
+    if (!result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
         return MTSP_VRP_C_NO_RESULT_INFEASIBLE;
 
-    if (result.timeout && result.upperBound == std::numeric_limits<double>::max())
+    if (result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
         return MTSP_VRP_C_NO_RESULT_TIMEOUT;
 
     size_t offset = 0;
@@ -42,7 +42,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
         offset += result.Paths[a].size();
     }
 
-    if (result.lowerBound == result.upperBound)
+    if (result.LowerBound >= result.UpperBound)
         return MTSP_VRP_C_RESULT_SOLVED;
 
     assert(result.timeout);

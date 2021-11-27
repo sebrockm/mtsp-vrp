@@ -33,6 +33,6 @@ TEST_CASE("br17.atsp", "[instances]")
     tsplp::MtspModel model{ startPositions, endPositions, weights };
     auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
     
-    REQUIRE(result.lowerBound == Approx(39));
-    REQUIRE(result.upperBound == Approx(39));
+    REQUIRE(result.LowerBound == Approx(39));
+    REQUIRE(result.UpperBound == Approx(39));
 }

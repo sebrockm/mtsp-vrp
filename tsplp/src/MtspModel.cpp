@@ -113,7 +113,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     if (m_model.Solve() != Status::Optimal)
         return bestResult;
 
-    bestResult.lowerBound = m_objective.Evaluate();
+    bestResult.LowerBound = m_objective.Evaluate();
     std::vector<Variable> fixedVariables0{};
     std::vector<Variable> fixedVariables1{};
 
@@ -126,14 +126,14 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     };
 
     std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
-    queue.emplace(bestResult.lowerBound, fixedVariables0, fixedVariables1);
+    queue.emplace(bestResult.LowerBound, fixedVariables0, fixedVariables1);
 
     while (!queue.empty() && std::chrono::steady_clock::now() < startTime + timeout)
     {
         UnfixVariables(fixedVariables0);
         UnfixVariables(fixedVariables1);
 
-        bestResult.lowerBound = queue.top().lowerBound;
+        bestResult.LowerBound = queue.top().lowerBound;
         fixedVariables0 = queue.top().fixedVariables0;
         fixedVariables1 = queue.top().fixedVariables1;
         queue.pop();
@@ -148,14 +148,14 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
         // do exploiting here
 
-        bestResult.lowerBound = std::min(bestResult.upperBound, currentLowerBound);
+        bestResult.LowerBound = std::min(bestResult.UpperBound, currentLowerBound);
         if (!queue.empty())
-            bestResult.lowerBound = std::min(currentLowerBound, queue.top().lowerBound);
+            bestResult.LowerBound = std::min(currentLowerBound, queue.top().lowerBound);
 
-        if (bestResult.lowerBound >= bestResult.upperBound)
+        if (bestResult.LowerBound >= bestResult.UpperBound)
             break;
 
-        if (currentLowerBound >= bestResult.upperBound)
+        if (currentLowerBound >= bestResult.UpperBound)
             continue;
 
         // fix variables according to reduced costs (dj)
@@ -172,10 +172,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
         if (!fractionalVar.has_value())
         {
-            bestResult.upperBound = currentLowerBound;
+            bestResult.UpperBound = currentLowerBound;
             bestResult.Paths = CreatePathsFromVariables();
 
-            if (bestResult.lowerBound >= bestResult.upperBound)
+            if (bestResult.LowerBound >= bestResult.UpperBound)
                 break;
             else
                 continue;
@@ -192,9 +192,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     }
 
     if (queue.empty())
-        bestResult.lowerBound = bestResult.upperBound;
+        bestResult.LowerBound = bestResult.UpperBound;
     else if (std::chrono::steady_clock::now() >= startTime + timeout)
-        bestResult.timeout = true;
+        bestResult.IsTimeoutHit = true;
 
     return bestResult;
 }

@@ -32,7 +32,7 @@ add_custom_target(tsplib-bench ALL
 	COMMAND ${CMAKE_COMMAND} -E echo "$VIRTUAL_ENV"
 	COMMAND ${deactivate_command}
 	COMMAND ${CMAKE_COMMAND} -E echo deactivated
-	VERBATIM
+	#VERBATIM
 	USES_TERMINAL
 	SOURCES tsplib.py requirements.txt
 )

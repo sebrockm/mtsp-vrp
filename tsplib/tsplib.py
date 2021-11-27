@@ -1,6 +1,5 @@
 import tsplib95 as tsplib
 import numpy as np
-from tqdm import tqdm
 from ctypes import *
 import os
 import sys
@@ -68,8 +67,9 @@ def main(dll_path, timeout_ms):
             else:
                 weights = np.zeros((N, N), dtype=int)
                 nodes = list(P.get_nodes())
-                for i in tqdm(range(N*N)):
-                    weights[i//N, i%N] = P.get_weight(nodes[i//N], nodes[i%N])
+                for i in range(N):
+                    for j in range(N):
+                        weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
             print('looking for dependencies...')
             dependencies = sorted((i, j) for j, i in zip(*np.where(weights == -1)) if i != j)

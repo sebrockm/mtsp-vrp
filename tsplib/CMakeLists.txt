@@ -15,10 +15,8 @@ endif()
 set(testenv "${CMAKE_CURRENT_BINARY_DIR}/testenv")
 if (WIN32)
 	set(activate_command "${testenv}/Scripts/activate.bat")
-	set(deactivate_command "${testenv}/Scripts/deactivate.bat")
 else()
 	set(activate_command . "${testenv}/bin/activate")
-	set(deactivate_command . "${testenv}/bin/deactivate")
 endif()
 
 add_custom_target(tsplib-bench ALL

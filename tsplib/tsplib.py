@@ -78,7 +78,7 @@ def main(dll_path, timeout_ms):
                 continue # dependencies are not supported yet
 
             print(f'starting solving {f} ...')
-            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[1], weights=weights, timeout=timeout_ms) # TODO: change to end_positions=[0] once supported
+            (paths, lengths, gap), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
             if paths is None:
                 print('solve_mtsp error:', gap)
                 result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'

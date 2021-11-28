@@ -94,7 +94,8 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         // don't provide a conversion from int to Variable, but we do provide one from int to LinearVariableCompositon.
         constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_startPositions[a], xt::all()))() == 1); // arcs out of start nodes
         constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_endPositions[a]))() == 1); // arcs into end nodes
-        constraints.emplace_back(X(a, m_endPositions[a], m_startPositions[(a + 1) % A]) == 1); // artificial connections from end to next start
+        if (A > 1 || m_startPositions[0] != m_endPositions[0])
+            constraints.emplace_back(X(a, m_endPositions[a], m_startPositions[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
     // inequalities to disallow cycles of length 2

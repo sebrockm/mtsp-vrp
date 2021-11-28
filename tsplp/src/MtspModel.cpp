@@ -52,7 +52,7 @@ namespace
     }
 }
 
-tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights)
+tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights)
     : m_startPositions(std::move(startPositions)),
     m_endPositions(std::move(endPositions)),
     A(m_startPositions.size()),
@@ -63,7 +63,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_objective(xt::sum(W * X)())
 {
     if (m_startPositions.size() != m_endPositions.size())
-        throw std::runtime_error("Start end end positions must have the same size.");
+        throw std::runtime_error("Start and end positions must have the same size.");
 
     if (W.shape(0) != W.shape(1))
         throw std::runtime_error("The weights must have shape (N, N).");

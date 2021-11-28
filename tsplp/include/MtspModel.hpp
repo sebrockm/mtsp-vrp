@@ -36,7 +36,7 @@ namespace tsplp
         LinearVariableComposition m_objective;
 
     public:
-        MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<double, 2> weights);
+        MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights);
 
     public:
         MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);

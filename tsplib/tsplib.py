@@ -22,7 +22,7 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     N = len(weights)
     pStarts = np.array(start_positions).astype(c_int).ctypes.data_as(POINTER(c_int))
     pEnds = np.array(end_positions).astype(c_int).ctypes.data_as(POINTER(c_int))
-    W = np.array(weights).astype(c_double).ctypes.data_as(POINTER(c_double))
+    W = np.array(weights).astype(c_int).ctypes.data_as(POINTER(c_int))
     lb = c_double(0)
     ub = c_double(0)
     pPaths = np.zeros(shape=(N,)).astype(c_int).ctypes.data_as(POINTER(c_int))

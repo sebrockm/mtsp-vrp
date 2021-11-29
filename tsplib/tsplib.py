@@ -1,11 +1,12 @@
 import tsplib95 as tsplib
 import numpy as np
+from numpy.ctypeslib import ndpointer
 from ctypes import *
 import os
 import sys
 import time
 
-mtsp_vrp_dll = None
+solve_mtsp_vrp = None
 
 def timing(f):
     def wrap(*args, **kwargs):
@@ -20,25 +21,30 @@ def timing(f):
 def solve_mtsp(start_positions, end_positions, weights, timeout):
     A = len(start_positions)
     N = len(weights)
-    pStarts = np.array(start_positions).astype(c_int).ctypes.data_as(POINTER(c_int))
-    pEnds = np.array(end_positions).astype(c_int).ctypes.data_as(POINTER(c_int))
-    W = np.array(weights).astype(c_int).ctypes.data_as(POINTER(c_int))
+    start_positions = np.array(start_positions, dtype=np.int32)
+    end_positions = np.array(end_positions, dtype=np.int32)
+    weights = np.array(weights, dtype=np.int32)
     lb = c_double(0)
     ub = c_double(0)
-    pPaths = np.zeros(shape=(N,)).astype(c_int).ctypes.data_as(POINTER(c_int))
-    pOffsets = np.zeros(shape=(A,)).astype(c_size_t).ctypes.data_as(POINTER(c_size_t))
+    pathsBuffer = np.zeros(shape=(N,), dtype=np.int32)
+    offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
-    result = mtsp_vrp_dll.solve_mtsp_vrp(c_size_t(A), c_size_t(N), pStarts, pEnds, W, c_int(timeout), byref(lb), byref(ub), pPaths, pOffsets)
+    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
     if result < 0:
         return None, None, result
+
+    print(pathsBuffer)
+    print(offsets)
 
     paths = []
     lengths = []
     for a in range(A):
-        start = pOffsets[a]
-        end = pOffsets[a+1] if a+1 < A else N
-        path = np.array(pPaths[start:end])
+        start = offsets[a]
+        end = offsets[a+1] if a+1 < A else N
+        path = np.array(pathsBuffer[start:end])
         length = np.sum(weights[path[:-1], path[1:]])
+        if start_positions[a] == end_positions[a]:
+            length += weights[path[-1], path[0]]
         paths.append(path)
         lengths.append(length)
 
@@ -46,8 +52,21 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     return paths, lengths, gap
 
 def main(dll_path, timeout_ms):
-    global mtsp_vrp_dll
-    mtsp_vrp_dll = cdll.LoadLibrary(dll_path)
+    global solve_mtsp_vrp
+    solve_mtsp_vrp = cdll.LoadLibrary(dll_path).solve_mtsp_vrp
+    solve_mtsp_vrp.restype = c_int
+    solve_mtsp_vrp.argtypes = [
+        c_size_t, # numberOfAgents
+        c_size_t, # numberOfNodes
+        ndpointer(c_int, flags='C_CONTIGUOUS'), # start_positions
+        ndpointer(c_int, flags='C_CONTIGUOUS'), # end_positions
+        ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
+        c_int, # timeout
+        POINTER(c_double), # lowerBound
+        POINTER(c_double), # upperBound
+        ndpointer(c_int, flags='C_CONTIGUOUS'), # paths
+        ndpointer(c_size_t, flags='C_CONTIGUOUS') # pathOffsets
+    ]
 
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tsplib')
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]

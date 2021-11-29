@@ -207,17 +207,17 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
     for (size_t a = 0; a < A; ++a)
     {
         paths[a].push_back(m_startPositions[a]);
-        for (auto i = m_startPositions[a]; i != m_endPositions[a];)
+        for (auto i = m_startPositions[a]; i != m_endPositions[a] || paths[a].size() < 2;)
         {
-            size_t j = 0;
-            for (; j < N; ++j)
+            for (size_t j = 0; j < N; ++j)
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
+                {
+                    paths[a].push_back(static_cast<int>(j));
+                    i = static_cast<decltype(i)>(j);
                     break;
+                }
             }
-            assert(j < N);
-            paths[a].push_back(static_cast<int>(j));
-            i = static_cast<decltype(i)>(j);
         }
         assert(paths[a].back() == m_endPositions[a]);
     }

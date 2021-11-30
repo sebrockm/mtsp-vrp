@@ -192,10 +192,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         queue.emplace(currentLowerBound, fixedVariables0, std::move(newFixedVariables1));
     }
 
-    if (queue.empty())
-        bestResult.LowerBound = bestResult.UpperBound;
-    else if (std::chrono::steady_clock::now() >= startTime + timeout)
+    if (!queue.empty() && std::chrono::steady_clock::now() >= startTime + timeout)
         bestResult.IsTimeoutHit = true;
+
+    bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
 
     return bestResult;
 }

@@ -38,8 +38,11 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     for (size_t a = 0; a < numberOfAgents; ++a)
     {
         pathOffsets[a] = offset;
-        std::copy(result.Paths[a].begin(), result.Paths[a].end(), paths + offset);
-        offset += result.Paths[a].size();
+        auto length = result.Paths[a].size();
+        if (startPositions[a] == endPositions[a])
+            --length; // don't copy unneeded (duplicate) last entry
+        std::copy_n(result.Paths[a].begin(), length, paths + offset);
+        offset += length;
     }
 
     if (result.LowerBound >= result.UpperBound)

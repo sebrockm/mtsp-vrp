@@ -27,5 +27,5 @@ add_custom_target(tsplib-bench ALL
 	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 10
 	VERBATIM
 	USES_TERMINAL
-	SOURCES tsplib.py requirements.txt
+	SOURCES requirements.txt tsplib.py tsplib/best-known-solutions.json
 )

@@ -94,7 +94,8 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         // don't provide a conversion from int to Variable, but we do provide one from int to LinearVariableCompositon.
         constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_startPositions[a], xt::all()))() == 1); // arcs out of start nodes
         constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_endPositions[a]))() == 1); // arcs into end nodes
-        constraints.emplace_back(X(a, m_endPositions[a], m_startPositions[(a + 1) % A]) == 1); // artificial connections from end to next start
+        if (A > 1 || m_startPositions[0] != m_endPositions[0])
+            constraints.emplace_back(X(a, m_endPositions[a], m_startPositions[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
     // inequalities to disallow cycles of length 2
@@ -191,10 +192,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         queue.emplace(currentLowerBound, fixedVariables0, std::move(newFixedVariables1));
     }
 
-    if (queue.empty())
-        bestResult.LowerBound = bestResult.UpperBound;
-    else if (std::chrono::steady_clock::now() >= startTime + timeout)
+    if (!queue.empty() && std::chrono::steady_clock::now() >= startTime + timeout)
         bestResult.IsTimeoutHit = true;
+
+    bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
 
     return bestResult;
 }
@@ -206,17 +207,17 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
     for (size_t a = 0; a < A; ++a)
     {
         paths[a].push_back(m_startPositions[a]);
-        for (auto i = m_startPositions[a]; i != m_endPositions[a];)
+        for (auto i = m_startPositions[a]; i != m_endPositions[a] || paths[a].size() < 2;)
         {
-            size_t j = 0;
-            for (; j < N; ++j)
+            for (size_t j = 0; j < N; ++j)
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
+                {
+                    paths[a].push_back(static_cast<int>(j));
+                    i = static_cast<decltype(i)>(j);
                     break;
+                }
             }
-            assert(j < N);
-            paths[a].push_back(static_cast<int>(j));
-            i = static_cast<decltype(i)>(j);
         }
         assert(paths[a].back() == m_endPositions[a]);
     }

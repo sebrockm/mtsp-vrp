@@ -24,7 +24,7 @@ add_custom_target(tsplib-bench ALL
 	COMMAND "${Python3_EXECUTABLE}" -m venv "${testenv}"
 	COMMAND ${activate_command}
 	COMMAND pip install -r "${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt"
-	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 10
+	COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py" "$<TARGET_FILE:mtsp-vrp-c>" 60000
 	VERBATIM
 	USES_TERMINAL
 	SOURCES requirements.txt tsplib.py tsplib/best-known-solutions.json

@@ -44,7 +44,8 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
             }
         }
 
-        paths[minA].insert(paths[minA].begin() + minI, static_cast<int>(n));
+        using DiffT = decltype(paths[minA].begin())::difference_type;
+        paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), static_cast<int>(n));
         cost += minDeltaCost;
     }
 

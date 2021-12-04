@@ -94,7 +94,7 @@ def main(dll_path, timeout_ms):
         P = tsplib.load(f)
         N = P.dimension
 
-        if N <= 200 and kind != 'sop': # increase once we are faster
+        if N <= 500 and kind != 'sop': # increase once we are faster
             print('creating weight matrix...')
             if P.is_full_matrix():
                 matrix = P.edge_weights[1:] if len(P.edge_weights[0]) == 1 else P.edge_weights

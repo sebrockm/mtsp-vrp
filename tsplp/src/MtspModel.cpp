@@ -1,4 +1,5 @@
 #include "MtspModel.hpp"
+#include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
 
@@ -68,6 +69,9 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     if (W.shape(0) != W.shape(1))
         throw std::runtime_error("The weights must have shape (N, N).");
 
+    for (size_t n = 0; n < N; ++n)
+        W(n, n) = 0;
+
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
@@ -110,7 +114,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 {
     const auto startTime = std::chrono::steady_clock::now();
 
-    MtspResult bestResult{};
+    auto [heuristicPaths, heursiticObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
+
+    MtspResult bestResult{ .Paths = std::move(heuristicPaths), .UpperBound = static_cast<double>(heursiticObjective) };
+
     if (m_model.Solve() != Status::Optimal)
         return bestResult;
 

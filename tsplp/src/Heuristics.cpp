@@ -25,8 +25,8 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
             continue;
 
         auto minDeltaCost = std::numeric_limits<int>::max();
-        auto minA = -1;
-        auto minI = -1;
+        auto minA = std::numeric_limits<size_t>::max();
+        auto minI = std::numeric_limits<size_t>::max();
 
         for (size_t a = 0; a < A; ++a)
         {
@@ -44,7 +44,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
             }
         }
 
-        paths[minA].insert(paths[minA].begin() + minI, n);
+        paths[minA].insert(paths[minA].begin() + minI, static_cast<int>(n));
         cost += minDeltaCost;
     }
 

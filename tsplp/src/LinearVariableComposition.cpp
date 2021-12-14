@@ -16,17 +16,22 @@ tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs,
     auto& biggerOne = lhs.m_coefficientMap.size() > rhs.m_coefficientMap.size() ? lhs : rhs;
     const auto& smallerOne = lhs.m_coefficientMap.size() > rhs.m_coefficientMap.size() ? rhs : lhs;
 
-    for (const auto& [var, coef] : smallerOne.m_coefficientMap)
-        biggerOne.m_coefficientMap[var] += coef;
-
-    biggerOne.m_constant += smallerOne.m_constant;
-
-    return biggerOne;
+    return std::move(biggerOne += smallerOne);
 }
 
 tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs, double rhs)
 {
     lhs.m_constant += rhs;
+    return lhs;
+}
+
+tsplp::LinearVariableComposition& tsplp::operator+=(LinearVariableComposition& lhs, LinearVariableComposition const& rhs)
+{
+    for (const auto& [var, coef] : rhs.m_coefficientMap)
+        lhs.m_coefficientMap[var] += coef;
+
+    lhs.m_constant += rhs.m_constant;
+
     return lhs;
 }
 

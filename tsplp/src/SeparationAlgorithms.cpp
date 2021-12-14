@@ -49,7 +49,7 @@ namespace tsplp::graph
         for (size_t u = 0; u < N; ++u)
             for (size_t v = 0; v < N; ++v)
                 if (get(parities, u) != get(parities, v))
-                    sum = sum + xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
+                    sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
         return sum >= 2;
     }

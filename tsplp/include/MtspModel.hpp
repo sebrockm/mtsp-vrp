@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <limits>
+#include <optional>
 #include <vector>
 #include <xtensor/xtensor.hpp>
 
@@ -39,7 +40,8 @@ namespace tsplp
         MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights);
 
     public:
-        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
+        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout,
+            std::optional<int> heuristicObjective = {}, std::optional<std::vector<std::vector<int>>> heuristicPaths = {});
 
     private:
         std::vector<std::vector<int>> CreatePathsFromVariables() const;

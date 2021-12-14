@@ -73,6 +73,9 @@ def main(dll_path, timeout_ms):
     with open(os.path.join(base, 'best-known-solutions.json')) as f:
         solutions = json.load(f)
 
+    bench_file = os.path.join(base, 'bench.txt')
+    os.remove(bench_file)
+
     missing_best_known_solutions = ['ESC11.sop']
 
     for f in files:
@@ -135,7 +138,7 @@ def main(dll_path, timeout_ms):
             result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
     
         print(result_string)
-        with open(os.path.join(base, 'bench.txt'), 'a') as f:
+        with open(bench_file, 'a') as f:
             f.write(result_string)
 
 

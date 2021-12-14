@@ -19,7 +19,7 @@ else()
 	set(activate_command . "${testenv}/bin/activate")
 endif()
 
-add_custom_target(tsplib-bench ALL
+add_custom_target(tsplib-bench
 	COMMENT "setting up virtual python environment and running tsplib.py"
 	COMMAND "${Python3_EXECUTABLE}" -m venv "${testenv}"
 	COMMAND ${activate_command}

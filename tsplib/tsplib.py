@@ -79,6 +79,8 @@ def main(dll_path, timeout_ms):
         base_name = os.path.basename(f)
         problem_name, ext = os.path.splitext(base_name)
         kind = ext[1:]
+        if kind not in ['tsp', 'atsp', 'sop']:
+            continue
         if base_name in missing_best_known_solutions:
             best_lb = 0
             best_ub = float('inf')
@@ -94,12 +96,15 @@ def main(dll_path, timeout_ms):
         P = tsplib.load(f)
         N = P.dimension
 
-        if N <= 500 and kind != 'sop': # increase once we are faster
-            print('creating weight matrix...')
-            if P.is_full_matrix():
+        if N <= 1000: # increase once we are faster
+            print('loading weight matrix...')
+            if os.path.isfile(f + '.weights.npy'):
+                weights = np.load(f + '.weights.npy')
+            elif P.is_full_matrix():
                 matrix = P.edge_weights[1:] if len(P.edge_weights[0]) == 1 else P.edge_weights
                 weights = np.array(sum(matrix, []), dtype=int).reshape((N, N))
             else:
+                print('creating weight matrix...')
                 weights = np.zeros((N, N), dtype=int)
                 nodes = list(P.get_nodes())
                 for i in range(N):

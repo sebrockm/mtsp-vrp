@@ -114,21 +114,24 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     if (heuristicObjective.has_value() != heuristicPaths.has_value())
         throw std::runtime_error("If you provide a heuristic objective, you also have to provide a corresponding heuristic path.");
 
+    if (heuristicPaths.has_value() && heuristicPaths->size() != A)
+        throw std::runtime_error("Invalid heuristic paths");
+
     const auto startTime = std::chrono::steady_clock::now();
 
     MtspResult bestResult{};
 
     if (heuristicObjective.has_value())
     {
-        bestResult.UpperBound = *heuristicObjective;
+        bestResult.UpperBound = static_cast<double>(*heuristicObjective);
         bestResult.Paths = std::move(*heuristicPaths);
     }
     else
     {
-        auto [heuristicPaths, heuristicObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
+        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
 
-        bestResult.Paths = std::move(heuristicPaths);
-        bestResult.UpperBound = static_cast<double>(heuristicObjective);
+        bestResult.Paths = std::move(nearestInsertionPaths);
+        bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
     }
 
     if (std::chrono::steady_clock::now() >= startTime + timeout)

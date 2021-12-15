@@ -2,7 +2,7 @@
 
 #include "Variable.hpp"
 
-#include <map>
+#include <vector>
 
 namespace tsplp
 {
@@ -15,7 +15,8 @@ namespace tsplp
         friend LinearConstraint operator==(LinearVariableComposition lhs, LinearVariableComposition rhs);
 
     private:
-        std::map<Variable, double, VariableLess> m_coefficientMap;
+        std::vector<Variable> m_variables;
+        std::vector<double> m_coefficients;
         double m_upperBound = 0.0;
         double m_lowerBound = 0.0;
 
@@ -25,7 +26,8 @@ namespace tsplp
     public:
         double GetUpperBound() const { return m_upperBound; }
         double GetLowerBound() const { return m_lowerBound; }
-        auto const& GetCoefficientMap() const { return m_coefficientMap; }
+        auto const& GetCoefficients() const { return m_coefficients; }
+        auto const& GetVariables() const { return m_variables; }
 
         bool Evaluate(double tolerance = 1.e-10) const;
     };

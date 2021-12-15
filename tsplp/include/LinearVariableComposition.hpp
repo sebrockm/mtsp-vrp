@@ -2,7 +2,7 @@
 
 #include "Variable.hpp"
 
-#include <map>
+#include <vector>
 
 namespace tsplp
 {
@@ -21,7 +21,8 @@ namespace tsplp
         friend class LinearConstraint;
 
     private:
-        std::map<Variable, double, VariableLess> m_coefficientMap;
+        std::vector<Variable> m_variables;
+        std::vector<double> m_coefficients;
         double m_constant = 0;
 
     public:
@@ -29,7 +30,8 @@ namespace tsplp
         LinearVariableComposition(double constant);
         LinearVariableComposition(const Variable& variable);
 
-        auto const& GetCoefficientMap() const { return m_coefficientMap; }
+        auto const& GetVariables() const { return m_variables; }
+        auto const& GetCoefficients() const { return m_coefficients; }
         double GetConstant() const { return m_constant; }
 
         double Evaluate() const;

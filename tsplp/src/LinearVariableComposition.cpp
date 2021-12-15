@@ -1,9 +1,11 @@
 #include "LinearVariableComposition.hpp"
 #include "Variable.hpp"
 
+#include <algorithm>
+
 tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableComposition linearComp)
 {
-    for (auto&& [var, coef] : linearComp.m_coefficientMap)
+    for (auto& coef : linearComp.m_coefficients)
         coef *= factor;
 
     linearComp.m_constant *= factor;
@@ -13,8 +15,8 @@ tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableC
 
 tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
-    auto& biggerOne = lhs.m_coefficientMap.size() > rhs.m_coefficientMap.size() ? lhs : rhs;
-    const auto& smallerOne = lhs.m_coefficientMap.size() > rhs.m_coefficientMap.size() ? rhs : lhs;
+    auto& biggerOne = lhs.m_coefficients.size() > rhs.m_coefficients.size() ? lhs : rhs;
+    const auto& smallerOne = lhs.m_coefficients.size() > rhs.m_coefficients.size() ? rhs : lhs;
 
     return std::move(biggerOne += smallerOne);
 }
@@ -27,8 +29,25 @@ tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs,
 
 tsplp::LinearVariableComposition& tsplp::operator+=(LinearVariableComposition& lhs, LinearVariableComposition const& rhs)
 {
-    for (const auto& [var, coef] : rhs.m_coefficientMap)
-        lhs.m_coefficientMap[var] += coef;
+    lhs.m_variables.reserve(lhs.m_variables.size() + rhs.m_variables.size());
+    lhs.m_coefficients.reserve(lhs.m_coefficients.size() + rhs.m_variables.size());
+
+    for (size_t i = 0; i < rhs.m_variables.size(); ++i)
+    {
+        const auto iter = std::upper_bound(lhs.m_variables.begin(), lhs.m_variables.end(), rhs.m_variables[i], VariableLess{});
+
+        if (iter != lhs.m_variables.end() && iter->GetId() == rhs.m_variables[i].GetId())
+        {
+            const auto id = static_cast<size_t>(iter - lhs.m_variables.begin());
+            lhs.m_coefficients[id] += rhs.m_coefficients[i];
+        }
+        else
+        {
+            const auto coefIter = lhs.m_coefficients.begin() + (iter - lhs.m_variables.begin());
+            lhs.m_variables.insert(iter, rhs.m_variables[i]);
+            lhs.m_coefficients.insert(coefIter, rhs.m_coefficients[i]);
+        }
+    }
 
     lhs.m_constant += rhs.m_constant;
 
@@ -37,8 +56,8 @@ tsplp::LinearVariableComposition& tsplp::operator+=(LinearVariableComposition& l
 
 tsplp::LinearVariableComposition tsplp::operator-(LinearVariableComposition operand)
 {
-    for (auto&& [var, coef] : operand.m_coefficientMap)
-        operand.m_coefficientMap[var] *= -1.0;
+    for (auto& coef : operand.m_coefficients)
+        coef *= -1.0;
 
     operand.m_constant *= -1.0;
 
@@ -56,15 +75,15 @@ tsplp::LinearVariableComposition::LinearVariableComposition(double constant)
 }
 
 tsplp::LinearVariableComposition::LinearVariableComposition(const Variable& variable)
-    : m_coefficientMap{ {variable, 1} }
+    : m_variables{ variable }, m_coefficients{ 1 }
 {
 }
 
 double tsplp::LinearVariableComposition::Evaluate() const
 {
     double result = m_constant;
-    for (auto const& [var, coef] : m_coefficientMap)
-        result += coef * var.GetObjectiveValue();
+    for (size_t i = 0; i < m_coefficients.size(); ++i)
+        result += m_coefficients[i] * m_variables[i].GetObjectiveValue();
 
     return result;
 }

@@ -33,8 +33,8 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
-    for (auto const& [var, coef] : objective.GetCoefficientMap())
-        m_spSimplexModel->setObjectiveCoefficient(var.GetId(), coef);
+    for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
+        m_spSimplexModel->setObjectiveCoefficient(objective.GetVariables()[i].GetId(), objective.GetCoefficients()[i]);
 }
 
 void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
@@ -58,12 +58,12 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
         lowerBounds.push_back(c.GetLowerBound());
         upperBounds.push_back(c.GetUpperBound());
 
-        rowStarts.push_back(rowStarts.back() + static_cast<int>(std::ssize(c.GetCoefficientMap())));
-        for (auto const& [var, coef] : c.GetCoefficientMap())
-        {
-            columns.push_back(var.GetId());
+        rowStarts.push_back(rowStarts.back() + static_cast<int>(std::ssize(c.GetCoefficients())));
+
+        for (const auto coef : c.GetCoefficients())
             elements.push_back(coef);
-        }
+        for (const auto var : c.GetVariables())
+            columns.push_back(var.GetId());
     }
 
     m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());

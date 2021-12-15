@@ -1,13 +1,16 @@
 #include "mtsp-vrp-c.h"
 #include <MtspModel.hpp>
+#include <Heuristics.hpp>
 
 #include <array>
 #include <chrono>
 #include <xtensor/xadapt.hpp>
 
-int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start_positions, const int* end_positions, const int* weights, int timeout,
+int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start_positions, const int* end_positions, const int* weights, int timeout_ms,
     double* lowerBound, double* upperBound, int* paths, size_t* pathOffsets)
 {
+    const auto startTime = std::chrono::steady_clock::now();
+
     if (numberOfAgents == 0 || numberOfNodes < 2 || numberOfAgents * 2 > numberOfNodes)
         return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_SIZE;
 
@@ -22,8 +25,14 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     const std::array weightsShape = { numberOfNodes, numberOfNodes };
     const auto weights_ = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership{}, weightsShape);
 
+    auto [heuristicPaths, heursticObjective] = tsplp::NearestInsertion(weights_, startPositions, endPositions);
+
     tsplp::MtspModel model(startPositions, endPositions, weights_);
-    auto const result = model.BranchAndCutSolve(std::chrono::milliseconds{ timeout });
+
+    const auto timeout = std::chrono::milliseconds{ timeout_ms } -
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+
+    const auto result = model.BranchAndCutSolve(timeout, heursticObjective, std::move(heuristicPaths));
 
     *lowerBound = result.LowerBound;
     *upperBound = result.UpperBound;

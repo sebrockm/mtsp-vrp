@@ -73,6 +73,9 @@ def main(dll_path, timeout_ms):
     with open(os.path.join(base, 'best-known-solutions.json')) as f:
         solutions = json.load(f)
 
+    bench_file = os.path.join(base, 'bench.txt')
+    os.remove(bench_file)
+
     missing_best_known_solutions = ['ESC11.sop']
 
     for f in files:
@@ -121,7 +124,7 @@ def main(dll_path, timeout_ms):
             (paths, lengths, lb, ub), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
             if paths is None:
                 print('solve_mtsp error:', lb)
-                result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
+                result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'
             else:
                 if lb > best_lb or ub < best_ub:
                     print(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
@@ -129,13 +132,13 @@ def main(dll_path, timeout_ms):
                 if lb >= ub and ub != best_ub:
                     print(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
                     sys.exit(1)
-                gap = ub / lb - 1
-                result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time={seconds:>6.3f}s result={lengths[0]:>7d} gap={gap:>7.2%}\n'
+                gap = ub / lb - 1 if lb > 0 else float('inf')
+                result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time={seconds:>7.3f}s result={lengths[0]:>8d} gap={gap:>7.2%}\n'
         else:
-            result_string = f'{base_name:<15s} N={N:>4d} A=1 mode=sum time=------s result=------- gap=-------\n'
+            result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'
     
         print(result_string)
-        with open(os.path.join(base, 'bench.txt'), 'a') as f:
+        with open(bench_file, 'a') as f:
             f.write(result_string)
 
 

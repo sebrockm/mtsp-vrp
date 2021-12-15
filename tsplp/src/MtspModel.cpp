@@ -5,7 +5,6 @@
 
 #include <cassert>
 #include <cmath>
-#include <optional>
 #include <queue>
 #include <stdexcept>
 #include <xtensor/xadapt.hpp>
@@ -110,13 +109,36 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout, std::optional<int> heuristicObjective, std::optional<std::vector<std::vector<int>>> heuristicPaths)
 {
+    if (heuristicObjective.has_value() != heuristicPaths.has_value())
+        throw std::runtime_error("If you provide a heuristic objective, you also have to provide a corresponding heuristic path.");
+
+    if (heuristicPaths.has_value() && heuristicPaths->size() != A)
+        throw std::runtime_error("Invalid heuristic paths");
+
     const auto startTime = std::chrono::steady_clock::now();
 
-    auto [heuristicPaths, heursiticObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
+    MtspResult bestResult{};
 
-    MtspResult bestResult{ .Paths = std::move(heuristicPaths), .UpperBound = static_cast<double>(heursiticObjective) };
+    if (heuristicObjective.has_value())
+    {
+        bestResult.UpperBound = static_cast<double>(*heuristicObjective);
+        bestResult.Paths = std::move(*heuristicPaths);
+    }
+    else
+    {
+        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
+
+        bestResult.Paths = std::move(nearestInsertionPaths);
+        bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
+    }
+
+    if (std::chrono::steady_clock::now() >= startTime + timeout)
+    {
+        bestResult.IsTimeoutHit = true;
+        return bestResult;
+    }
 
     if (m_model.Solve() != Status::Optimal)
         return bestResult;

@@ -71,7 +71,7 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
 
 tsplp::Status tsplp::Model::Solve()
 {
-    m_spSimplexModel->primal();
+    m_spSimplexModel->dual();
     const auto status = m_spSimplexModel->status();
 
     switch (status)

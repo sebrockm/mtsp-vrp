@@ -38,7 +38,7 @@ namespace tsplp::graph
             }
         }
 
-        auto parities = boost::make_one_bit_color_map(N, get(boost::vertex_index, graph));
+        const auto parities = boost::make_one_bit_color_map(N, get(boost::vertex_index, graph));
 
         const auto cutSize = boost::stoer_wagner_min_cut(graph, get(boost::edge_weight, graph), boost::parity_map(parities));
 

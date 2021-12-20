@@ -8,7 +8,7 @@ namespace tsplp::graph
     {
         boost::adjacency_list<> dependencyGraph;
         for (const auto [u, v] : dependencies)
-            add_edge(u, v, dependencyGraph);
+            add_edge(static_cast<size_t>(u), static_cast<size_t>(v), dependencyGraph);
 
         boost::adjacency_list<> transitiveClosure;
         boost::transitive_closure(dependencyGraph, transitiveClosure);
@@ -18,7 +18,7 @@ namespace tsplp::graph
         for (const auto v : boost::make_iterator_range(vertices(transitiveClosure)))
         {
             const auto [first, last] = adjacent_vertices(v, transitiveClosure);
-            result.emplace(std::piecewise_construct, std::make_tuple(v), std::make_tuple(first, last));
+            result.emplace(std::piecewise_construct, std::make_tuple(static_cast<int>(v)), std::make_tuple(first, last));
         }
 
         return result;

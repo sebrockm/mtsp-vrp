@@ -18,7 +18,8 @@ namespace tsplp::graph
         for (const auto v : boost::make_iterator_range(vertices(transitiveClosure)))
         {
             const auto [first, last] = adjacent_vertices(v, transitiveClosure);
-            result.emplace(std::piecewise_construct, std::make_tuple(static_cast<int>(v)), std::make_tuple(first, last));
+            if (first != last)
+                result.emplace(std::piecewise_construct, std::make_tuple(static_cast<int>(v)), std::make_tuple(first, last));
         }
 
         return result;

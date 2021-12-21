@@ -26,8 +26,9 @@ namespace
             const auto [first, last] = adjacent_vertices(v, transitiveClosure);
             if (first != last)
             {
-                result.emplace(std::piecewise_construct, std::make_tuple(static_cast<int>(v)), std::make_tuple(first, last));
-                std::sort(result[v].begin(), result[v].end());
+                const auto v2 = static_cast<int>(v);
+                result.emplace(std::piecewise_construct, std::make_tuple(v2), std::make_tuple(first, last));
+                std::sort(result[v2].begin(), result[v2].end());
             }
         }
 

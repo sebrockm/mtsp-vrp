@@ -7,4 +7,6 @@
 namespace tsplp::graph
 {
     std::unordered_map<int, std::vector<int>> CreateTransitiveDependencies(std::span<const std::pair<int, int>> dependencies);
+
+    std::unordered_map<int, std::vector<int>> CreateTransitiveDependenciesReversed(std::span<const std::pair<int, int>> dependencies);
 }

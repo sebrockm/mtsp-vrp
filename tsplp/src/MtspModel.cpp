@@ -89,6 +89,31 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         constraints.emplace_back(X(a, m_weightsManager.EndPositions()[a], m_weightsManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
+    
+    for (const auto [v, u] : xt::argwhere(m_weightsManager.W() < 0))
+    {
+        for (size_t a = 0; a < A; ++a)
+            constraints.emplace_back(xt::sum(xt::view(X + 0, a, u, xt::all()))() == xt::sum(xt::view(X + 0, a, xt::all(), v))()); // require the same agent to visit dependent nodes
+
+        for (auto s : m_weightsManager.StartPositions())
+        {
+            if (s != u)
+                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
+        }
+
+        for (auto e : m_weightsManager.EndPositions())
+        {
+            if (e != v)
+                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
+        }
+
+        if (A > 1 || u != m_weightsManager.StartPositions()[0] || v != m_weightsManager.EndPositions()[0])
+            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0); // reverse edge must not be used, except end -> start in case A == 1
+
+        for (auto [w] : xt::argwhere(xt::view(m_weightsManager.W(), xt::all(), v) < 0))
+            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, w))() == 0); // if u->v->w then u->w must not be used
+    }
+
     // inequalities to disallow cycles of length 2
     for (size_t u = 0; u < N; ++u)
         for (size_t v = u + 1; v < N; ++v)
@@ -97,30 +122,16 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout, std::optional<int> heuristicObjective, std::optional<std::vector<std::vector<int>>> heuristicPaths)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout)
 {
-    if (heuristicObjective.has_value() != heuristicPaths.has_value())
-        throw std::runtime_error("If you provide a heuristic objective, you also have to provide a corresponding heuristic path.");
-
-    if (heuristicPaths.has_value() && heuristicPaths->size() != A)
-        throw std::runtime_error("Invalid heuristic paths");
-
     const auto startTime = std::chrono::steady_clock::now();
 
     MtspResult bestResult{};
 
-    if (heuristicObjective.has_value())
-    {
-        bestResult.UpperBound = static_cast<double>(*heuristicObjective);
-        bestResult.Paths = std::move(*heuristicPaths);
-    }
-    else
-    {
-        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightsManager.W(), m_weightsManager.StartPositions(), m_weightsManager.EndPositions());
+    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightsManager.W(), m_weightsManager.StartPositions(), m_weightsManager.EndPositions());
 
-        bestResult.Paths = std::move(nearestInsertionPaths);
-        bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-    }
+    bestResult.Paths = std::move(nearestInsertionPaths);
+    bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
 
     if (std::chrono::steady_clock::now() >= startTime + timeout)
     {

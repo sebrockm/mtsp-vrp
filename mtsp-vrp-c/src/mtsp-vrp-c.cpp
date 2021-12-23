@@ -1,6 +1,5 @@
 #include "mtsp-vrp-c.h"
 #include <MtspModel.hpp>
-#include <Heuristics.hpp>
 
 #include <array>
 #include <chrono>
@@ -25,14 +24,12 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     const std::array weightsShape = { numberOfNodes, numberOfNodes };
     const auto weights_ = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership{}, weightsShape);
 
-    auto [heuristicPaths, heursticObjective] = tsplp::NearestInsertion(weights_, startPositions, endPositions);
-
     tsplp::MtspModel model(startPositions, endPositions, weights_);
 
     const auto timeout = std::chrono::milliseconds{ timeout_ms } -
         std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
 
-    const auto result = model.BranchAndCutSolve(timeout, heursticObjective, std::move(heuristicPaths));
+    const auto result = model.BranchAndCutSolve(timeout);
 
     *lowerBound = result.LowerBound;
     *upperBound = result.UpperBound;

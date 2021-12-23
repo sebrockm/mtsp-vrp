@@ -1,12 +1,8 @@
 #pragma once
 
-#include <span>
-#include <unordered_map>
-#include <vector>
+#include <xtensor/xtensor.hpp>
 
-namespace tsplp::graph
+namespace tsplp
 {
-    std::unordered_map<int, std::vector<int>> CreateTransitiveDependencies(std::span<const std::pair<int, int>> dependencies);
-
-    std::unordered_map<int, std::vector<int>> CreateTransitiveDependenciesReversed(std::span<const std::pair<int, int>> dependencies);
+    xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights);
 }

@@ -3,6 +3,7 @@
 #include "LinearVariableComposition.hpp"
 #include "Model.hpp"
 #include "Variable.hpp"
+#include "WeightManager.hpp"
 
 #include <chrono>
 #include <limits>
@@ -23,15 +24,12 @@ namespace tsplp
     class MtspModel
     {
     private:
-        xt::xtensor<int, 1> m_startPositions;
-        xt::xtensor<int, 1> m_endPositions;
+        WeightManager m_weightsManager;
 
         size_t A;
         size_t N;
 
         Model m_model;
-
-        xt::xtensor<double, 2> W;
         xt::xtensor<Variable, 3> X;
 
         LinearVariableComposition m_objective;

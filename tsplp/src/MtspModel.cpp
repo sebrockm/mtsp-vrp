@@ -53,24 +53,13 @@ namespace
 }
 
 tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights)
-    : m_startPositions(std::move(startPositions)),
-    m_endPositions(std::move(endPositions)),
-    A(m_startPositions.size()),
-    N(weights.shape(0)),
+    : m_weightsManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
+    A(m_weightsManager.A()),
+    N(m_weightsManager.N()),
     m_model(A * N * N),
-    W(std::move(weights)),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
-    m_objective(xt::sum(W * X)())
+    m_objective(xt::sum(m_weightsManager.W() * X)())
 {
-    if (m_startPositions.size() != m_endPositions.size())
-        throw std::runtime_error("Start and end positions must have the same size.");
-
-    if (W.shape(0) != W.shape(1))
-        throw std::runtime_error("The weights must have shape (N, N).");
-
-    for (size_t n = 0; n < N; ++n)
-        W(n, n) = 0;
-
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
@@ -95,10 +84,9 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         // We write X + 0 instead of X to turn summed up type from Variable to LinearVariableComposition.
         // That is necessary because xtensor initializes the sum with a conversion from 0 to ResultType and we
         // don't provide a conversion from int to Variable, but we do provide one from int to LinearVariableCompositon.
-        constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_startPositions[a], xt::all()))() == 1); // arcs out of start nodes
-        constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_endPositions[a]))() == 1); // arcs into end nodes
-        if (A > 1 || m_startPositions[0] != m_endPositions[0])
-            constraints.emplace_back(X(a, m_endPositions[a], m_startPositions[(a + 1) % A]) == 1); // artificial connections from end to next start
+        constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_weightsManager.StartPositions()[a], xt::all()))() == 1); // arcs out of start nodes
+        constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_weightsManager.EndPositions()[a]))() == 1); // arcs into end nodes
+        constraints.emplace_back(X(a, m_weightsManager.EndPositions()[a], m_weightsManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
     // inequalities to disallow cycles of length 2
@@ -128,7 +116,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     }
     else
     {
-        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(W, m_startPositions, m_endPositions);
+        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightsManager.W(), m_weightsManager.StartPositions(), m_weightsManager.EndPositions());
 
         bestResult.Paths = std::move(nearestInsertionPaths);
         bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
@@ -235,8 +223,8 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 
     for (size_t a = 0; a < A; ++a)
     {
-        paths[a].push_back(m_startPositions[a]);
-        for (auto i = m_startPositions[a]; i != m_endPositions[a] || paths[a].size() < 2;)
+        paths[a].push_back(m_weightsManager.StartPositions()[a]);
+        for (auto i = m_weightsManager.StartPositions()[a]; i != m_weightsManager.EndPositions()[a] || paths[a].size() < 2;)
         {
             for (size_t j = 0; j < N; ++j)
             {
@@ -248,8 +236,8 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
                 }
             }
         }
-        assert(paths[a].back() == m_endPositions[a]);
+        assert(paths[a].back() == m_weightsManager.EndPositions()[a]);
     }
 
-    return paths;
+    return m_weightsManager.TransformPathsBack(std::move(paths));
 }

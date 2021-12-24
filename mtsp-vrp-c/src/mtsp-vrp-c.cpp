@@ -57,6 +57,6 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
     if (result.LowerBound >= result.UpperBound)
         return MTSP_VRP_C_RESULT_SOLVED;
 
-    assert(result.timeout);
+    assert(result.IsTimeoutHit);
     return MTSP_VRP_C_RESULT_TIMEOUT;
 }

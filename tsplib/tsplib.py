@@ -19,22 +19,19 @@ def timing(f):
     return wrap
 
 @timing
-def solve_mtsp(start_positions, end_positions, weights, dependencies, timeout):
+def solve_mtsp(start_positions, end_positions, weights, timeout):
     A = len(start_positions)
     N = len(weights)
-    D = len(dependencies)
     start_positions = np.array(start_positions, dtype=np.int32)
     end_positions = np.array(end_positions, dtype=np.int32)
     weights = np.array(weights, dtype=np.int32)
-    dependencies = np.array(dependencies, dtype=np.int32)
-    print('dependencies in solve_mtsp:', dependencies)
     lb = c_double(0)
     ub = c_double(0)
     pathsBuffer = np.zeros(shape=(N,), dtype=np.int32)
     offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
-    print(f'solve_mtsp_vrp(A={A}, N={N}, D={D}, start_positions, end_positions, weights, dependencies, timeout={timeout}, byref(lb), byref(ub), pathsBuffer, offsets)')
-    result = solve_mtsp_vrp(A, N, 0, start_positions, end_positions, weights, dependencies, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
+    print(f'solve_mtsp_vrp(A={A}, N={N}, start_positions, end_positions, weights, timeout={timeout}, byref(lb), byref(ub), pathsBuffer, offsets)')
+    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
     if result < 0:
         return None, None, result, result
 
@@ -66,7 +63,6 @@ def main(dll_path, timeout_ms):
         ndpointer(c_int, flags='C_CONTIGUOUS'), # start_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # end_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
-        ndpointer(c_int, flags='C_CONTIGUOUS'), # dependencies
         c_int, # timeout
         POINTER(c_double), # lowerBound
         POINTER(c_double), # upperBound
@@ -88,7 +84,6 @@ def main(dll_path, timeout_ms):
     missing_best_known_solutions = ['ESC11.sop']
 
     for f in files:
-        input('ENTER...')
         base_name = os.path.basename(f)
         problem_name, ext = os.path.splitext(base_name)
         kind = ext[1:]
@@ -124,11 +119,8 @@ def main(dll_path, timeout_ms):
                     for j in range(N):
                         weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
-            print('looking for dependencies...')
-            dependencies = sorted((i, j) for j, i in zip(*np.where(weights == -1)) if i != j)
-
             print(f'starting solving {f} ...')
-            (paths, lengths, lb, ub), seconds = solve_mtsp(start_positions=[0], end_positions=[0], dependencies=dependencies, weights=weights, timeout=timeout_ms)
+            (paths, lengths, lb, ub), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
             if paths is None:
                 print('solve_mtsp error:', lb)
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'

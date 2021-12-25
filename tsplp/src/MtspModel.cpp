@@ -173,7 +173,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         if (m_model.Solve() != Status::Optimal)
             continue;
 
-        auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
+        const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
 
         // do exploiting here
 
@@ -197,7 +197,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             continue;
         }
 
-        auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
+        const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
 
         if (!fractionalVar.has_value())
         {

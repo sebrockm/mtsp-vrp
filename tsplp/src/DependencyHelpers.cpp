@@ -9,7 +9,7 @@ namespace tsplp
     xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights)
     {
         boost::adjacency_list<> dependencyGraph;
-        for (const auto [u, v] : xt::argwhere(weights < 0))
+        for (const auto [u, v] : xt::argwhere(equal(weights, -1)))
             add_edge(v, u, dependencyGraph);
 
         boost::adjacency_list<> transitiveClosure;

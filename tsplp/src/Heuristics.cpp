@@ -1,8 +1,8 @@
 #include "Heuristics.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/connected_components.hpp>
 #include <boost/graph/topological_sort.hpp>
-#include <boost/graph/properties.hpp>
 
 #include <xtensor/xview.hpp>
 
@@ -21,6 +21,9 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         const auto vv = add_vertex(v, dependencyGraph);
         add_edge(uu, vv, dependencyGraph);
     }
+
+    std::vector<int> componentIds(num_vertices(dependencyGraph));
+    const auto numberOfComponents = boost::connected_components(dependencyGraph, &componentIds[0]);
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
@@ -53,15 +56,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
             for (size_t i = 1; i < paths[a].size(); ++i)
             {
                 const auto oldCost = weights(paths[a][i - 1], paths[a][i]);
-                if (oldCost < 0)
-                    throw 0;
-                const auto newCost1 = weights(paths[a][i - 1], n);
-                if (newCost1 < 0)
-                    throw 1;
-                const auto newCost2 = weights(n, paths[a][i]);
-                if (newCost2 < 0)
-                    throw 2;
-                const auto newCost = newCost1 + newCost2;
+                const auto newCost = weights(paths[a][i - 1], n) + weights(n, paths[a][i]);
                 const auto deltaCost = newCost - oldCost;
                 if (deltaCost < minDeltaCost)
                 {

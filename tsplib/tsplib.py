@@ -59,7 +59,6 @@ def main(dll_path, timeout_ms):
     solve_mtsp_vrp.argtypes = [
         c_size_t, # numberOfAgents
         c_size_t, # numberOfNodes
-        c_size_t, # numberOfDependencies
         ndpointer(c_int, flags='C_CONTIGUOUS'), # start_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # end_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # weights

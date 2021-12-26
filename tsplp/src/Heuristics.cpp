@@ -4,6 +4,8 @@
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/topological_sort.hpp>
 
+#include <unordered_set>
+
 #include <xtensor/xview.hpp>
 
 std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
@@ -23,20 +25,26 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     }
 
     std::vector<int> componentIds(num_vertices(dependencyGraph));
-    const auto numberOfComponents = boost::connected_components(dependencyGraph, &componentIds[0]);
+    const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
     for (auto& i : order)
         i = dependencyGraph[i];
 
+    std::unordered_set<int> inserted;
+
     auto paths = std::vector<std::vector<int>>(A);
     int cost = 0;
     for (size_t a = 0; a < A; ++a)
     {
         paths[a].reserve(N);
+        paths[a].push_back(startPositions[a]);
         if (a == 0)
             paths[a].insert(paths[a].end(), order.rbegin(), order.rend());
+        paths[a].push_back(endPositions[a]);
+
+        inserted.insert(paths[a].begin(), paths[a].end());
 
         for (size_t i = 0; i + 1 < paths[a].size(); ++i)
             cost += weights(paths[a][i], paths[a][i + 1]);
@@ -44,7 +52,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
 
     for (size_t n = 0; n < N; ++n)
     {
-        if (std::find(order.begin(), order.end(), n) != order.end())
+        if (inserted.contains(n))
             continue;
 
         auto minDeltaCost = std::numeric_limits<int>::max();

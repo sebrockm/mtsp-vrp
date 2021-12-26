@@ -52,7 +52,14 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
     for (size_t a = 0; a < A; ++a)
     {
         m_weights(m_endPositions[a], m_startPositions[(a + 1) % A]) = 0; // artificially connect end positions i to start positions i+1 with zero cost
-        m_weights(m_endPositions[a], m_startPositions[a]) = -1; // set dependency s->e
+
+        // The following step looks beneficial, however, it is problematic, in particular in the case A == 1.
+        // That is because the arc (e, s) must be used here to complete a full cycle and its weight must be 0.
+        // Hence, we cannot use it to store the dependency flag (-1) of s->e.
+        // But also in the case A > 1 this complicates the heuristics.
+        // Fortunately, doing this is optional because the initial constraints already enforce a path from s to e.
+        // So, we just leave it out.
+        // m_weights(m_endPositions[a], m_startPositions[a]) = -1; // set dependency s->e
     }
 
     m_weights = CreateTransitiveDependencies(std::move(m_weights));

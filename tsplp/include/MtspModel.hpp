@@ -7,8 +7,6 @@
 
 #include <chrono>
 #include <limits>
-#include <optional>
-#include <unordered_map>
 #include <vector>
 #include <xtensor/xtensor.hpp>
 

@@ -90,7 +90,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     }
 
     
-    for (const auto [v, u] : xt::argwhere(m_weightsManager.W() < 0))
+    for (const auto [v, u] : xt::argwhere(equal(m_weightsManager.W(), -1)))
     {
         for (size_t a = 0; a < A; ++a)
             constraints.emplace_back(xt::sum(xt::view(X + 0, a, u, xt::all()))() == xt::sum(xt::view(X + 0, a, xt::all(), v))()); // require the same agent to visit dependent nodes

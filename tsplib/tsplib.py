@@ -88,6 +88,8 @@ def main(dll_path, timeout_ms):
         kind = ext[1:]
         if kind not in ['tsp', 'atsp', 'sop']:
             continue
+        if kind == 'sop':
+            continue
         if base_name in missing_best_known_solutions:
             best_lb = 0
             best_ub = float('inf')

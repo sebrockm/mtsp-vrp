@@ -130,7 +130,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightsManager.W(), m_weightsManager.StartPositions(), m_weightsManager.EndPositions());
 
-    bestResult.Paths = std::move(nearestInsertionPaths);
+    bestResult.Paths = m_weightsManager.TransformPathsBack(std::move(nearestInsertionPaths));
     bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
 
     if (std::chrono::steady_clock::now() >= startTime + timeout)

@@ -25,7 +25,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     }
 
     std::vector<int> componentIds(num_vertices(dependencyGraph));
-    const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
+    [[maybe_unused]] const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
@@ -52,7 +52,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
 
     for (size_t n = 0; n < N; ++n)
     {
-        if (inserted.contains(n))
+        if (inserted.contains(static_cast<int>(n)))
             continue;
 
         auto minDeltaCost = std::numeric_limits<int>::max();

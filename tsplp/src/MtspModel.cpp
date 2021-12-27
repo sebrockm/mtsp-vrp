@@ -97,17 +97,18 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
 
         for (auto s : m_weightsManager.StartPositions())
         {
-            if (s != u)
+            
+            if (static_cast<size_t>(s) != u)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
         }
 
         for (auto e : m_weightsManager.EndPositions())
         {
-            if (e != v)
+            if (static_cast<size_t>(e) != v)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
         }
 
-        if (A > 1 || u != m_weightsManager.StartPositions()[0] || v != m_weightsManager.EndPositions()[0])
+        if (A > 1 || u != static_cast<size_t>(m_weightsManager.StartPositions()[0]) || v != static_cast<size_t>(m_weightsManager.EndPositions()[0]))
             constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0); // reverse edge must not be used, except end -> start in case A == 1
 
         for (auto [w] : xt::argwhere(xt::view(m_weightsManager.W(), xt::all(), v) < 0))

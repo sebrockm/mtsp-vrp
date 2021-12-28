@@ -97,7 +97,6 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
 
         for (auto s : m_weightsManager.StartPositions())
         {
-            
             if (static_cast<size_t>(s) != u)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
         }

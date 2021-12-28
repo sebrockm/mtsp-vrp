@@ -41,7 +41,8 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         paths[a].reserve(N);
         paths[a].push_back(startPositions[a]);
         if (a == 0)
-            paths[a].insert(paths[a].end(), order.rbegin(), order.rend());
+            paths[a].insert(paths[a].end(), order.rbegin(), order.rend());  // TODO: better distribute the connected components among the agents
+                                                                            // also: handle cases when stard/end nodes have dependencies
         paths[a].push_back(endPositions[a]);
 
         inserted.insert(paths[a].begin(), paths[a].end());

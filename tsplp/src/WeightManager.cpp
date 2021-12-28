@@ -59,6 +59,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
         // But also in the case A > 1 this complicates the heuristics.
         // Fortunately, doing this is optional because the initial constraints already enforce a path from s to e.
         // So, we just leave it out.
+        // TODO: what if initial weights already have a -1 here?
         // m_weights(m_endPositions[a], m_startPositions[a]) = -1; // set dependency s->e
     }
 

@@ -109,7 +109,7 @@ namespace tsplp::graph
 
             for (size_t a = 0; a < A; ++a)
             {
-                const auto e = m_weightManager.EndPositions()[a];
+                const auto e = static_cast<size_t>(m_weightManager.EndPositions()[a]);
                 const auto parities = boost::make_one_bit_color_map(N, get(boost::vertex_index, filteredSupportGraph));
 
                 const auto cutSize = boost::boykov_kolmogorov_max_flow(supportGraph, n, e);
@@ -120,8 +120,8 @@ namespace tsplp::graph
                     const auto black = get(colorMap, n);
                     assert(get(colorMap, e) != black);
                     LinearVariableComposition sum;
-                    for (auto u = 0; u < N; ++u)
-                        for (auto v = 0; v < N; ++v)
+                    for (size_t u = 0; u < N; ++u)
+                        for (size_t v = 0; v < N; ++v)
                             if (get(colorMap, u) == black && get(colorMap, v) != black)
                                 sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 

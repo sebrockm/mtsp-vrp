@@ -23,7 +23,7 @@ namespace tsplp
     class MtspModel
     {
     private:
-        WeightManager m_weightsManager;
+        WeightManager m_weightManager;
 
         size_t A;
         size_t N;

@@ -29,7 +29,7 @@ TEST_CASE("br17.atsp", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0 };
     xt::xtensor<int, 1> endPositions{ 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
+    tsplp::MtspModel model{ startPositions, endPositions, tsplp::CreateTransitiveDependencies(weights) };
     auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
     
     REQUIRE(result.LowerBound == Approx(39));

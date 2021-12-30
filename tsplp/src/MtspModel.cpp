@@ -89,29 +89,35 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         constraints.emplace_back(X(a, m_weightManager.EndPositions()[a], m_weightManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
-    
-    for (const auto [v, u] : xt::argwhere(equal(m_weightManager.W(), -1)))
+    const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
+    for (const auto [v, u] : dependencies)
     {
+        assert(std::find(m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), v) == m_weightManager.StartPositions().end());
+        assert(std::find(m_weightManager.EndPositions().begin(), m_weightManager.EndPositions().end(), u) == m_weightManager.EndPositions().end());
+
+        if (A == 1)
+        {
+            const auto s = static_cast<size_t>(m_weightManager.StartPositions()[0]);
+            const auto e = static_cast<size_t>(m_weightManager.EndPositions()[0]);
+            assert(s != u || e != v); // TODO: ensure that W[e, s] == 0, even though W[e, s] == -1 would be plausible. Arc (e, s) must be used in case A == 1
+        }
+
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0); // reverse edge of dependency must not be used
+
         for (size_t a = 0; a < A; ++a)
             constraints.emplace_back(xt::sum(xt::view(X + 0, a, u, xt::all()))() == xt::sum(xt::view(X + 0, a, xt::all(), v))()); // require the same agent to visit dependent nodes
 
-        for (auto s : m_weightManager.StartPositions())
+        for (const auto s : m_weightManager.StartPositions())
         {
             if (static_cast<size_t>(s) != u)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
         }
 
-        for (auto e : m_weightManager.EndPositions())
+        for (const auto e : m_weightManager.EndPositions())
         {
             if (static_cast<size_t>(e) != v)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
         }
-
-        if (A > 1 || u != static_cast<size_t>(m_weightManager.StartPositions()[0]) || v != static_cast<size_t>(m_weightManager.EndPositions()[0]))
-            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0); // reverse edge must not be used, except end -> start in case A == 1
-
-        for (auto [w] : xt::argwhere(xt::view(m_weightManager.W(), xt::all(), v) < 0))
-            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, w))() == 0); // if u->v->w then u->w must not be used
     }
 
     // inequalities to disallow cycles of length 2
@@ -140,7 +146,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     }
 
     if (m_model.Solve() != Status::Optimal)
-        return bestResult;
+          return bestResult;
 
     bestResult.LowerBound = m_objective.Evaluate();
     std::vector<Variable> fixedVariables0{};

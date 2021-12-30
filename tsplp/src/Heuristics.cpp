@@ -16,21 +16,20 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     const auto N = weights.shape(0);
     assert(weights.shape(1) == N);
 
-    boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, size_t> dependencyGraph;
-    for (const auto [v, u] : xt::argwhere(equal(weights, -1)))
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
+    const auto dependencies = xt::argwhere(equal(weights, -1));
+    for (const auto [v, u] : dependencies)
     {
-        const auto uu = add_vertex(u, dependencyGraph);
-        const auto vv = add_vertex(v, dependencyGraph);
-        add_edge(uu, vv, dependencyGraph);
+        add_edge(u, v, dependencyGraph);
     }
+
+    assert(num_edges(dependencyGraph) == size(dependencies));
 
     std::vector<int> componentIds(num_vertices(dependencyGraph));
     [[maybe_unused]] const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
-    for (auto& i : order)
-        i = dependencyGraph[i];
 
     std::unordered_set<int> inserted;
 
@@ -38,11 +37,14 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     int cost = 0;
     for (size_t a = 0; a < A; ++a)
     {
+        auto newEnd = std::remove(order.begin(), order.end(), startPositions[a]);
+        newEnd = std::remove(order.begin(), newEnd, endPositions[a]);
+
         paths[a].reserve(N);
         paths[a].push_back(startPositions[a]);
         if (a == 0)
-            paths[a].insert(paths[a].end(), order.rbegin(), order.rend());  // TODO: better distribute the connected components among the agents
-                                                                            // also: handle cases when stard/end nodes have dependencies
+            paths[a].insert(paths[a].end(), std::make_reverse_iterator(newEnd), order.rend());  // TODO: better distribute the connected components among the agents
+                                                                                                // also: handle cases when stard/end nodes have dependencies
         paths[a].push_back(endPositions[a]);
 
         inserted.insert(paths[a].begin(), paths[a].end());

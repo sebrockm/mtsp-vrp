@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 
+#include <xtensor/xindex_view.hpp>
 #include <xtensor/xview.hpp>
 
 tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int, 1> originalStartPositions, xt::xtensor<int, 1> originalEndPositions)
@@ -13,6 +14,10 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
 
     if (m_weights.shape(0) != m_weights.shape(1))
         throw std::runtime_error("The weights must have shape (N, N).");
+
+    // ignore self referring arcs for convenience
+    for (size_t n = 0; n < m_weights.shape(0); ++n)
+        m_weights(n, n) = 0;
 
     const auto A = m_startPositions.size();
 
@@ -26,6 +31,9 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), s)), 1);
             m_startPositions[a] = static_cast<int>(m_weights.shape(0)) - 1;
             m_toOriginal[m_startPositions[a]] = s;
+
+            auto addedRow = xt::view(m_weights, -1, xt::all());
+            xt::filtration(addedRow, equal(addedRow, -1)) = 0; // a start node copied from an end node must not have dependees
         }
         else
         {
@@ -38,16 +46,15 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), e)), 1);
             m_endPositions[a] = static_cast<int>(m_weights.shape(0)) - 1;
             m_toOriginal[m_endPositions[a]] = e;
+
+            auto addedColumn = xt::view(m_weights, xt::all(), -1);
+            xt::filtration(addedColumn, equal(addedColumn, -1)) = 0; // an end node copied from a start node must not have dependers
         }
         else
         {
             startEndInUse.insert(e);
         }
     }
-
-    // ignore self referring arcs for convenience
-    for (size_t n = 0; n < m_weights.shape(0); ++n)
-        m_weights(n, n) = 0;
 
     for (size_t a = 0; a < A; ++a)
     {

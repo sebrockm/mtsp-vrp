@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 #include <xtensor/xtensor.hpp>
 
 namespace tsplp
@@ -23,6 +24,7 @@ namespace tsplp::graph
 
         std::optional<LinearConstraint> Ucut() const;
 
-        std::optional<LinearConstraint> Pi() const;
+        std::vector<LinearConstraint> Pi() const;
+        std::vector<LinearConstraint> Sigma() const;
     };
 }

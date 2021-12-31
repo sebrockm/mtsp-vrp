@@ -204,9 +204,16 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             continue;
         }
 
-        if (const auto pi = separator.Pi(); pi.has_value())
+        if (const auto pi = separator.Pi(); !pi.empty())
         {
-            m_model.AddConstraints(std::span{ &*pi, &*pi + 1 });
+            m_model.AddConstraints(pi);
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        if (const auto sigma = separator.Sigma(); !sigma.empty())
+        {
+            m_model.AddConstraints(sigma);
             queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
             continue;
         }

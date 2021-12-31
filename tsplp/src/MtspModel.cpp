@@ -97,8 +97,8 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
 
         if (A == 1)
         {
-            const auto s = static_cast<size_t>(m_weightManager.StartPositions()[0]);
-            const auto e = static_cast<size_t>(m_weightManager.EndPositions()[0]);
+            [[maybe_unused]] const auto s = static_cast<size_t>(m_weightManager.StartPositions()[0]);
+            [[maybe_unused]] const auto e = static_cast<size_t>(m_weightManager.EndPositions()[0]);
             assert(s != u || e != v); // TODO: ensure that W[e, s] == 0, even though W[e, s] == -1 would be plausible. Arc (e, s) must be used in case A == 1
         }
 

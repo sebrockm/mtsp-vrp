@@ -204,18 +204,21 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             continue;
         }
 
-        if (const auto pi = separator.Pi(); !pi.empty())
+        if (m_weightManager.HasDependencies())
         {
-            m_model.AddConstraints(pi);
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
+            if (const auto pi = separator.Pi(); !pi.empty())
+            {
+                m_model.AddConstraints(pi);
+                queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+                continue;
+            }
 
-        if (const auto sigma = separator.Sigma(); !sigma.empty())
-        {
-            m_model.AddConstraints(sigma);
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
+            if (const auto sigma = separator.Sigma(); !sigma.empty())
+            {
+                m_model.AddConstraints(sigma);
+                queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+                continue;
+            }
         }
 
         const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());

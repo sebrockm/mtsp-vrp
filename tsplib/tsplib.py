@@ -88,8 +88,6 @@ def main(dll_path, timeout_ms):
         kind = ext[1:]
         if kind not in ['tsp', 'atsp', 'sop']:
             continue
-        if kind == 'sop':
-            continue
         if base_name in missing_best_known_solutions:
             best_lb = 0
             best_ub = float('inf')
@@ -126,12 +124,13 @@ def main(dll_path, timeout_ms):
                 print('solve_mtsp error:', lb)
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'
             else:
-                if lb > best_lb or ub < best_ub:
-                    print(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
-                    sys.exit(1)
-                if lb >= ub and ub != best_ub:
-                    print(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
-                    sys.exit(1)
+                if base_name not in missing_best_known_solutions:
+                    if lb > best_lb or ub < best_ub:
+                        print(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
+                        sys.exit(1)
+                    if lb >= ub and ub != best_ub:
+                        print(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
+                        sys.exit(1)
                 gap = ub / lb - 1 if lb > 0 else float('inf')
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time={seconds:>7.3f}s result={lengths[0]:>8d} gap={gap:>7.2%}\n'
         else:

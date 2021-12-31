@@ -7,7 +7,7 @@
 #include <xtensor/xview.hpp>
 
 tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int, 1> originalStartPositions, xt::xtensor<int, 1> originalEndPositions)
-    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions)
+    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions), m_hasDependencies(xt::any(equal(m_weights, -1)))
 {
     if (m_startPositions.size() != m_endPositions.size())
         throw std::runtime_error("Start and end positions must have the same size.");

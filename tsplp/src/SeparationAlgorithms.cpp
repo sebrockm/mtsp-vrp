@@ -153,7 +153,6 @@ namespace tsplp::graph
 
     std::vector<LinearConstraint> Separator::Sigma() const
     {
-        static std::unordered_set<LinearConstraint> s_all;
         const auto N = m_weightManager.N();
         const auto A = m_weightManager.A();
         const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });

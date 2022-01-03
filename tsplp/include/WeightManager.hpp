@@ -10,7 +10,7 @@ namespace tsplp
     class WeightManager
     {
     private:
-        xt::xtensor<double, 2> m_weights;
+        xt::xtensor<int, 2> m_weights;
         xt::xtensor<int, 1> m_startPositions;
         xt::xtensor<int, 1> m_endPositions;
         std::unordered_map<int, int> m_toOriginal;

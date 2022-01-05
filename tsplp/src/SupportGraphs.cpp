@@ -32,7 +32,7 @@ tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variabl
 std::pair<double, std::vector<std::pair<tsplp::graph::PiSigmaVertex, tsplp::graph::PiSigmaVertex>>>
 tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, ConstraintType x)
 {
-    struct Filter
+    struct Filter // cannot be a lambda because the filter must be default constructible
     {
         const xt::xtensor<int, 2>* pw;
         ConstraintType x;

@@ -163,6 +163,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
     queue.emplace(bestResult.LowerBound, fixedVariables0, fixedVariables1);
 
+    graph::Separator separator(X, m_weightManager);
+
     while (!queue.empty() && std::chrono::steady_clock::now() < startTime + timeout)
     {
         UnfixVariables(fixedVariables0);
@@ -195,8 +197,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
         // fix variables according to reduced costs (dj)
 
-        graph::Separator separator(X, m_weightManager);
-
         if (const auto ucut = separator.Ucut(); ucut.has_value())
         {
             m_model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
@@ -204,21 +204,25 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             continue;
         }
 
-        if (m_weightManager.HasDependencies())
+        if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
         {
-            if (const auto pi = separator.Pi(); !pi.empty())
-            {
-                m_model.AddConstraints(pi);
-                queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-                continue;
-            }
+            m_model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
 
-            if (const auto sigma = separator.Sigma(); !sigma.empty())
-            {
-                m_model.AddConstraints(sigma);
-                queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-                continue;
-            }
+        if (const auto pi = separator.Pi(); pi.has_value())
+        {
+            m_model.AddConstraints(std::span{ &*pi, &*pi + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        if (const auto sigma = separator.Sigma(); sigma.has_value())
+        {
+            m_model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
         }
 
         const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());

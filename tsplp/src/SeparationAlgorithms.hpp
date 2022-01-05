@@ -28,7 +28,8 @@ namespace tsplp::graph
 
         std::optional<LinearConstraint> Ucut() const;
 
-        std::vector<LinearConstraint> Pi() const;
-        std::vector<LinearConstraint> Sigma() const;
+        std::optional<LinearConstraint> Pi() const;
+        std::optional<LinearConstraint> Sigma() const;
+        std::optional<LinearConstraint> PiSigma() const;
     };
 }

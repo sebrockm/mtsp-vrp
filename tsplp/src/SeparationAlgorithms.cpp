@@ -61,12 +61,14 @@ namespace tsplp::graph
         return sum >= 2;
     }
 
-    std::vector<LinearConstraint> Separator::Pi() const
+    std::optional<LinearConstraint> Separator::Pi() const
     {
+        if (!m_weightManager.HasDependencies())
+            return std::nullopt;
+
         const auto N = m_weightManager.N();
         const auto A = m_weightManager.A();
 
-        std::vector<LinearConstraint> result;
         for (size_t n = 0; n < N; ++n)
         {
             const auto nDependsOn = equal(xt::view(m_weightManager.W(), n, xt::all()), -1);
@@ -91,20 +93,22 @@ namespace tsplp::graph
                     assert(std::abs(sum.Evaluate() - cutSize) < 1.e-10);
                     auto constraint = sum >= 1;
                     assert(!constraint.Evaluate());
-                    result.push_back(std::move(constraint));
+
+                    return std::move(constraint);
                 }
             }
         }
 
-        return result;
+        return std::nullopt;
     }
 
-    std::vector<LinearConstraint> Separator::Sigma() const
+    std::optional<LinearConstraint> Separator::Sigma() const
     {
+        if (!m_weightManager.HasDependencies())
+            return std::nullopt;
+
         const auto N = m_weightManager.N();
         const auto A = m_weightManager.A();
-
-        std::vector<LinearConstraint> result;
 
         for (size_t n = 0; n < N; ++n)
         {
@@ -128,11 +132,40 @@ namespace tsplp::graph
 
                     auto constraint = sum >= 1;
                     assert(!constraint.Evaluate());
-                    result.push_back(std::move(constraint));
+
+                    return std::move(constraint);
                 }
             }
         }
 
-        return result;
+        return std::nullopt;
+    }
+
+    std::optional<LinearConstraint> Separator::PiSigma() const
+    {
+        if (!m_weightManager.HasDependencies())
+            return std::nullopt;
+
+        const auto N = m_weightManager.N();
+
+        for (const auto [t, s] : xt::argwhere(equal(m_weightManager.W(), -1)))
+        {
+            const auto [cutSize, cutEdges] = m_spSupportGraph->FindMinCut(s, t, PiSigmaSupportGraph::ConstraintType::PiSigma);
+
+            if (cutSize < 1.0 - 1.e-10)
+            {
+                LinearVariableComposition sum;
+                for (const auto [u, v] : cutEdges)
+                    sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
+
+                assert(std::abs(sum.Evaluate() - cutSize) < 1.e-10);
+                auto constraint = sum >= 1;
+                assert(!constraint.Evaluate());
+
+                return std::move(constraint);
+            }
+        }
+
+        return std::nullopt;
     }
 }

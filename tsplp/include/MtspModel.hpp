@@ -20,6 +20,10 @@ namespace tsplp
         bool IsTimeoutHit = false;
     };
 
+    class CyclicDependenciesException : public std::exception
+    {
+    };
+
     class MtspModel
     {
     private:

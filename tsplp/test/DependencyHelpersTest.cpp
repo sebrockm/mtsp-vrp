@@ -1,4 +1,5 @@
 #include "DependencyHelpers.hpp"
+#include "MtspModel.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -41,4 +42,16 @@ TEST_CASE("transitive line", "[CreateTransitiveDependencies]")
     w(4, 2) = -1;
 
     REQUIRE(std::as_const(w) == wt);
+}
+
+TEST_CASE("cycle detection", "[CreateTransitiveDependencies]")
+{
+    xt::xtensor<int, 2> w = xt::zeros<int>({ 5, 5 });
+    w(1, 0) = -1;
+    w(2, 1) = -1;
+    w(3, 2) = -1;
+    w(4, 3) = -1;
+    w(0, 4) = -1;
+
+    REQUIRE_THROWS_AS(tsplp::CreateTransitiveDependencies(w), tsplp::CyclicDependenciesException);
 }

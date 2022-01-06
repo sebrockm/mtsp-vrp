@@ -6,17 +6,17 @@
 
 namespace
 {
+    struct CycleDetector : public boost::dfs_visitor<>
+    {
+        void back_edge(auto, auto)
+        {
+            throw tsplp::CyclicDependenciesException{};
+        }
+    };
+
     template <typename Graph>
     void ThrowOnCycle(const Graph& graph)
     {
-        struct CycleDetector : public boost::dfs_visitor<>
-        {
-            void back_edge(auto, auto)
-            {
-                throw tsplp::CyclicDependenciesException{};
-            }
-        };
-
         boost::depth_first_search(graph, visitor(CycleDetector{}));
     }
 }

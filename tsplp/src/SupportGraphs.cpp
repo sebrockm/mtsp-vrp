@@ -47,6 +47,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
             case ConstraintType::Sigma: return (*pw)(v, t) != -1;
             case ConstraintType::PiSigma: return (*pw)(s, v) != -1 && (*pw)(v, t) != -1;
             }
+            return true;
         }
     };
 
@@ -87,7 +88,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
 
     const auto colorMap = get(boost::vertex_color, filteredSupportGraph);
 
-    const auto black = get(colorMap, s);
+    [[maybe_unused]] const auto black = get(colorMap, s);
     assert(black == boost::black_color);
     assert(get(colorMap, t) != black);
 

@@ -94,7 +94,7 @@ namespace tsplp::graph
                     auto constraint = sum >= 1;
                     assert(!constraint.Evaluate());
 
-                    return std::move(constraint);
+                    return constraint;
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace tsplp::graph
                     auto constraint = sum >= 1;
                     assert(!constraint.Evaluate());
 
-                    return std::move(constraint);
+                    return constraint;
                 }
             }
         }
@@ -162,7 +162,7 @@ namespace tsplp::graph
                 auto constraint = sum >= 1;
                 assert(!constraint.Evaluate());
 
-                return std::move(constraint);
+                return constraint;
             }
         }
 

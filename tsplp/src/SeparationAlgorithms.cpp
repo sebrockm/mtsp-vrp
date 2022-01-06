@@ -146,8 +146,6 @@ namespace tsplp::graph
         if (!m_weightManager.HasDependencies())
             return std::nullopt;
 
-        const auto N = m_weightManager.N();
-
         for (const auto [t, s] : xt::argwhere(equal(m_weightManager.W(), -1)))
         {
             const auto [cutSize, cutEdges] = m_spSupportGraph->FindMinCut(s, t, PiSigmaSupportGraph::ConstraintType::PiSigma);

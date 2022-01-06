@@ -54,9 +54,17 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
 
     const auto getCapacity = [&](PiSigmaEdge e)
     {
-        const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });
-        const auto values = xt::view(m_variables, xt::all(), source(e, filteredSupportGraph), target(e, filteredSupportGraph));
-        return xt::sum(vf(values))();
+        // const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });
+        // const auto values = xt::view(m_variables, xt::all(), source(e, filteredSupportGraph), target(e, filteredSupportGraph));
+        // return xt::sum(vf(values))();
+        
+        const auto A = m_variables.shape(0);
+
+        // it turns out that this manual summing is much faster than the outcommented "nicer" version above
+        double sum = 0.0;
+        for (size_t a = 0; a < A; ++a)
+            sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph)).GetObjectiveValue();
+        return sum;
     };
 
     const auto getReverseEdge = [&](PiSigmaEdge e)

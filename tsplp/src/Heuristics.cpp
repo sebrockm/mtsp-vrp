@@ -3,7 +3,9 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/topological_sort.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
+#include <unordered_map>
 #include <unordered_set>
 
 #include <xtensor/xview.hpp>
@@ -19,52 +21,59 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
     const auto dependencies = xt::argwhere(equal(weights, -1));
     for (const auto [v, u] : dependencies)
-    {
         add_edge(u, v, dependencyGraph);
-    }
 
-    assert(num_edges(dependencyGraph) == size(dependencies));
+    for (size_t a = 0; a < A; ++a)
+        add_edge(startPositions[a], endPositions[a], dependencyGraph);
 
-    std::vector<int> componentIds(num_vertices(dependencyGraph));
-    [[maybe_unused]] const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
+    assert(num_edges(dependencyGraph) >= size(dependencies));
+
+    std::vector<int> componentIds(N);
+    const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
 
-    std::unordered_set<int> inserted;
+    std::unordered_set<size_t> inserted;
+    std::vector<size_t> component2AgentMap(numberOfComponents, A);
 
     auto paths = std::vector<std::vector<int>>(A);
     int cost = 0;
     for (size_t a = 0; a < A; ++a)
     {
-        auto newEnd = std::remove(order.begin(), order.end(), startPositions[a]);
-        newEnd = std::remove(order.begin(), newEnd, endPositions[a]);
+        assert(componentIds[startPositions[a]] == componentIds[endPositions[a]]);
 
-        paths[a].reserve(N);
         paths[a].push_back(startPositions[a]);
-        if (a == 0)
-            paths[a].insert(paths[a].end(), std::make_reverse_iterator(newEnd), order.rend());  // TODO: better distribute the connected components among the agents
-                                                                                                // also: handle cases when stard/end nodes have dependencies
+        inserted.insert(startPositions[a]);
+
         paths[a].push_back(endPositions[a]);
+        inserted.insert(endPositions[a]);
 
-        inserted.insert(paths[a].begin(), paths[a].end());
+        cost += weights(startPositions[a], endPositions[a]);
 
-        for (size_t i = 0; i + 1 < paths[a].size(); ++i)
-            cost += weights(paths[a][i], paths[a][i + 1]);
+        component2AgentMap[componentIds[startPositions[a]]] = a;
     }
 
-    for (size_t n = 0; n < N; ++n)
+    std::vector<size_t> lastInsertPositionOfComponent(numberOfComponents, 0);
+
+    for (const auto n : boost::adaptors::reverse(order))
     {
-        if (inserted.contains(static_cast<int>(n)))
+        if (inserted.contains(n))
             continue;
+
+        const auto comp = componentIds[n];
 
         auto minDeltaCost = std::numeric_limits<int>::max();
         auto minA = std::numeric_limits<size_t>::max();
         auto minI = std::numeric_limits<size_t>::max();
 
-        for (size_t a = 0; a < A; ++a)
+        const auto aRange = component2AgentMap[comp] == A
+            ? std::make_pair(static_cast<size_t>(0), A)
+            : std::make_pair(component2AgentMap[comp], component2AgentMap[comp] + 1);
+
+        for (size_t a = aRange.first; a < aRange.second; ++a)
         {
-            for (size_t i = 1; i < paths[a].size(); ++i)
+            for (size_t i = 1 + lastInsertPositionOfComponent[comp]; i < paths[a].size(); ++i)
             {
                 const auto oldCost = weights(paths[a][i - 1], paths[a][i]);
                 const auto newCost = weights(paths[a][i - 1], n) + weights(n, paths[a][i]);
@@ -81,6 +90,9 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         using DiffT = decltype(paths[minA].begin())::difference_type;
         paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), static_cast<int>(n));
         cost += minDeltaCost;
+
+        component2AgentMap[comp] = minA;
+        lastInsertPositionOfComponent[comp] = minI;
     }
 
     return { paths, cost };

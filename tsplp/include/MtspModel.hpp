@@ -6,6 +6,7 @@
 #include "WeightManager.hpp"
 
 #include <chrono>
+#include <exception>
 #include <limits>
 #include <vector>
 #include <xtensor/xtensor.hpp>

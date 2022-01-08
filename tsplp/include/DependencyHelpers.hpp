@@ -1,7 +1,5 @@
 #pragma once
 
-#include <exception>
-
 #include <xtensor/xtensor.hpp>
 
 namespace tsplp

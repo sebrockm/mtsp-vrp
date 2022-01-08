@@ -59,7 +59,7 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const int* start
         assert(result.IsTimeoutHit);
         return MTSP_VRP_C_RESULT_TIMEOUT;
     }
-    catch (tsplp::CyclicDependenciesException)
+    catch (const tsplp::CyclicDependenciesException&)
     {
         return MTSP_VRP_C_CYCLIC_DEPENDENCIES;
     }

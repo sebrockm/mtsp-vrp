@@ -24,18 +24,18 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         add_edge(u, v, dependencyGraph);
 
     for (size_t a = 0; a < A; ++a)
-        add_edge(startPositions[a], endPositions[a], dependencyGraph);
+        add_edge(static_cast<size_t>(startPositions[a]), static_cast<size_t>(endPositions[a]), dependencyGraph);
 
     assert(num_edges(dependencyGraph) >= size(dependencies));
 
-    std::vector<int> componentIds(N);
+    std::vector<size_t> componentIds(N);
     const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
 
     std::unordered_set<size_t> inserted;
-    std::vector<size_t> component2AgentMap(numberOfComponents, A);
+    std::vector<size_t> component2AgentMap(static_cast<size_t>(numberOfComponents), A);
 
     auto paths = std::vector<std::vector<int>>(A);
     int cost = 0;
@@ -44,17 +44,17 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         assert(componentIds[startPositions[a]] == componentIds[endPositions[a]]);
 
         paths[a].push_back(startPositions[a]);
-        inserted.insert(startPositions[a]);
+        inserted.insert(static_cast<size_t>(startPositions[a]));
 
         paths[a].push_back(endPositions[a]);
-        inserted.insert(endPositions[a]);
+        inserted.insert(static_cast<size_t>(endPositions[a]));
 
         cost += weights(startPositions[a], endPositions[a]);
 
-        component2AgentMap[componentIds[startPositions[a]]] = a;
+        component2AgentMap[componentIds[static_cast<size_t>(startPositions[a])]] = a;
     }
 
-    std::vector<size_t> lastInsertPositionOfComponent(numberOfComponents, 0);
+    std::vector<size_t> lastInsertPositionOfComponent(static_cast<size_t>(numberOfComponents), 0);
 
     for (const auto n : boost::adaptors::reverse(order))
     {

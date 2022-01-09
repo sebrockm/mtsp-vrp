@@ -5,7 +5,6 @@
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
-#include <unordered_map>
 #include <unordered_set>
 
 #include <xtensor/xview.hpp>

@@ -31,7 +31,6 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
 
-    std::unordered_set<size_t> inserted;
     std::vector<size_t> component2AgentMap(static_cast<size_t>(numberOfComponents), A);
 
     auto paths = std::vector<std::vector<int>>(A);
@@ -41,13 +40,9 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         assert(componentIds[startPositions[a]] == componentIds[endPositions[a]]);
 
         paths[a].push_back(startPositions[a]);
-        inserted.insert(static_cast<size_t>(startPositions[a]));
-
         paths[a].push_back(endPositions[a]);
-        inserted.insert(static_cast<size_t>(endPositions[a]));
 
         cost += weights(startPositions[a], endPositions[a]);
-
         component2AgentMap[componentIds[static_cast<size_t>(startPositions[a])]] = a;
     }
 
@@ -55,7 +50,8 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
 
     for (const auto n : boost::adaptors::reverse(order))
     {
-        if (inserted.contains(n))
+        if (std::find(startPositions.begin(), startPositions.end(), n) != startPositions.end()
+            || std::find(endPositions.begin(), endPositions.end(), n) != endPositions.end())
             continue;
 
         const auto comp = componentIds[n];

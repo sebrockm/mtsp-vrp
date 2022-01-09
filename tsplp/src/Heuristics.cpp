@@ -7,8 +7,6 @@
 
 #include <unordered_set>
 
-#include <xtensor/xview.hpp>
-
 std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     const xt::xtensor<int, 2>& weights, const xt::xtensor<int, 1>& startPositions, const xt::xtensor<int, 1>& endPositions)
 {

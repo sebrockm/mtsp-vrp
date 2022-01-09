@@ -53,12 +53,12 @@ namespace
 }
 
 tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights)
-    : m_weightsManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
-    A(m_weightsManager.A()),
-    N(m_weightsManager.N()),
+    : m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
+    A(m_weightManager.A()),
+    N(m_weightManager.N()),
     m_model(A * N * N),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
-    m_objective(xt::sum(m_weightsManager.W() * X)())
+    m_objective(xt::sum(m_weightManager.W() * X)())
 {
     m_model.SetObjective(m_objective);
 
@@ -84,9 +84,40 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
         // We write X + 0 instead of X to turn summed up type from Variable to LinearVariableComposition.
         // That is necessary because xtensor initializes the sum with a conversion from 0 to ResultType and we
         // don't provide a conversion from int to Variable, but we do provide one from int to LinearVariableCompositon.
-        constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_weightsManager.StartPositions()[a], xt::all()))() == 1); // arcs out of start nodes
-        constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_weightsManager.EndPositions()[a]))() == 1); // arcs into end nodes
-        constraints.emplace_back(X(a, m_weightsManager.EndPositions()[a], m_weightsManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
+        constraints.emplace_back(xt::sum(xt::view(X + 0, a, m_weightManager.StartPositions()[a], xt::all()))() == 1); // arcs out of start nodes
+        constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), m_weightManager.EndPositions()[a]))() == 1); // arcs into end nodes
+        constraints.emplace_back(X(a, m_weightManager.EndPositions()[a], m_weightManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
+    }
+
+    const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
+    for (const auto [v, u] : dependencies)
+    {
+        assert(std::find(m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), v) == m_weightManager.StartPositions().end());
+        assert(std::find(m_weightManager.EndPositions().begin(), m_weightManager.EndPositions().end(), u) == m_weightManager.EndPositions().end());
+
+        if (A == 1)
+        {
+            [[maybe_unused]] const auto s = static_cast<size_t>(m_weightManager.StartPositions()[0]);
+            [[maybe_unused]] const auto e = static_cast<size_t>(m_weightManager.EndPositions()[0]);
+            assert(s != u || e != v); // TODO: ensure that W[e, s] == 0, even though W[e, s] == -1 would be plausible. Arc (e, s) must be used in case A == 1
+        }
+
+        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0); // reverse edge of dependency must not be used
+
+        for (size_t a = 0; a < A; ++a)
+            constraints.emplace_back(xt::sum(xt::view(X + 0, a, u, xt::all()))() == xt::sum(xt::view(X + 0, a, xt::all(), v))()); // require the same agent to visit dependent nodes
+
+        for (const auto s : m_weightManager.StartPositions())
+        {
+            if (static_cast<size_t>(s) != u)
+                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
+        }
+
+        for (const auto e : m_weightManager.EndPositions())
+        {
+            if (static_cast<size_t>(e) != v)
+                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
+        }
     }
 
     // inequalities to disallow cycles of length 2
@@ -97,30 +128,16 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout, std::optional<int> heuristicObjective, std::optional<std::vector<std::vector<int>>> heuristicPaths)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout)
 {
-    if (heuristicObjective.has_value() != heuristicPaths.has_value())
-        throw std::runtime_error("If you provide a heuristic objective, you also have to provide a corresponding heuristic path.");
-
-    if (heuristicPaths.has_value() && heuristicPaths->size() != A)
-        throw std::runtime_error("Invalid heuristic paths");
-
     const auto startTime = std::chrono::steady_clock::now();
 
     MtspResult bestResult{};
 
-    if (heuristicObjective.has_value())
-    {
-        bestResult.UpperBound = static_cast<double>(*heuristicObjective);
-        bestResult.Paths = std::move(*heuristicPaths);
-    }
-    else
-    {
-        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightsManager.W(), m_weightsManager.StartPositions(), m_weightsManager.EndPositions());
+    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions());
 
-        bestResult.Paths = std::move(nearestInsertionPaths);
-        bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-    }
+    bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
+    bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
 
     if (std::chrono::steady_clock::now() >= startTime + timeout)
     {
@@ -129,7 +146,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     }
 
     if (m_model.Solve() != Status::Optimal)
-        return bestResult;
+          return bestResult;
 
     bestResult.LowerBound = m_objective.Evaluate();
     std::vector<Variable> fixedVariables0{};
@@ -145,6 +162,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
     std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
     queue.emplace(bestResult.LowerBound, fixedVariables0, fixedVariables1);
+
+    graph::Separator separator(X, m_weightManager);
 
     while (!queue.empty() && std::chrono::steady_clock::now() < startTime + timeout)
     {
@@ -162,7 +181,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         if (m_model.Solve() != Status::Optimal)
             continue;
 
-        auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
+        const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
 
         // do exploiting here
 
@@ -178,7 +197,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
         // fix variables according to reduced costs (dj)
 
-        graph::Separator separator(X);
         if (const auto ucut = separator.Ucut(); ucut.has_value())
         {
             m_model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
@@ -186,7 +204,28 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             continue;
         }
 
-        auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
+        if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
+        {
+            m_model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        if (const auto pi = separator.Pi(); pi.has_value())
+        {
+            m_model.AddConstraints(std::span{ &*pi, &*pi + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        if (const auto sigma = separator.Sigma(); sigma.has_value())
+        {
+            m_model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
+            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
+            continue;
+        }
+
+        const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
 
         if (!fractionalVar.has_value())
         {
@@ -223,8 +262,8 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
 
     for (size_t a = 0; a < A; ++a)
     {
-        paths[a].push_back(m_weightsManager.StartPositions()[a]);
-        for (auto i = m_weightsManager.StartPositions()[a]; i != m_weightsManager.EndPositions()[a] || paths[a].size() < 2;)
+        paths[a].push_back(m_weightManager.StartPositions()[a]);
+        for (auto i = m_weightManager.StartPositions()[a]; i != m_weightManager.EndPositions()[a] || paths[a].size() < 2;)
         {
             for (size_t j = 0; j < N; ++j)
             {
@@ -236,8 +275,8 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
                 }
             }
         }
-        assert(paths[a].back() == m_weightsManager.EndPositions()[a]);
+        assert(paths[a].back() == m_weightManager.EndPositions()[a]);
     }
 
-    return m_weightsManager.TransformPathsBack(std::move(paths));
+    return m_weightManager.TransformPathsBack(std::move(paths));
 }

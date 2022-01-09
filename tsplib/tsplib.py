@@ -74,7 +74,10 @@ def main(dll_path, timeout_ms):
         solutions = json.load(f)
 
     bench_file = os.path.join(base, 'bench.txt')
-    os.remove(bench_file)
+    try:
+        os.remove(bench_file)
+    except OSError:
+        pass
 
     missing_best_known_solutions = ['ESC11.sop']
 
@@ -114,24 +117,19 @@ def main(dll_path, timeout_ms):
                     for j in range(N):
                         weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
-            print('looking for dependencies...')
-            dependencies = sorted((i, j) for j, i in zip(*np.where(weights == -1)) if i != j)
-            if (len(dependencies) > 0):
-                print(f'ignoring {f} because it has dependencies')
-                continue # dependencies are not supported yet
-
             print(f'starting solving {f} ...')
             (paths, lengths, lb, ub), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
             if paths is None:
                 print('solve_mtsp error:', lb)
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'
             else:
-                if lb > best_lb or ub < best_ub:
-                    print(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
-                    sys.exit(1)
-                if lb >= ub and ub != best_ub:
-                    print(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
-                    sys.exit(1)
+                if base_name not in missing_best_known_solutions:
+                    if lb > best_lb or ub < best_ub:
+                        print(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
+                        sys.exit(1)
+                    if lb >= ub and ub != best_ub:
+                        print(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
+                        sys.exit(1)
                 gap = ub / lb - 1 if lb > 0 else float('inf')
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time={seconds:>7.3f}s result={lengths[0]:>8d} gap={gap:>7.2%}\n'
         else:

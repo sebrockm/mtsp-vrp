@@ -6,8 +6,8 @@
 #include "WeightManager.hpp"
 
 #include <chrono>
+#include <exception>
 #include <limits>
-#include <optional>
 #include <vector>
 #include <xtensor/xtensor.hpp>
 
@@ -21,10 +21,14 @@ namespace tsplp
         bool IsTimeoutHit = false;
     };
 
+    class CyclicDependenciesException : public std::exception
+    {
+    };
+
     class MtspModel
     {
     private:
-        WeightManager m_weightsManager;
+        WeightManager m_weightManager;
 
         size_t A;
         size_t N;
@@ -38,8 +42,7 @@ namespace tsplp
         MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights);
 
     public:
-        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout,
-            std::optional<int> heuristicObjective = {}, std::optional<std::vector<std::vector<int>>> heuristicPaths = {});
+        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
 
     private:
         std::vector<std::vector<int>> CreatePathsFromVariables() const;

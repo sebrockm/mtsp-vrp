@@ -30,7 +30,6 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     pathsBuffer = np.zeros(shape=(N,), dtype=np.int32)
     offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
-    print(f'solve_mtsp_vrp(A={A}, N={N}, start_positions, end_positions, weights, timeout={timeout}, byref(lb), byref(ub), pathsBuffer, offsets)')
     result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
     if result < 0:
         return None, None, result, result

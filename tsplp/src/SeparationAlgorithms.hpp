@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optional>
-#include <vector>
+
 #include <xtensor/xtensor.hpp>
 
 namespace tsplp

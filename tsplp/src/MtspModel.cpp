@@ -76,6 +76,13 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
     {
         constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
         constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
+
+        // each node must be entered and left by the same agent (except start nodes which are artificially entered by previous agent)
+        if (std::find(m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), n) == m_weightManager.StartPositions().end())
+        {
+            for (size_t a = 0; a < A; ++a)
+                constraints.emplace_back(xt::sum(xt::view(X + 0, a, xt::all(), n))() == xt::sum(xt::view(X + 0, a, n, xt::all()))());
+        }
     }
 
     // special inequalities for start and end nodes
@@ -263,17 +270,20 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
     for (size_t a = 0; a < A; ++a)
     {
         paths[a].push_back(m_weightManager.StartPositions()[a]);
-        for (auto i = m_weightManager.StartPositions()[a]; i != m_weightManager.EndPositions()[a] || paths[a].size() < 2;)
+
+        for (size_t i = 1; i < N; ++i)
         {
-            for (size_t j = 0; j < N; ++j)
+            for (size_t n = 0; n < N; ++n)
             {
-                if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
+                if (X(a, paths[a].back(), n).GetObjectiveValue() > 1 - 1.e-10)
                 {
-                    paths[a].push_back(static_cast<int>(j));
-                    i = static_cast<decltype(i)>(j);
+                    paths[a].push_back(static_cast<int>(n));
                     break;
                 }
             }
+
+            if (paths[a].back() == m_weightManager.EndPositions()[a])
+                break;
         }
         assert(paths[a].back() == m_weightManager.EndPositions()[a]);
     }

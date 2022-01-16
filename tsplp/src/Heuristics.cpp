@@ -16,17 +16,24 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     assert(weights.shape(1) == N);
 
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(N);
     const auto dependencies = xt::argwhere(equal(weights, -1));
     for (const auto [v, u] : dependencies)
+    {
         add_edge(u, v, dependencyGraph);
+        add_edge(u, v, dependencyGraphUndirected);
+    }
 
     for (size_t a = 0; a < A; ++a)
+    {
         add_edge(static_cast<size_t>(startPositions[a]), static_cast<size_t>(endPositions[a]), dependencyGraph);
+        add_edge(static_cast<size_t>(startPositions[a]), static_cast<size_t>(endPositions[a]), dependencyGraphUndirected);
+    }
 
     assert(num_edges(dependencyGraph) >= size(dependencies));
 
     std::vector<size_t> componentIds(N);
-    const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
+    const auto numberOfComponents = boost::connected_components(dependencyGraphUndirected, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));

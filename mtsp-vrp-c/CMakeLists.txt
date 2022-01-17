@@ -14,11 +14,10 @@ target_include_directories(mtsp-vrp-c
 )
 
 target_precompile_headers(mtsp-vrp-c
-	PUBLIC
-		<stddef.h>
 	PRIVATE
 		<array>
 		<chrono>
+		<stddef.h>
 		<xtensor/xadapt.hpp>
 )
 

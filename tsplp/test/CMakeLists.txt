@@ -12,4 +12,6 @@ target_precompile_headers(tsplp-test
 		<vector>
 )
 
+set_source_files_properties(catch-main.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
 add_test(NAME tsplp-test COMMAND tsplp-test)

@@ -6,6 +6,6 @@
 
 namespace tsplp
 {
-    std::tuple<std::vector<std::vector<int>>, int> NearestInsertion(
-        const xt::xtensor<int, 2>& weights, const xt::xtensor<int, 1>& startPositions, const xt::xtensor<int, 1>& endPositions);
+    std::tuple<std::vector<std::vector<size_t>>, int> NearestInsertion(
+        const xt::xtensor<int, 2>& weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions);
 }

@@ -16,7 +16,7 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);
-    for (int i = 0; i < static_cast<int>(numberOfBinaryVariables); ++i)
+    for (size_t i = 0; i < numberOfBinaryVariables; ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
         m_variables.back().SetLowerBound(0.0);
@@ -34,7 +34,7 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
     for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
-        m_spSimplexModel->setObjectiveCoefficient(objective.GetVariables()[i].GetId(), objective.GetCoefficients()[i]);
+        m_spSimplexModel->setObjectiveCoefficient(static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
 }
 
 void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
@@ -63,7 +63,7 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
         for (const auto coef : c.GetCoefficients())
             elements.push_back(coef);
         for (const auto var : c.GetVariables())
-            columns.push_back(var.GetId());
+            columns.push_back(static_cast<int>(var.GetId()));
     }
 
     m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());

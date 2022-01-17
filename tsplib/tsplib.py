@@ -58,13 +58,13 @@ def main(dll_path, timeout_ms):
     solve_mtsp_vrp.argtypes = [
         c_size_t, # numberOfAgents
         c_size_t, # numberOfNodes
-        ndpointer(c_int, flags='C_CONTIGUOUS'), # start_positions
-        ndpointer(c_int, flags='C_CONTIGUOUS'), # end_positions
+        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # start_positions
+        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # end_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
         c_int, # timeout
         POINTER(c_double), # lowerBound
         POINTER(c_double), # upperBound
-        ndpointer(c_int, flags='C_CONTIGUOUS'), # paths
+        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # paths
         ndpointer(c_size_t, flags='C_CONTIGUOUS') # pathOffsets
     ]
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tsplib')

@@ -52,7 +52,7 @@ namespace
     }
 }
 
-tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights)
+tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights)
     : m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
     A(m_weightManager.A()),
     N(m_weightManager.N()),
@@ -97,8 +97,8 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
 
         if (A == 1)
         {
-            [[maybe_unused]] const auto s = static_cast<size_t>(m_weightManager.StartPositions()[0]);
-            [[maybe_unused]] const auto e = static_cast<size_t>(m_weightManager.EndPositions()[0]);
+            [[maybe_unused]] const auto s = m_weightManager.StartPositions()[0];
+            [[maybe_unused]] const auto e = m_weightManager.EndPositions()[0];
             assert(s != u || e != v); // TODO: ensure that W[e, s] == 0, even though W[e, s] == -1 would be plausible. Arc (e, s) must be used in case A == 1
         }
 
@@ -109,13 +109,13 @@ tsplp::MtspModel::MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int,
 
         for (const auto s : m_weightManager.StartPositions())
         {
-            if (static_cast<size_t>(s) != u)
+            if (s != u)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0); // u->v, so startPosition->v is not possible
         }
 
         for (const auto e : m_weightManager.EndPositions())
         {
-            if (static_cast<size_t>(e) != v)
+            if (e != v)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
         }
     }
@@ -256,9 +256,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     return bestResult;
 }
 
-std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
+std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables() const
 {
-    std::vector<std::vector<int>> paths(A);
+    std::vector<std::vector<size_t>> paths(A);
 
     for (size_t a = 0; a < A; ++a)
     {
@@ -269,8 +269,7 @@ std::vector<std::vector<int>> tsplp::MtspModel::CreatePathsFromVariables() const
             {
                 if (std::abs(X(a, i, j).GetObjectiveValue() - 1.0) < 1.e-10)
                 {
-                    paths[a].push_back(static_cast<int>(j));
-                    i = static_cast<decltype(i)>(j);
+                    i = paths[a].emplace_back(j);
                     break;
                 }
             }

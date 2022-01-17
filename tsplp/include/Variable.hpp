@@ -8,17 +8,17 @@ namespace tsplp
     {
     private:
         ClpSimplex* m_pModel;
-        int m_id;
+        size_t m_id;
 
     public:
         Variable() = default;
-        explicit Variable(ClpSimplex& model, int id);
+        explicit Variable(ClpSimplex& model, size_t id);
         double GetUpperBound() const;
         double GetLowerBound() const;
         void SetUpperBound(double upperBound);
         void SetLowerBound(double lowerBound);
         double GetObjectiveValue() const;
-        int GetId() const;
+        size_t GetId() const;
     };
 
     struct VariableLess

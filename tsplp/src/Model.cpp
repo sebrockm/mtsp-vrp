@@ -16,7 +16,7 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);
-    for (int i = 0; i < static_cast<int>(numberOfBinaryVariables); ++i)
+    for (size_t i = 0; i < numberOfBinaryVariables; ++i)
     {
         m_variables.emplace_back(*m_spSimplexModel, i);
         m_variables.back().SetLowerBound(0.0);

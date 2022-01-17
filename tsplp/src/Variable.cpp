@@ -2,7 +2,7 @@
 
 #include <ClpSimplex.hpp>
 
-tsplp::Variable::Variable(ClpSimplex& model, int id)
+tsplp::Variable::Variable(ClpSimplex& model, size_t id)
     : m_pModel(&model), m_id(id)
 {
 }
@@ -32,7 +32,7 @@ double tsplp::Variable::GetObjectiveValue() const
     return m_pModel->primalColumnSolution()[m_id];
 }
 
-int tsplp::Variable::GetId() const
+size_t tsplp::Variable::GetId() const
 {
     return m_id;
 }

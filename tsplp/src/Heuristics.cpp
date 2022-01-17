@@ -7,8 +7,8 @@
 
 #include <unordered_set>
 
-std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
-    const xt::xtensor<int, 2>& weights, const xt::xtensor<int, 1>& startPositions, const xt::xtensor<int, 1>& endPositions)
+std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
+    const xt::xtensor<int, 2>& weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions)
 {
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
@@ -21,7 +21,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         add_edge(u, v, dependencyGraph);
 
     for (size_t a = 0; a < A; ++a)
-        add_edge(static_cast<size_t>(startPositions[a]), static_cast<size_t>(endPositions[a]), dependencyGraph);
+        add_edge(startPositions[a], endPositions[a], dependencyGraph);
 
     assert(num_edges(dependencyGraph) >= size(dependencies));
 
@@ -31,9 +31,9 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
 
-    std::vector<size_t> component2AgentMap(static_cast<size_t>(numberOfComponents), A);
+    std::vector<size_t> component2AgentMap(numberOfComponents, A);
 
-    auto paths = std::vector<std::vector<int>>(A);
+    auto paths = std::vector<std::vector<size_t>>(A);
     int cost = 0;
     for (size_t a = 0; a < A; ++a)
     {
@@ -43,10 +43,10 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         paths[a].push_back(endPositions[a]);
 
         cost += weights(startPositions[a], endPositions[a]);
-        component2AgentMap[componentIds[static_cast<size_t>(startPositions[a])]] = a;
+        component2AgentMap[componentIds[startPositions[a]]] = a;
     }
 
-    std::vector<size_t> lastInsertPositionOfComponent(static_cast<size_t>(numberOfComponents), 0);
+    std::vector<size_t> lastInsertPositionOfComponent(numberOfComponents, 0);
 
     for (const auto n : boost::adaptors::reverse(order))
     {
@@ -81,7 +81,7 @@ std::tuple<std::vector<std::vector<int>>, int> tsplp::NearestInsertion(
         }
 
         using DiffT = decltype(paths[minA].begin())::difference_type;
-        paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), static_cast<int>(n));
+        paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), n);
         cost += minDeltaCost;
 
         component2AgentMap[comp] = minA;

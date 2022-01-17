@@ -6,7 +6,7 @@
 #include <xtensor/xindex_view.hpp>
 #include <xtensor/xview.hpp>
 
-tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int, 1> originalStartPositions, xt::xtensor<int, 1> originalEndPositions)
+tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> originalStartPositions, xt::xtensor<size_t, 1> originalEndPositions)
     : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions), m_hasDependencies(xt::any(equal(m_weights, -1)))
 {
     if (m_startPositions.size() != m_endPositions.size())
@@ -29,7 +29,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
         {
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, s, xt::newaxis(), xt::all())), 0);
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), s)), 1);
-            m_startPositions[a] = static_cast<int>(m_weights.shape(0)) - 1;
+            m_startPositions[a] = m_weights.shape(0) - 1;
             m_toOriginal[m_startPositions[a]] = s;
 
             auto addedRow = xt::view(m_weights, -1, xt::all());
@@ -44,7 +44,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
         {
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, e, xt::newaxis(), xt::all())), 0);
             m_weights = xt::concatenate(xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), e)), 1);
-            m_endPositions[a] = static_cast<int>(m_weights.shape(0)) - 1;
+            m_endPositions[a] = m_weights.shape(0) - 1;
             m_toOriginal[m_endPositions[a]] = e;
 
             auto addedColumn = xt::view(m_weights, xt::all(), -1);
@@ -73,7 +73,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<int
     m_weights = CreateTransitiveDependencies(std::move(m_weights));
 }
 
-std::vector<std::vector<int>> tsplp::WeightManager::TransformPathsBack(std::vector<std::vector<int>> paths) const
+std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(std::vector<std::vector<size_t>> paths) const
 {
     for (auto& path : paths)
         for (auto& i : path)

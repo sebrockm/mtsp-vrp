@@ -19,12 +19,12 @@ double tsplp::Variable::GetLowerBound() const
 
 void tsplp::Variable::SetUpperBound(double upperBound)
 {
-    m_pModel->setColumnUpper(m_id, upperBound);
+    m_pModel->setColumnUpper(static_cast<int>(m_id), upperBound);
 }
 
 void tsplp::Variable::SetLowerBound(double lowerBound)
 {
-    m_pModel->setColumnLower(m_id, lowerBound);
+    m_pModel->setColumnLower(static_cast<int>(m_id), lowerBound);
 }
 
 double tsplp::Variable::GetObjectiveValue() const

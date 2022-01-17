@@ -21,7 +21,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<siz
 
     const auto A = m_startPositions.size();
 
-    std::unordered_set<int> startEndInUse;
+    std::unordered_set<size_t> startEndInUse;
 
     for (size_t a = 0; a < A; ++a)
     {

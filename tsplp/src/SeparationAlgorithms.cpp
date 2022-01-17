@@ -77,7 +77,7 @@ namespace tsplp::graph
 
             for (size_t a = 0; a < A; ++a)
             {
-                const auto e = static_cast<size_t>(m_weightManager.EndPositions()[a]);
+                const auto e = m_weightManager.EndPositions()[a];
                 if (n == e)
                     continue;
 
@@ -118,7 +118,7 @@ namespace tsplp::graph
 
             for (size_t a = 0; a < A; ++a)
             {
-                const auto s = static_cast<size_t>(m_weightManager.StartPositions()[a]);
+                const auto s = m_weightManager.StartPositions()[a];
                 if (n == s)
                     continue;
 

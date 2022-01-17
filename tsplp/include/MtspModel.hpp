@@ -15,7 +15,7 @@ namespace tsplp
 {
     struct MtspResult
     {
-        std::vector<std::vector<int>> Paths{};
+        std::vector<std::vector<size_t>> Paths{};
         double LowerBound = -std::numeric_limits<double>::max();
         double UpperBound = std::numeric_limits<double>::max();
         bool IsTimeoutHit = false;
@@ -39,12 +39,12 @@ namespace tsplp
         LinearVariableComposition m_objective;
 
     public:
-        MtspModel(xt::xtensor<int, 1> startPositions, xt::xtensor<int, 1> endPositions, xt::xtensor<int, 2> weights);
+        MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights);
 
     public:
         MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
 
     private:
-        std::vector<std::vector<int>> CreatePathsFromVariables() const;
+        std::vector<std::vector<size_t>> CreatePathsFromVariables() const;
     };
 }

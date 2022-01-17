@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 class ClpSimplex;
 
 namespace tsplp

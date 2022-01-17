@@ -13,5 +13,13 @@ target_include_directories(mtsp-vrp-c
 		"${CMAKE_CURRENT_BINARY_DIR}" # GenerateExportHeader generates the header here
 )
 
+target_precompile_headers(mtsp-vrp-c
+	PRIVATE
+		<array>
+		<chrono>
+		<stddef.h>
+		<xtensor/xadapt.hpp>
+)
+
 include(GenerateExportHeader)
 generate_export_header(mtsp-vrp-c)

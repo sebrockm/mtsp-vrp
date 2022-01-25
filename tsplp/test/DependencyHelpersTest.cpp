@@ -1,5 +1,6 @@
 #include "DependencyHelpers.hpp"
 #include "MtspModel.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <catch2/catch.hpp>
 

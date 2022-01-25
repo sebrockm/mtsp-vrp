@@ -1,4 +1,5 @@
 #include "Heuristics.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
@@ -16,17 +17,24 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
     assert(weights.shape(1) == N);
 
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(N);
     const auto dependencies = xt::argwhere(equal(weights, -1));
     for (const auto [v, u] : dependencies)
+    {
         add_edge(u, v, dependencyGraph);
+        add_edge(u, v, dependencyGraphUndirected);
+    }
 
     for (size_t a = 0; a < A; ++a)
+    {
         add_edge(startPositions[a], endPositions[a], dependencyGraph);
+        add_edge(startPositions[a], endPositions[a], dependencyGraphUndirected);
+    }
 
     assert(num_edges(dependencyGraph) >= size(dependencies));
 
     std::vector<size_t> componentIds(N);
-    const auto numberOfComponents = boost::connected_components(dependencyGraph, componentIds.data());
+    const auto numberOfComponents = boost::connected_components(dependencyGraphUndirected, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
@@ -43,6 +51,10 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
         paths[a].push_back(endPositions[a]);
 
         cost += weights(startPositions[a], endPositions[a]);
+
+        if (component2AgentMap[componentIds[startPositions[a]]] != A)
+            throw IncompatibleDependenciesException();
+
         component2AgentMap[componentIds[startPositions[a]]] = a;
     }
 
@@ -60,11 +72,11 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
         auto minA = std::numeric_limits<size_t>::max();
         auto minI = std::numeric_limits<size_t>::max();
 
-        const auto aRange = component2AgentMap[comp] == A
+        const auto [aRangeFirst, aRangeLast] = component2AgentMap[comp] == A
             ? std::make_pair(static_cast<size_t>(0), A)
             : std::make_pair(component2AgentMap[comp], component2AgentMap[comp] + 1);
 
-        for (size_t a = aRange.first; a < aRange.second; ++a)
+        for (size_t a = aRangeFirst; a < aRangeLast; ++a)
         {
             for (size_t i = 1 + lastInsertPositionOfComponent[comp]; i < paths[a].size(); ++i)
             {

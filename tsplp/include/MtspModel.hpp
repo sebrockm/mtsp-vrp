@@ -6,7 +6,6 @@
 #include "WeightManager.hpp"
 
 #include <chrono>
-#include <exception>
 #include <limits>
 #include <vector>
 #include <xtensor/xtensor.hpp>
@@ -19,10 +18,6 @@ namespace tsplp
         double LowerBound = -std::numeric_limits<double>::max();
         double UpperBound = std::numeric_limits<double>::max();
         bool IsTimeoutHit = false;
-    };
-
-    class CyclicDependenciesException : public std::exception
-    {
     };
 
     class MtspModel

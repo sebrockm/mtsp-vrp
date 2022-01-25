@@ -1,5 +1,6 @@
 #include "mtsp-vrp-c.h"
 #include <MtspModel.hpp>
+#include <TsplpExceptions.hpp>
 
 #include <array>
 #include <chrono>
@@ -62,5 +63,9 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* st
     catch (const tsplp::CyclicDependenciesException&)
     {
         return MTSP_VRP_C_CYCLIC_DEPENDENCIES;
+    }
+    catch (const tsplp::IncompatibleDependenciesException&)
+    {
+        return MTSP_VRP_C_INCOMPATIBLE_DEPENDENCIES;
     }
 }

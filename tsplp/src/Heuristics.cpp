@@ -1,4 +1,5 @@
 #include "Heuristics.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
@@ -50,6 +51,10 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
         paths[a].push_back(endPositions[a]);
 
         cost += weights(startPositions[a], endPositions[a]);
+
+        if (component2AgentMap[componentIds[startPositions[a]]] != A)
+            throw IncompatibleDependenciesException();
+
         component2AgentMap[componentIds[startPositions[a]]] = a;
     }
 
@@ -67,11 +72,11 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
         auto minA = std::numeric_limits<size_t>::max();
         auto minI = std::numeric_limits<size_t>::max();
 
-        const auto aRange = component2AgentMap[comp] == A
+        const auto [aRangeFirst, aRangeLast] = component2AgentMap[comp] == A
             ? std::make_pair(static_cast<size_t>(0), A)
             : std::make_pair(component2AgentMap[comp], component2AgentMap[comp] + 1);
 
-        for (size_t a = aRange.first; a < aRange.second; ++a)
+        for (size_t a = aRangeFirst; a < aRangeLast; ++a)
         {
             for (size_t i = 1 + lastInsertPositionOfComponent[comp]; i < paths[a].size(); ++i)
             {

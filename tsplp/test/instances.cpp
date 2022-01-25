@@ -1,4 +1,5 @@
 #include "MtspModel.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <catch2/catch.hpp>
 
@@ -62,7 +63,7 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
     tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::minutes{ 1 });
+    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
 
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
@@ -93,6 +94,28 @@ TEST_CASE("ESC07.sop", "[instances]")
     REQUIRE(result.UpperBound == Approx(2125));
 }
 
+TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
+{
+    xt::xtensor<int, 2> weights =
+    {
+        {  0,   0,    0,    0,    0,    0,    0,    0, 1000000 },
+        { -1,   0,  100,  200,   75,    0,  300,  100, 0 },
+        { -1, 400,    0,  500,  325,  400,  600,    0, 0 },
+        { -1, 700,  800,    0,  550,  700,  900,  800, 0 },
+        { -1,  -1,  250,  225,    0,  275,  525,  250, 0 },
+        { -1,  -1,  100,  200,   -1,    0,   -1,   -1, 0 },
+        { -1,  -1, 1100, 1200, 1075, 1000,    0, 1100, 0 },
+        { -1,  -1,    0,  500,  325,  400,  600,    0, 0 },
+        { -1,  -1,   -1,   -1,   -1,   -1,   -1,   -1, 0 }
+    };
+
+    xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
+    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
+
+    tsplp::MtspModel model{ startPositions, endPositions, weights };
+    REQUIRE_THROWS_AS(model.BranchAndCutSolve(std::chrono::seconds{ 1 }), tsplp::IncompatibleDependenciesException);
+}
+
 TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
 {
     xt::xtensor<int, 2> weights =
@@ -112,7 +135,7 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
     tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::hours{ 1 });
+    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
 
     REQUIRE(result.LowerBound == Approx(1200));
     REQUIRE(result.UpperBound == Approx(1200));

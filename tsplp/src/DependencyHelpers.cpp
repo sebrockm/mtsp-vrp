@@ -1,5 +1,6 @@
 #include "DependencyHelpers.hpp"
 #include "MtspModel.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/transitive_closure.hpp>

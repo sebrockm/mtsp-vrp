@@ -29,6 +29,26 @@ tsplp::Model::~Model()
     // ClpSimplex gets destroyed here so that it can stay forward declared in header file
 }
 
+tsplp::Model::Model(const Model& other)
+    : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
+{
+    m_variables.reserve(other.m_variables.size());
+
+    for (auto v : other.m_variables)
+        m_variables.emplace_back(*m_spSimplexModel, v.GetId());
+}
+
+tsplp::Model::Model(Model&& other) noexcept
+    : m_spSimplexModel(std::move(other.m_spSimplexModel)), m_variables(std::move(other.m_variables))
+{
+}
+
+tsplp::Model& tsplp::Model::operator=(Model other)
+{
+    swap(*this, other);
+    return *this;
+}
+
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
@@ -81,4 +101,12 @@ tsplp::Status tsplp::Model::Solve()
     case 2: return Status::Unbounded;
     default: return Status::Error;
     }
+}
+
+void tsplp::swap(tsplp::Model& m1, tsplp::Model& m2) noexcept
+{
+    using std::swap;
+
+    swap(m1.m_spSimplexModel, m2.m_spSimplexModel);
+    swap(m1.m_variables, m2.m_variables);
 }

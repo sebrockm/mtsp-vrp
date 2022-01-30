@@ -37,7 +37,7 @@ namespace tsplp
         MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights);
 
     public:
-        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
+        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout, size_t noOfThreads = 1);
 
     private:
         std::vector<std::vector<size_t>> CreatePathsFromVariables() const;

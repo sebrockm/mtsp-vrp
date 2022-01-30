@@ -54,6 +54,7 @@ target_precompile_headers(tsplp
 		<optional>
 		<queue>
 		<stdexcept>
+		<thread>
 		<unordered_set>
 )
 

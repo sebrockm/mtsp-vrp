@@ -1,12 +1,17 @@
 #include "MtspModel.hpp"
+#include "BranchAndCutQueue.hpp"
 #include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <mutex>
 #include <queue>
 #include <stdexcept>
+#include <thread>
+
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xview.hpp>
 
@@ -135,10 +140,11 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout, size_t noOfThreads)
 {
     const auto startTime = std::chrono::steady_clock::now();
 
+    std::mutex bestResultMutex;
     MtspResult bestResult{};
 
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions());
@@ -152,111 +158,151 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         return bestResult;
     }
 
-    if (m_model.Solve() != Status::Optimal)
-          return bestResult;
+    BranchAndCutQueue queue;
 
-    bestResult.LowerBound = m_objective.Evaluate();
-    std::vector<Variable> fixedVariables0{};
-    std::vector<Variable> fixedVariables1{};
+    std::mutex perThreadDataMutex;
+    std::vector<double> perThreadLowerBounds(bestResult.LowerBound, noOfThreads);
+    std::vector<bool> perThreadIsWorking(false, noOfThreads);
 
-    struct SData
+    const auto threadLoop = [&](size_t threadId)
     {
-        double lowerBound = -std::numeric_limits<double>::max();
+        graph::Separator separator(X, m_weightManager);
+
         std::vector<Variable> fixedVariables0{};
         std::vector<Variable> fixedVariables1{};
-        bool operator>(SData const& sd) const { return lowerBound > sd.lowerBound; }
+
+        auto model = m_model;
+
+        while (true)
+        {
+            UnfixVariables(fixedVariables0);
+            UnfixVariables(fixedVariables1);
+
+            auto top = queue.Pop();
+            if (!top.has_value())
+                break;
+
+            if (std::chrono::steady_clock::now() >= startTime + timeout)
+            {
+                std::unique_lock lock{ bestResultMutex };
+                bestResult.IsTimeoutHit = true;
+                break;
+            }
+
+            {
+                std::unique_lock lock{ perThreadDataMutex };
+                perThreadLowerBounds[threadId] = top->LowerBound;
+            }
+
+            fixedVariables0 = std::move(top->FixedVariables0);
+            fixedVariables1 = std::move(top->FixedVariables1);
+
+            FixVariables(fixedVariables0, 0.0);
+            FixVariables(fixedVariables1, 1.0);
+
+            if (model.Solve() != Status::Optimal)
+            {
+                queue.NotifyNodeDone();
+                continue;
+            }
+
+            const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
+
+            // do exploiting here
+
+            {
+                std::unique_lock lock{ bestResultMutex };
+
+                auto threadLowerBound = std::min(bestResult.UpperBound, currentLowerBound);
+
+                threadLowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
+
+                {
+                    std::unique_lock lock{ perThreadDataMutex };
+
+                    perThreadLowerBounds[threadId] = threadLowerBound;
+
+                    bestResult.LowerBound = *std::min_element(begin(perThreadLowerBounds), end(perThreadLowerBounds));
+                }
+
+                if (bestResult.LowerBound >= bestResult.UpperBound)
+                    break;
+
+                if (currentLowerBound >= bestResult.UpperBound)
+                {
+                    queue.NotifyNodeDone();
+                    continue;
+                }
+            }
+
+            // fix variables according to reduced costs (dj)
+
+            if (const auto ucut = separator.Ucut(); ucut.has_value())
+            {
+                model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone();
+                continue;
+            }
+
+            if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
+            {
+                model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone();
+                continue;
+            }
+
+            if (const auto pi = separator.Pi(); pi.has_value())
+            {
+                model.AddConstraints(std::span{ &*pi, &*pi + 1 });
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone();
+                continue;
+            }
+
+            if (const auto sigma = separator.Sigma(); sigma.has_value())
+            {
+                model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone();
+                continue;
+            }
+
+            const auto fractionalVar = FindFractionalVariable(model.GetVariables());
+
+            if (!fractionalVar.has_value())
+            {
+                std::unique_lock lock{ bestResultMutex };
+
+                if (currentLowerBound < bestResult.UpperBound)
+                {
+                    bestResult.UpperBound = currentLowerBound;
+                    bestResult.Paths = CreatePathsFromVariables();
+
+                    if (bestResult.LowerBound >= bestResult.UpperBound)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        queue.NotifyNodeDone();
+                        continue;
+                    }
+                }
+            }
+
+            queue.PushBranch(currentLowerBound, std::move(fixedVariables0), std::move(fixedVariables1), fractionalVar.value());
+            queue.NotifyNodeDone();
+        }
     };
 
-    std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
-    queue.emplace(bestResult.LowerBound, fixedVariables0, fixedVariables1);
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < noOfThreads; ++i)
+        threads.emplace_back(threadLoop, i);
 
-    graph::Separator separator(X, m_weightManager);
-
-    while (!queue.empty() && std::chrono::steady_clock::now() < startTime + timeout)
-    {
-        UnfixVariables(fixedVariables0);
-        UnfixVariables(fixedVariables1);
-
-        bestResult.LowerBound = queue.top().lowerBound;
-        fixedVariables0 = queue.top().fixedVariables0;
-        fixedVariables1 = queue.top().fixedVariables1;
-        queue.pop();
-
-        FixVariables(fixedVariables0, 0.0);
-        FixVariables(fixedVariables1, 1.0);
-
-        if (m_model.Solve() != Status::Optimal)
-            continue;
-
-        const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
-
-        // do exploiting here
-
-        bestResult.LowerBound = std::min(bestResult.UpperBound, currentLowerBound);
-        if (!queue.empty())
-            bestResult.LowerBound = std::min(currentLowerBound, queue.top().lowerBound);
-
-        if (bestResult.LowerBound >= bestResult.UpperBound)
-            break;
-
-        if (currentLowerBound >= bestResult.UpperBound)
-            continue;
-
-        // fix variables according to reduced costs (dj)
-
-        if (const auto ucut = separator.Ucut(); ucut.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto pi = separator.Pi(); pi.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*pi, &*pi + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto sigma = separator.Sigma(); sigma.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
-
-        if (!fractionalVar.has_value())
-        {
-            bestResult.UpperBound = currentLowerBound;
-            bestResult.Paths = CreatePathsFromVariables();
-
-            if (bestResult.LowerBound >= bestResult.UpperBound)
-                break;
-            else
-                continue;
-        }
-
-        auto newFixedVariables0 = fixedVariables0;
-        newFixedVariables0.push_back(fractionalVar.value());
-
-        auto newFixedVariables1 = fixedVariables1;
-        newFixedVariables1.push_back(fractionalVar.value());
-
-        queue.emplace(currentLowerBound, std::move(newFixedVariables0), fixedVariables1);
-        queue.emplace(currentLowerBound, fixedVariables0, std::move(newFixedVariables1));
-    }
-
-    if (!queue.empty() && std::chrono::steady_clock::now() >= startTime + timeout)
-        bestResult.IsTimeoutHit = true;
+    for (auto& thread : threads)
+        thread.join();
 
     bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
 

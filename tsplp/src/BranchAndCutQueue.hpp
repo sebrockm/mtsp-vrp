@@ -13,10 +13,10 @@ namespace tsplp
 {
     struct SData
     {
-        double lowerBound = -std::numeric_limits<double>::max();
-        std::vector<Variable> fixedVariables0{};
-        std::vector<Variable> fixedVariables1{};
-        bool operator>(SData const& sd) const { return lowerBound > sd.lowerBound; }
+        double LowerBound = -std::numeric_limits<double>::max();
+        std::vector<Variable> FixedVariables0{};
+        std::vector<Variable> FixedVariables1{};
+        bool operator>(SData const& sd) const { return LowerBound > sd.LowerBound; }
     };
 
     class BranchAndCutQueue
@@ -26,7 +26,7 @@ namespace tsplp
         std::greater<> m_comparer{};
         size_t m_dataInProgress = 0;
         bool m_isCleared = false;
-        std::mutex m_mutex;
+        mutable std::mutex m_mutex;
         std::condition_variable m_cv;
 
     public:
@@ -35,6 +35,7 @@ namespace tsplp
     public:
         void ClearAll();
         void NotifyNodeDone();
+        std::optional<double> GetLowerBound() const;
         std::optional<SData> Pop();
         void Push(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1);
         void PushBranch(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1, Variable branchingVariable);

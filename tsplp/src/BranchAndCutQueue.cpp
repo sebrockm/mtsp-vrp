@@ -30,6 +30,16 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone()
         m_cv.notify_all();
 }
 
+std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
+{
+    std::unique_lock lock{ m_mutex };
+
+    if (m_heap.empty())
+        return std::nullopt;
+    
+    return m_heap.front().LowerBound;
+}
+
 std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
 {
     std::unique_lock lock{ m_mutex };

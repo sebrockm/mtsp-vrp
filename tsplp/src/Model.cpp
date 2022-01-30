@@ -18,9 +18,9 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     m_variables.reserve(numberOfBinaryVariables);
     for (size_t i = 0; i < numberOfBinaryVariables; ++i)
     {
-        m_variables.emplace_back(*m_spSimplexModel, i);
-        m_variables.back().SetLowerBound(0.0);
-        m_variables.back().SetUpperBound(1.0);
+        m_variables.emplace_back(i);
+        m_variables.back().SetLowerBound(0.0, *this);
+        m_variables.back().SetUpperBound(1.0, *this);
     }
 }
 
@@ -30,12 +30,8 @@ tsplp::Model::~Model()
 }
 
 tsplp::Model::Model(const Model& other)
-    : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
+    : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel)), m_variables(other.m_variables)
 {
-    m_variables.reserve(other.m_variables.size());
-
-    for (auto v : other.m_variables)
-        m_variables.emplace_back(*m_spSimplexModel, v.GetId());
 }
 
 tsplp::Model::Model(Model&& other) noexcept

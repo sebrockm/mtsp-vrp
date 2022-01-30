@@ -6,6 +6,8 @@
 
 namespace tsplp
 {
+    class Model;
+
     class LinearVariableComposition
     {
         friend LinearVariableComposition operator*(double factor, LinearVariableComposition linearComp);
@@ -34,7 +36,7 @@ namespace tsplp
         auto const& GetCoefficients() const { return m_coefficients; }
         double GetConstant() const { return m_constant; }
 
-        double Evaluate() const;
+        double Evaluate(const Model& model) const;
     };
 
     LinearVariableComposition operator*(double factor, LinearVariableComposition linearComp);

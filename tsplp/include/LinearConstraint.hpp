@@ -7,6 +7,7 @@
 namespace tsplp
 {
     class LinearVariableComposition;
+    class Model;
 
     class LinearConstraint
     {
@@ -29,7 +30,7 @@ namespace tsplp
         auto const& GetCoefficients() const { return m_coefficients; }
         auto const& GetVariables() const { return m_variables; }
 
-        bool Evaluate(double tolerance = 1.e-10) const;
+        bool Evaluate(const Model& model, double tolerance = 1.e-10) const;
     };
 
     LinearConstraint operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs);

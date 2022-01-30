@@ -40,6 +40,6 @@ namespace tsplp
         MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout, size_t noOfThreads = 1);
 
     private:
-        std::vector<std::vector<size_t>> CreatePathsFromVariables() const;
+        std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
     };
 }

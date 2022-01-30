@@ -16,6 +16,8 @@ namespace tsplp
 
     class Model
     {
+        friend class Variable; 
+
     private:
         std::unique_ptr<ClpSimplex> m_spSimplexModel;
         std::vector<Variable> m_variables;

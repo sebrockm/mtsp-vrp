@@ -2,6 +2,7 @@
 
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
+#include "Model.hpp"
 #include "SupportGraphs.hpp"
 #include "Variable.hpp"
 #include "WeightManager.hpp"
@@ -20,8 +21,8 @@ namespace tsplp::graph
     using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
     using UndirectedGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
 
-    Separator::Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager)
-        : m_variables(variables), m_weightManager(weightManager), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.W()))
+    Separator::Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager, const Model& model)
+        : m_variables(variables), m_weightManager(weightManager), m_model(model), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.W(), model))
     {
     }
 
@@ -32,7 +33,7 @@ namespace tsplp::graph
     std::optional<LinearConstraint> Separator::Ucut() const
     {
         const auto N = m_weightManager.N();
-        const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });
+        const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
         const auto values = vf(m_variables);
 
         UndirectedGraph graph(N);
@@ -90,9 +91,9 @@ namespace tsplp::graph
                     for (const auto [u, v] : cutEdges)
                         sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
-                    assert(std::abs(sum.Evaluate() - cutSize) < 1.e-10);
+                    assert(std::abs(sum.Evaluate(m_model) - cutSize) < 1.e-10);
                     auto constraint = sum >= 1;
-                    assert(!constraint.Evaluate());
+                    assert(!constraint.Evaluate(m_model));
 
                     return constraint;
                 }
@@ -131,7 +132,7 @@ namespace tsplp::graph
                         sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
                     auto constraint = sum >= 1;
-                    assert(!constraint.Evaluate());
+                    assert(!constraint.Evaluate(m_model));
 
                     return constraint;
                 }
@@ -156,9 +157,9 @@ namespace tsplp::graph
                 for (const auto [u, v] : cutEdges)
                     sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
-                assert(std::abs(sum.Evaluate() - cutSize) < 1.e-10);
+                assert(std::abs(sum.Evaluate(m_model) - cutSize) < 1.e-10);
                 auto constraint = sum >= 1;
-                assert(!constraint.Evaluate());
+                assert(!constraint.Evaluate(m_model));
 
                 return constraint;
             }

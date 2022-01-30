@@ -32,11 +32,11 @@ tsplp::LinearConstraint::LinearConstraint(LinearVariableComposition&& convertee)
 {
 }
 
-bool tsplp::LinearConstraint::Evaluate(double tolerance) const
+bool tsplp::LinearConstraint::Evaluate(const Model& model, double tolerance) const
 {
     double value = 0.0;
     for (size_t i = 0; i < m_coefficients.size(); ++i)
-        value += m_coefficients[i] * m_variables[i].GetObjectiveValue();
+        value += m_coefficients[i] * m_variables[i].GetObjectiveValue(model);
 
     return m_lowerBound <= value + tolerance && value - tolerance <= m_upperBound;
 }

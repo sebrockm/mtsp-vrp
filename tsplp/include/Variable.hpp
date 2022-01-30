@@ -2,24 +2,26 @@
 
 #include <cstddef>
 
-class ClpSimplex;
-
 namespace tsplp
 {
+    class Model;
+
     class Variable
     {
     private:
-        ClpSimplex* m_pModel;
         size_t m_id;
 
     public:
         Variable() = default;
-        explicit Variable(ClpSimplex& model, size_t id);
-        double GetUpperBound() const;
-        double GetLowerBound() const;
-        void SetUpperBound(double upperBound);
-        void SetLowerBound(double lowerBound);
-        double GetObjectiveValue() const;
+        explicit Variable(size_t id);
+
+        double GetUpperBound(const Model& model) const;
+        double GetLowerBound(const Model& model) const;
+
+        void SetUpperBound(double upperBound, Model& model) const;
+        void SetLowerBound(double lowerBound, Model& model) const;
+
+        double GetObjectiveValue(const Model& model) const;
         size_t GetId() const;
     };
 

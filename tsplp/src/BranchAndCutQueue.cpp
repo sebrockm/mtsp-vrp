@@ -40,6 +40,13 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
     return m_heap.front().LowerBound;
 }
 
+size_t tsplp::BranchAndCutQueue::GetSize() const
+{
+    std::unique_lock lock{ m_mutex };
+
+    return m_heap.size();
+}
+
 std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
 {
     std::unique_lock lock{ m_mutex };

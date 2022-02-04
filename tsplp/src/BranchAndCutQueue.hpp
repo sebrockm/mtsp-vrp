@@ -24,7 +24,7 @@ namespace tsplp
     private:
         std::vector<SData> m_heap{};
         std::greater<> m_comparer{};
-        size_t m_dataInProgress = 0;
+        std::unordered_map<std::thread::id, double> m_currentlyWorkedOnLowerBounds;
         bool m_isCleared = false;
         mutable std::mutex m_mutex;
         std::condition_variable m_cv;
@@ -37,6 +37,7 @@ namespace tsplp
         void NotifyNodeDone();
         std::optional<double> GetLowerBound() const;
         size_t GetSize() const;
+        size_t GetWorkedOnSize() const;
         std::optional<SData> Pop();
         void Push(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1);
         void PushBranch(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1, Variable branchingVariable);

@@ -21,9 +21,9 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone()
 
     {
         std::unique_lock lock{ m_mutex };
-        assert(m_dataInProgress > 0);
-        --m_dataInProgress;
-        needsNotify = m_dataInProgress == 0;
+        [[maybe_unused]] const auto removedCount = m_currentlyWorkedOnLowerBounds.erase(std::this_thread::get_id());
+        assert(removedCount == 1);
+        needsNotify = m_currentlyWorkedOnLowerBounds.empty();
     }
 
     if (needsNotify)
@@ -34,10 +34,21 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
 {
     std::unique_lock lock{ m_mutex };
 
-    if (m_heap.empty())
-        return std::nullopt;
-    
-    return m_heap.front().LowerBound;
+    const auto lbHeap = m_heap.empty() ? std::nullopt : std::make_optional(m_heap.front().LowerBound);
+
+    const auto minIter = std::min_element(begin(m_currentlyWorkedOnLowerBounds), end(m_currentlyWorkedOnLowerBounds), [](auto p1, auto p2) { return p1.second < p2.second; });
+    const auto lbUsed = minIter == m_currentlyWorkedOnLowerBounds.end() ? std::nullopt : std::make_optional(minIter->second);
+
+    if (lbHeap.has_value() && lbUsed.has_value())
+        return std::min(lbHeap, lbUsed);
+
+    if (lbHeap.has_value() && !lbUsed.has_value())
+        return lbHeap;
+
+    if (!lbHeap.has_value() && lbUsed.has_value())
+        return lbUsed;
+
+    return std::nullopt;
 }
 
 size_t tsplp::BranchAndCutQueue::GetSize() const
@@ -47,14 +58,21 @@ size_t tsplp::BranchAndCutQueue::GetSize() const
     return m_heap.size();
 }
 
+size_t tsplp::BranchAndCutQueue::GetWorkedOnSize() const
+{
+    std::unique_lock lock{ m_mutex };
+
+    return m_currentlyWorkedOnLowerBounds.size();
+}
+
 std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
 {
     std::unique_lock lock{ m_mutex };
 
-    while (!m_isCleared && m_heap.empty() && m_dataInProgress > 0)
+    while (!m_isCleared && m_heap.empty() && !m_currentlyWorkedOnLowerBounds.empty())
         m_cv.wait(lock);
 
-    if (m_isCleared || (m_heap.empty() && m_dataInProgress == 0))
+    if (m_isCleared || (m_heap.empty() && m_currentlyWorkedOnLowerBounds.empty()))
         return std::nullopt;
 
     std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
@@ -62,7 +80,7 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
     std::optional result = std::move(m_heap.back());
     m_heap.pop_back();
 
-    ++m_dataInProgress;
+    m_currentlyWorkedOnLowerBounds.emplace(std::this_thread::get_id(), result->LowerBound);
 
     return result;
 }

@@ -163,7 +163,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     BranchAndCutQueue queue;
 
     std::mutex perThreadDataMutex;
-    std::vector<std::optional<double>> perThreadLowerBounds(threadCount);
+    //std::vector<std::optional<double>> perThreadLowerBounds(threadCount);
     std::vector<Model> perThreadModels(threadCount, m_model);
 
     std::jthread printer([&](std::stop_token token)
@@ -171,10 +171,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
         while (!token.stop_requested())
         {
             std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
-            std::unique_lock lock{ bestResultMutex };
-            std::unique_lock lock2{ perThreadDataMutex };
-            const auto t = std::count_if(begin(perThreadLowerBounds), end(perThreadLowerBounds), [](auto o) { return o.has_value(); });
-            printf("[%7.1lf, %7.1lf] S: %.4zd T: %.2td      \r", bestResult.LowerBound, bestResult.UpperBound, queue.GetSize(), t);
+            const auto [lb, ub] = [&]
+            {
+                std::unique_lock lock{ bestResultMutex };
+                return std::make_pair(bestResult.LowerBound, bestResult.UpperBound);
+            }();
+            printf("[%7.1lf, %7.1lf] S: %.4zd T: %.2zd      \r", lb , ub, queue.GetSize(), queue.GetWorkedOnSize());
         }
     });
 
@@ -202,11 +204,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                 break;
             }
 
-            {
-                std::unique_lock lock{ perThreadDataMutex };
-                perThreadLowerBounds[threadId] = top->LowerBound;
-            }
-
             fixedVariables0 = std::move(top->FixedVariables0);
             fixedVariables1 = std::move(top->FixedVariables1);
 
@@ -218,7 +215,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
                 if (perThreadModels[threadId].Solve() != Status::Optimal)
                 {
-                    perThreadLowerBounds[threadId] = std::nullopt;
                     queue.NotifyNodeDone();
                     continue;
                 }
@@ -231,22 +227,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 std::unique_lock lock{ bestResultMutex };
 
-                auto threadLowerBound = std::min(bestResult.UpperBound, currentLowerBound);
+                const auto threadLowerBound = std::min(bestResult.UpperBound, currentLowerBound);
 
-                threadLowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
-
-                {
-                    std::unique_lock lock2{ perThreadDataMutex };
-
-                    assert(threadLowerBound >= perThreadLowerBounds[threadId]);
-                    perThreadLowerBounds[threadId] = threadLowerBound;
-
-                    const auto newGlobalLowerBound = **std::min_element(begin(perThreadLowerBounds), end(perThreadLowerBounds),
-                        [](auto lb1, auto lb2) { return lb1.value_or(std::numeric_limits<double>::max()) < lb2.value_or(std::numeric_limits<double>::max()); });
-
-                    assert(newGlobalLowerBound >= bestResult.LowerBound);
-                    bestResult.LowerBound = newGlobalLowerBound;
-                } 
+                bestResult.LowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
 
                 if (bestResult.LowerBound >= bestResult.UpperBound)
                 {
@@ -256,10 +239,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
                 if (currentLowerBound >= bestResult.UpperBound)
                 {
-                    {
-                        std::unique_lock lock{ perThreadDataMutex };
-                        perThreadLowerBounds[threadId] = std::nullopt;
-                    }
                     queue.NotifyNodeDone();
                     continue;
                 }
@@ -273,7 +252,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                     std::unique_lock lock{ perThreadDataMutex };
                     for (auto& model : perThreadModels)
                         model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
-                    perThreadLowerBounds[threadId] = std::nullopt;
                 }
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone();
@@ -286,7 +264,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                     std::unique_lock lock{ perThreadDataMutex };
                     for (auto& model : perThreadModels)
                         model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
-                    perThreadLowerBounds[threadId] = std::nullopt;
                 }
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone();
@@ -299,7 +276,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                     std::unique_lock lock{ perThreadDataMutex };
                     for (auto& model : perThreadModels)
                         model.AddConstraints(std::span{ &*pi, &*pi + 1 });
-                    perThreadLowerBounds[threadId] = std::nullopt;
                 }
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone();
@@ -312,7 +288,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                     std::unique_lock lock{ perThreadDataMutex };
                     for (auto& model : perThreadModels)
                         model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
-                    perThreadLowerBounds[threadId] = std::nullopt;
                 }
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone();
@@ -330,11 +305,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                     bestResult.UpperBound = currentLowerBound;
                     bestResult.Paths = CreatePathsFromVariables(perThreadModels[threadId]);
 
-                    {
-                        std::unique_lock lock{ perThreadDataMutex };
-                        perThreadLowerBounds[threadId] = std::nullopt;
-                    }
-
                     if (bestResult.LowerBound >= bestResult.UpperBound)
                     {
                         queue.ClearAll();
@@ -346,11 +316,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                         continue;
                     }
                 }
-            }
-
-            {
-                std::unique_lock lock{ perThreadDataMutex };
-                perThreadLowerBounds[threadId] = std::nullopt;
             }
 
             queue.PushBranch(currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value());

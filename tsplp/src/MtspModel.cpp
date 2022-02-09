@@ -1,5 +1,6 @@
 #include "MtspModel.hpp"
 #include "BranchAndCutQueue.hpp"
+#include "ConstraintDeque.hpp"
 #include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
@@ -208,7 +209,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             FixVariables(fixedVariables0, 0.0, model);
             FixVariables(fixedVariables1, 1.0, model);
 
-            constraints.PopToModel(model);
+            constraints.PopToModel(threadId, model);
 
             if (model.Solve() != Status::Optimal)
             {
@@ -243,7 +244,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
             // fix variables according to reduced costs (dj)
 
-            if (const auto ucut = separator.Ucut(); ucut.has_value())
+            if (auto ucut = separator.Ucut(); ucut.has_value())
             {
                 constraints.Push(std::move(*ucut));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
@@ -251,7 +252,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                 continue;
             }
 
-            if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
+            if (auto pisigma = separator.PiSigma(); pisigma.has_value())
             {
                 constraints.Push(std::move(*pisigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
@@ -259,7 +260,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                 continue;
             }
 
-            if (const auto pi = separator.Pi(); pi.has_value())
+            if (auto pi = separator.Pi(); pi.has_value())
             {
                 constraints.Push(std::move(*pi));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
@@ -267,7 +268,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
                 continue;
             }
 
-            if (const auto sigma = separator.Sigma(); sigma.has_value())
+            if (auto sigma = separator.Sigma(); sigma.has_value())
             {
                 constraints.Push(std::move(*sigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);

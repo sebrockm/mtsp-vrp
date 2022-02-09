@@ -146,39 +146,3 @@ void tsplp::BranchAndCutQueue::PushBranch(double lowerBound, std::vector<Variabl
         m_cv.notify_one();
     }
 }
-
-tsplp::ConstraintDeque::ConstraintDeque(size_t numberOfThreads)
-    : m_numberOfThreads(numberOfThreads)
-{
-}
-
-void tsplp::ConstraintDeque::Push(LinearConstraint constraint)
-{
-    std::unique_lock lock{ m_mutex };
-
-    m_deque.push_back(std::move(constraint));
-}
-
-void tsplp::ConstraintDeque::PopToModel(Model& model)
-{
-    const auto id = std::this_thread::get_id();
-
-    std::unique_lock lock{ m_mutex };
-
-    if (!m_readPositions.contains(id))
-        m_readPositions[id] = 0;
-
-    for (auto position = m_readPositions[id]; position != m_deque.size(); ++position)
-        model.AddConstraints({ &m_deque[position], &m_deque[position] + 1 });
-
-    m_readPositions[id] = m_deque.size();
-
-    if (m_readPositions.size() == m_numberOfThreads)
-    {
-        auto const minReadPosition = std::min_element(begin(m_readPositions), end(m_readPositions), [](auto p1, auto p2) { return p1.second < p2.second; })->second;
-        m_deque.erase(m_deque.begin(), m_deque.begin() + minReadPosition);
-
-        for (auto& [i, position] : m_readPositions)
-            position -= minReadPosition;
-    }
-}

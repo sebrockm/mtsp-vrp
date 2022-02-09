@@ -1,12 +1,8 @@
 #pragma once
 
-#include "LinearConstraint.hpp"
 #include "Variable.hpp"
 
-#include <algorithm>
 #include <condition_variable>
-#include <deque>
-#include <limits>
 #include <mutex>
 #include <optional>
 #include <vector>
@@ -44,23 +40,5 @@ namespace tsplp
         std::optional<SData> Pop();
         void Push(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1);
         void PushBranch(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1, Variable branchingVariable);
-    };
-
-    class Model;
-
-    class ConstraintDeque
-    {
-    private:
-        std::deque<LinearConstraint> m_deque;
-        std::unordered_map<std::thread::id, size_t> m_readPositions;
-        size_t m_numberOfThreads;
-        std::mutex m_mutex;
-
-    public:
-        ConstraintDeque(size_t numberOfThreads);
-
-    public:
-        void Push(LinearConstraint constraint);
-        void PopToModel(Model& model);
     };
 }

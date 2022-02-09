@@ -38,6 +38,7 @@ namespace tsplp
         void ClearAll();
         void NotifyNodeDone();
         std::optional<double> GetLowerBound() const;
+        void UpdateCurrentLowerBound(double currentLowerBound);
         size_t GetSize() const;
         size_t GetWorkedOnSize() const;
         std::optional<SData> Pop();

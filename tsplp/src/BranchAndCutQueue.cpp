@@ -53,6 +53,14 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
     return std::nullopt;
 }
 
+void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(double currentLowerBound)
+{
+    std::unique_lock lock{ m_mutex };
+
+    assert(m_currentlyWorkedOnLowerBounds.contains(std::this_thread::get_id()));
+    m_currentlyWorkedOnLowerBounds[std::this_thread::get_id()] = currentLowerBound;
+}
+
 size_t tsplp::BranchAndCutQueue::GetSize() const
 {
     std::unique_lock lock{ m_mutex };

@@ -217,6 +217,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             }
 
             const auto currentLowerBound = std::ceil(m_objective.Evaluate(model) - 1.e-10);
+            queue.UpdateCurrentLowerBound(currentLowerBound);
 
             // do exploiting here
 

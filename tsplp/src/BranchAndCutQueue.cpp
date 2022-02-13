@@ -17,13 +17,13 @@ void tsplp::BranchAndCutQueue::ClearAll()
     m_cv.notify_all();
 }
 
-void tsplp::BranchAndCutQueue::NotifyNodeDone()
+void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
 {
     bool needsNotify = false;
 
     {
         std::unique_lock lock{ m_mutex };
-        [[maybe_unused]] const auto removedCount = m_currentlyWorkedOnLowerBounds.erase(std::this_thread::get_id());
+        [[maybe_unused]] const auto removedCount = m_currentlyWorkedOnLowerBounds.erase(threadId);
         assert(removedCount == 1);
         needsNotify = m_currentlyWorkedOnLowerBounds.empty();
     }
@@ -53,12 +53,12 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
     return std::nullopt;
 }
 
-void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(double currentLowerBound)
+void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double currentLowerBound)
 {
     std::unique_lock lock{ m_mutex };
 
-    assert(m_currentlyWorkedOnLowerBounds.contains(std::this_thread::get_id()));
-    m_currentlyWorkedOnLowerBounds[std::this_thread::get_id()] = currentLowerBound;
+    assert(m_currentlyWorkedOnLowerBounds.contains(threadId));
+    m_currentlyWorkedOnLowerBounds[threadId] = currentLowerBound;
 }
 
 size_t tsplp::BranchAndCutQueue::GetSize() const
@@ -75,7 +75,7 @@ size_t tsplp::BranchAndCutQueue::GetWorkedOnSize() const
     return m_currentlyWorkedOnLowerBounds.size();
 }
 
-std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
+std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
 {
     std::unique_lock lock{ m_mutex };
 
@@ -90,7 +90,7 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop()
     std::optional result = std::move(m_heap.back());
     m_heap.pop_back();
 
-    m_currentlyWorkedOnLowerBounds.emplace(std::this_thread::get_id(), result->LowerBound);
+    m_currentlyWorkedOnLowerBounds.emplace(threadId, result->LowerBound);
 
     return result;
 }

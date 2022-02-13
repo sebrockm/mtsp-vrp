@@ -32,6 +32,7 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
 
     result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
     if result < 0:
+        print(f'error: {result}')
         return None, None, result, result
 
     print(pathsBuffer)

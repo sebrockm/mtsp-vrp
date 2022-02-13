@@ -191,7 +191,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             UnfixVariables(fixedVariables0, model);
             UnfixVariables(fixedVariables1, model);
 
-            auto top = queue.Pop();
+            auto top = queue.Pop(threadId);
             if (!top.has_value())
                 break;
 
@@ -213,12 +213,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
             if (model.Solve() != Status::Optimal)
             {
-                queue.NotifyNodeDone();
+                queue.NotifyNodeDone(threadId);
                 continue;
             }
 
             const auto currentLowerBound = std::ceil(m_objective.Evaluate(model) - 1.e-10);
-            queue.UpdateCurrentLowerBound(currentLowerBound);
+            queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
             // do exploiting here
 
@@ -237,7 +237,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
                 if (currentLowerBound >= bestResult.UpperBound)
                 {
-                    queue.NotifyNodeDone();
+                    queue.NotifyNodeDone(threadId);
                     continue;
                 }
             }
@@ -248,7 +248,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 constraints.Push(std::move(*ucut));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
-                queue.NotifyNodeDone();
+                queue.NotifyNodeDone(threadId);
                 continue;
             }
 
@@ -256,7 +256,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 constraints.Push(std::move(*pisigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
-                queue.NotifyNodeDone();
+                queue.NotifyNodeDone(threadId);
                 continue;
             }
 
@@ -264,7 +264,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 constraints.Push(std::move(*pi));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
-                queue.NotifyNodeDone();
+                queue.NotifyNodeDone(threadId);
                 continue;
             }
 
@@ -272,7 +272,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 constraints.Push(std::move(*sigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
-                queue.NotifyNodeDone();
+                queue.NotifyNodeDone(threadId);
                 continue;
             }
 
@@ -282,26 +282,29 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             {
                 std::unique_lock lock{ bestResultMutex };
 
-                if (currentLowerBound < bestResult.UpperBound)
+                if (currentLowerBound >= bestResult.UpperBound) // another thread may have updated UpperBound since the last check
                 {
-                    bestResult.UpperBound = currentLowerBound;
-                    bestResult.Paths = CreatePathsFromVariables(model);
+                    queue.NotifyNodeDone(threadId);
+                    continue;
+                }
 
-                    if (bestResult.LowerBound >= bestResult.UpperBound)
-                    {
-                        queue.ClearAll();
-                        break;
-                    }
-                    else
-                    {
-                        queue.NotifyNodeDone();
-                        continue;
-                    }
+                bestResult.UpperBound = currentLowerBound;
+                bestResult.Paths = CreatePathsFromVariables(model);
+
+                if (bestResult.LowerBound >= bestResult.UpperBound)
+                {
+                    queue.ClearAll();
+                    break;
+                }
+                else
+                {
+                    queue.NotifyNodeDone(threadId);
+                    continue;
                 }
             }
 
             queue.PushBranch(currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value());
-            queue.NotifyNodeDone();
+            queue.NotifyNodeDone(threadId);
         }
     };
 

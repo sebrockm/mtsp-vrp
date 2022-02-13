@@ -68,4 +68,8 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* st
     {
         return MTSP_VRP_C_INCOMPATIBLE_DEPENDENCIES;
     }
+    catch (...)
+    {
+        return INT_MIN;
+    }
 }

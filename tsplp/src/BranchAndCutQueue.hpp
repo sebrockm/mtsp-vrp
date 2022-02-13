@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 #include <vector>
 
 namespace tsplp
@@ -22,7 +23,7 @@ namespace tsplp
     private:
         std::vector<SData> m_heap{};
         std::greater<> m_comparer{};
-        std::unordered_map<std::thread::id, double> m_currentlyWorkedOnLowerBounds;
+        std::unordered_map<size_t, double> m_currentlyWorkedOnLowerBounds;
         bool m_isCleared = false;
         mutable std::mutex m_mutex;
         std::condition_variable m_cv;
@@ -32,12 +33,12 @@ namespace tsplp
 
     public:
         void ClearAll();
-        void NotifyNodeDone();
+        void NotifyNodeDone(size_t threadId);
         std::optional<double> GetLowerBound() const;
-        void UpdateCurrentLowerBound(double currentLowerBound);
+        void UpdateCurrentLowerBound(size_t threadId, double currentLowerBound);
         size_t GetSize() const;
         size_t GetWorkedOnSize() const;
-        std::optional<SData> Pop();
+        std::optional<SData> Pop(size_t threadId);
         void Push(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1);
         void PushBranch(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1, Variable branchingVariable);
     };

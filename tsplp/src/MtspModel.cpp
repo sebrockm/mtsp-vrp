@@ -9,7 +9,6 @@
 #include <cassert>
 #include <cmath>
 #include <mutex>
-#include <queue>
 #include <stdexcept>
 #include <thread>
 
@@ -150,11 +149,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     std::mutex bestResultMutex;
     MtspResult bestResult{};
 
-    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions());
-
-    bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
-    bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-
     if (std::chrono::steady_clock::now() >= startTime + timeout)
     {
         bestResult.IsTimeoutHit = true;
@@ -164,19 +158,19 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     BranchAndCutQueue queue;
     ConstraintDeque constraints(threadCount);
 
-    std::jthread printer([&](std::stop_token token)
-    {
-        while (!token.stop_requested())
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
-            const auto [lb, ub] = [&]
-            {
-                std::unique_lock lock{ bestResultMutex };
-                return std::make_pair(bestResult.LowerBound, bestResult.UpperBound);
-            }();
-            printf("[%7.1lf, %7.1lf] S: %.4zd T: %.2zd      \r", lb , ub, queue.GetSize(), queue.GetWorkedOnSize());
-        }
-    });
+    //std::jthread printer([&](std::stop_token token)
+    //{
+    //    while (!token.stop_requested())
+    //    {
+    //        std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
+    //        const auto [lb, ub] = [&]
+    //        {
+    //            std::unique_lock lock{ bestResultMutex };
+    //            return std::make_pair(bestResult.LowerBound, bestResult.UpperBound);
+    //        }();
+    //        printf("[%7.1lf, %7.1lf] S: %.4zd T: %.2zd      \r", lb , ub, queue.GetSize(), queue.GetWorkedOnSize());
+    //    }
+    //});
 
     const auto threadLoop = [&](const size_t threadId)
     {
@@ -309,13 +303,32 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
     };
 
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < threadCount; ++i)
+    for (size_t i = 1; i < threadCount; ++i)
         threads.emplace_back(threadLoop, i);
+
+    try
+    {
+        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions());
+
+        {
+            std::unique_lock lock{ bestResultMutex };
+            bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
+            bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
+        }
+    }
+    catch (...)
+    {
+        for (auto& thread : threads)
+            thread.join();
+        throw;
+    }
+
+    threadLoop(0); // main thread is working with threadId == 0
 
     for (auto& thread : threads)
         thread.join();
 
-    printer.request_stop();
+    //printer.request_stop();
 
     bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
 

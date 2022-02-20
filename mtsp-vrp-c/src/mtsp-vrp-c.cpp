@@ -27,12 +27,12 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* st
 
     try
     {
-        tsplp::MtspModel model(startPositions, endPositions, weights_);
-
         const auto timeout = std::chrono::milliseconds{ timeout_ms } -
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
 
-        const auto result = model.BranchAndCutSolve(timeout);
+        tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
+
+        const auto result = model.BranchAndCutSolve();
 
         *lowerBound = result.LowerBound;
         *upperBound = result.UpperBound;

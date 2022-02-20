@@ -29,8 +29,8 @@ TEST_CASE("br17.atsp", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0 };
     xt::xtensor<int, 1> endPositions{ 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
+    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    auto result = model.BranchAndCutSolve();
     
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
@@ -62,8 +62,8 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
+    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
@@ -87,8 +87,8 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0 };
     xt::xtensor<int, 1> endPositions{ 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
+    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(2125));
     REQUIRE(result.UpperBound == Approx(2125));
@@ -112,8 +112,7 @@ TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
-    REQUIRE_THROWS_AS(model.BranchAndCutSolve(std::chrono::seconds{ 1 }), tsplp::IncompatibleDependenciesException);
+    REQUIRE_THROWS_AS(tsplp::MtspModel(startPositions, endPositions, weights, std::chrono::seconds{ 1 }), tsplp::IncompatibleDependenciesException);
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
@@ -134,8 +133,8 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights };
-    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 1 });
+    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(1200));
     REQUIRE(result.UpperBound == Approx(1200));

@@ -2,6 +2,8 @@
 #include "TsplpExceptions.hpp"
 
 #include <catch2/catch.hpp>
+#include <chrono>
+#include <xtensor/xnpy.hpp>
 
 TEST_CASE("br17.atsp", "[instances]")
 {

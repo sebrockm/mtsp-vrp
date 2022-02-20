@@ -3,8 +3,10 @@
 #include "LinearVariableComposition.hpp"
 
 #include <ClpSimplex.hpp>
+#include <future>
 #include <limits>
 #include <stdexcept>
+#include <thread>
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
@@ -24,10 +26,7 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
     }
 }
 
-tsplp::Model::~Model()
-{
-    // ClpSimplex gets destroyed here so that it can stay forward declared in header file
-}
+tsplp::Model::~Model() noexcept = default;
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
@@ -69,12 +68,32 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
     m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
 }
 
-tsplp::Status tsplp::Model::Solve()
+tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
 {
-    m_spSimplexModel->dual();
-    const auto status = m_spSimplexModel->status();
+    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel, std::promise<void> promise)
+    {
+        spSimplexModel->dual();
+        promise.set_value();
+    };
 
-    switch (status)
+    std::promise<void> solverPromise;
+    const auto solverFuture = solverPromise.get_future();
+
+    std::thread solverThread(solverTask, m_spSimplexModel, std::move(solverPromise));
+
+    const auto futureStatus = solverFuture.wait_for(timeout);
+
+    if (futureStatus == std::future_status::timeout)
+    {
+        solverThread.detach();
+        return Status::Timeout;
+    }
+
+    solverThread.join();
+
+    const auto modelStatus = m_spSimplexModel->status();
+
+    switch (modelStatus)
     {
     case 0: return Status::Optimal;
     case 1: return Status::Infeasible;

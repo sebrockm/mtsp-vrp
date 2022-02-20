@@ -184,14 +184,22 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
 
 tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 {
-    if (std::chrono::steady_clock::now() >= m_endTime)
+    using namespace std::chrono_literals;
+
+    auto remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+
+    if (remainingTime <= 0ms)
     {
         m_bestResult.IsTimeoutHit = true;
         return m_bestResult;
     }
 
-    if (m_model.Solve() != Status::Optimal)
-          return m_bestResult;
+    if (const auto status = m_model.Solve(remainingTime); status != Status::Optimal)
+    {
+        if (status == Status::Timeout)
+            m_bestResult.IsTimeoutHit = true;
+        return m_bestResult;
+    }
 
     m_bestResult.LowerBound = m_objective.Evaluate();
     std::vector<Variable> fixedVariables0{};
@@ -223,7 +231,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
         FixVariables(fixedVariables0, 0.0);
         FixVariables(fixedVariables1, 1.0);
 
-        if (m_model.Solve() != Status::Optimal)
+        remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+
+        if (m_model.Solve(remainingTime) != Status::Optimal)
             continue;
 
         const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);

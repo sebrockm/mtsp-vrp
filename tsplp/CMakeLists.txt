@@ -49,6 +49,7 @@ target_precompile_headers(tsplp
 		<algorithm>
 		<cassert>
 		<cmath>
+		<future>
 		<limits>
 		<optional>
 		<queue>

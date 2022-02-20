@@ -9,8 +9,10 @@
 #include <unordered_set>
 
 std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
-    const xt::xtensor<int, 2>& weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions)
+    const xt::xtensor<int, 2>& weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions, std::chrono::milliseconds timeout)
 {
+    const auto startTime = std::chrono::steady_clock::now();
+
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
     const auto N = weights.shape(0);
@@ -62,6 +64,9 @@ std::tuple<std::vector<std::vector<size_t>>, int> tsplp::NearestInsertion(
 
     for (const auto n : boost::adaptors::reverse(order))
     {
+        if (std::chrono::steady_clock::now() >= startTime + timeout)
+            return { {}, 0 };
+
         if (std::find(startPositions.begin(), startPositions.end(), n) != startPositions.end()
             || std::find(endPositions.begin(), endPositions.end(), n) != endPositions.end())
             continue;

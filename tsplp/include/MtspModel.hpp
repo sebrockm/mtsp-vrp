@@ -36,6 +36,8 @@ namespace tsplp
 
         LinearVariableComposition m_objective;
 
+        MtspResult m_bestResult{};
+
     public:
         MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
 

@@ -61,13 +61,28 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(m_weightManager.W() * X)())
 {
+    const auto heuristicTimeout = timeout - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_startTime);
+    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
+
+    m_bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
+    m_bestResult.Paths = std::move(nearestInsertionPaths);
+
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
+
     m_model.SetObjective(m_objective);
 
     const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
     const auto D = dependencies.size();
 
     if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
         return;
+    }
 
     std::vector<LinearConstraint> constraints;
     const auto numberOfConstraints = A * N + 3 * N + 3 * A + D * (3 * A + 1) + N * (N - 1) / 2;
@@ -79,7 +94,10 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
             constraints.emplace_back(X(a, n, n) == 0);
 
     if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
         return;
+    }
 
     // degree inequalities
     for (size_t n = 0; n < N; ++n)
@@ -96,7 +114,10 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     }
 
     if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
         return;
+    }
 
     // special inequalities for start and end nodes
     for (size_t a = 0; a < A; ++a)
@@ -139,7 +160,10 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
         }
 
         if (std::chrono::steady_clock::now() >= m_endTime)
+        {
+            m_bestResult.IsTimeoutHit = true;
             return;
+        }
     }
 
     // inequalities to disallow cycles of length 2
@@ -149,7 +173,10 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
             constraints.emplace_back((xt::sum(xt::view(X + 0, xt::all(), u, v)) + xt::sum(xt::view(X + 0, xt::all(), v, u)))() <= 1);
 
         if (std::chrono::steady_clock::now() >= m_endTime)
+        {
+            m_bestResult.IsTimeoutHit = true;
             return;
+        }
     }
 
     m_model.AddConstraints(constraints);
@@ -157,29 +184,16 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
 
 tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 {
-    MtspResult bestResult{};
-
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
-        bestResult.IsTimeoutHit = true;
-        return bestResult;
-    }
-
-    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions());
-
-    bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
-    bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-
-    if (std::chrono::steady_clock::now() >= m_endTime)
-    {
-        bestResult.IsTimeoutHit = true;
-        return bestResult;
+        m_bestResult.IsTimeoutHit = true;
+        return m_bestResult;
     }
 
     if (m_model.Solve() != Status::Optimal)
-          return bestResult;
+          return m_bestResult;
 
-    bestResult.LowerBound = m_objective.Evaluate();
+    m_bestResult.LowerBound = m_objective.Evaluate();
     std::vector<Variable> fixedVariables0{};
     std::vector<Variable> fixedVariables1{};
 
@@ -192,7 +206,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
     };
 
     std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
-    queue.emplace(bestResult.LowerBound, fixedVariables0, fixedVariables1);
+    queue.emplace(m_bestResult.LowerBound, fixedVariables0, fixedVariables1);
 
     graph::Separator separator(X, m_weightManager);
 
@@ -201,7 +215,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
         UnfixVariables(fixedVariables0);
         UnfixVariables(fixedVariables1);
 
-        bestResult.LowerBound = queue.top().lowerBound;
+        m_bestResult.LowerBound = queue.top().lowerBound;
         fixedVariables0 = queue.top().fixedVariables0;
         fixedVariables1 = queue.top().fixedVariables1;
         queue.pop();
@@ -216,14 +230,14 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
         // do exploiting here
 
-        bestResult.LowerBound = std::min(bestResult.UpperBound, currentLowerBound);
+        m_bestResult.LowerBound = std::min(m_bestResult.UpperBound, currentLowerBound);
         if (!queue.empty())
-            bestResult.LowerBound = std::min(currentLowerBound, queue.top().lowerBound);
+            m_bestResult.LowerBound = std::min(currentLowerBound, queue.top().lowerBound);
 
-        if (bestResult.LowerBound >= bestResult.UpperBound)
+        if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
             break;
 
-        if (currentLowerBound >= bestResult.UpperBound)
+        if (currentLowerBound >= m_bestResult.UpperBound)
             continue;
 
         // fix variables according to reduced costs (dj)
@@ -260,10 +274,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
 
         if (!fractionalVar.has_value())
         {
-            bestResult.UpperBound = currentLowerBound;
-            bestResult.Paths = CreatePathsFromVariables();
+            m_bestResult.UpperBound = currentLowerBound;
+            m_bestResult.Paths = CreatePathsFromVariables();
 
-            if (bestResult.LowerBound >= bestResult.UpperBound)
+            if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
                 break;
             else
                 continue;
@@ -280,11 +294,11 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
     }
 
     if (!queue.empty() && std::chrono::steady_clock::now() >= m_endTime)
-        bestResult.IsTimeoutHit = true;
+        m_bestResult.IsTimeoutHit = true;
 
-    bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
+    m_bestResult.LowerBound = std::min(m_bestResult.LowerBound, m_bestResult.UpperBound);
 
-    return bestResult;
+    return m_bestResult;
 }
 
 std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables() const

@@ -22,12 +22,12 @@ def timing(f):
 def solve_mtsp(start_positions, end_positions, weights, timeout):
     A = len(start_positions)
     N = len(weights)
-    start_positions = np.array(start_positions, dtype=np.int32)
-    end_positions = np.array(end_positions, dtype=np.int32)
+    start_positions = np.array(start_positions, dtype=np.uint64)
+    end_positions = np.array(end_positions, dtype=np.uint64)
     weights = np.array(weights, dtype=np.int32)
     lb = c_double(0)
     ub = c_double(0)
-    pathsBuffer = np.zeros(shape=(N,), dtype=np.int32)
+    pathsBuffer = np.zeros(shape=(N,), dtype=np.uint64)
     offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
     result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)

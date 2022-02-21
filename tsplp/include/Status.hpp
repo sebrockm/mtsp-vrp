@@ -7,7 +7,7 @@ namespace tsplp
         Optimal,
         Infeasible,
         Unbounded,
-        Error,
-        Timeout
+        Timeout,
+        Error
     };
 }

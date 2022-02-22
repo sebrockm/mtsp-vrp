@@ -197,7 +197,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
     if (const auto status = m_model.Solve(remainingTime); status != Status::Optimal)
     {
         if (status == Status::Timeout)
+        {
+            assert(std::chrono::steady_clock::now() >= m_endTime);
             m_bestResult.IsTimeoutHit = true;
+        }
         return m_bestResult;
     }
 

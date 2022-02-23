@@ -23,6 +23,9 @@ namespace tsplp
     class MtspModel
     {
     private:
+        std::chrono::steady_clock::time_point m_startTime = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point m_endTime;
+
         WeightManager m_weightManager;
 
         size_t A;
@@ -33,11 +36,13 @@ namespace tsplp
 
         LinearVariableComposition m_objective;
 
-    public:
-        MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights);
+        MtspResult m_bestResult{};
 
     public:
-        MtspResult BranchAndCutSolve(std::chrono::milliseconds timeout);
+        MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
+
+    public:
+        MtspResult BranchAndCutSolve();
 
     private:
         std::vector<std::vector<size_t>> CreatePathsFromVariables() const;

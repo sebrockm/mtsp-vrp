@@ -29,9 +29,6 @@ tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs,
 
 tsplp::LinearVariableComposition& tsplp::operator+=(LinearVariableComposition& lhs, LinearVariableComposition const& rhs)
 {
-    lhs.m_variables.reserve(lhs.m_variables.size() + rhs.m_variables.size());
-    lhs.m_coefficients.reserve(lhs.m_coefficients.size() + rhs.m_variables.size());
-
     for (size_t i = 0; i < rhs.m_variables.size(); ++i)
     {
         const auto iter = std::upper_bound(lhs.m_variables.begin(), lhs.m_variables.end(), rhs.m_variables[i], VariableLess{});

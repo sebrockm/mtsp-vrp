@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <mutex>
 #include <stdexcept>
 #include <thread>
 
@@ -57,24 +56,52 @@ namespace
     }
 }
 
-tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights)
-    : m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
+tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout)
+    : m_endTime(m_startTime + timeout),
+    m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions)),
     A(m_weightManager.A()),
     N(m_weightManager.N()),
     m_model(A * N * N),
     X(xt::adapt(m_model.GetVariables(), { A, N, N })),
     m_objective(xt::sum(m_weightManager.W() * X)())
 {
+    const auto heuristicTimeout = timeout - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_startTime);
+    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
+
+    m_bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
+    m_bestResult.Paths = std::move(nearestInsertionPaths);
+
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
+
     m_model.SetObjective(m_objective);
 
+    const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
+    const auto D = dependencies.size();
+
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
+
     std::vector<LinearConstraint> constraints;
-    const auto numberOfConstraints = A * N + 2 * N + 3 * A + N * (N - 1) / 2;
+    const auto numberOfConstraints = A * N + 3 * N + 3 * A + D * (3 * A + 1) + N * (N - 1) / 2;
     constraints.reserve(numberOfConstraints);
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)
         for (size_t n = 0; n < N; ++n)
             constraints.emplace_back(X(a, n, n) == 0);
+
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
 
     // degree inequalities
     for (size_t n = 0; n < N; ++n)
@@ -90,6 +117,12 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
         }
     }
 
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
+
     // special inequalities for start and end nodes
     for (size_t a = 0; a < A; ++a)
     {
@@ -101,7 +134,6 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
         constraints.emplace_back(X(a, m_weightManager.EndPositions()[a], m_weightManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
-    const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
     for (const auto [v, u] : dependencies)
     {
         assert(std::find(m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), v) == m_weightManager.StartPositions().end());
@@ -130,29 +162,42 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
             if (e != v)
                 constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0); // u->v, so u->endPosition is not possible
         }
+
+        if (std::chrono::steady_clock::now() >= m_endTime)
+        {
+            m_bestResult.IsTimeoutHit = true;
+            return;
+        }
     }
 
     // inequalities to disallow cycles of length 2
     for (size_t u = 0; u < N; ++u)
+    {
         for (size_t v = u + 1; v < N; ++v)
             constraints.emplace_back((xt::sum(xt::view(X + 0, xt::all(), u, v)) + xt::sum(xt::view(X + 0, xt::all(), v, u)))() <= 1);
+
+        if (std::chrono::steady_clock::now() >= m_endTime)
+        {
+            m_bestResult.IsTimeoutHit = true;
+            return;
+        }
+    }
 
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds timeout, std::optional<size_t> noOfThreads)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads)
 {
-    const auto startTime = std::chrono::steady_clock::now();
+    using namespace std::chrono_literals;
 
     const auto threadCount = noOfThreads.value_or(std::thread::hardware_concurrency());
 
-    std::mutex bestResultMutex;
-    MtspResult bestResult{};
+    auto remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
 
-    if (std::chrono::steady_clock::now() >= startTime + timeout)
+    if (remainingTime <= 0ms)
     {
-        bestResult.IsTimeoutHit = true;
-        return bestResult;
+        m_bestResult.IsTimeoutHit = true;
+        return m_bestResult;
     }
 
     BranchAndCutQueue queue;
@@ -189,11 +234,11 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             if (!top.has_value())
                 break;
 
-            if (std::chrono::steady_clock::now() >= startTime + timeout)
+            if (std::chrono::steady_clock::now() >= m_endTime)
             {
                 queue.ClearAll();
-                std::unique_lock lock{ bestResultMutex };
-                bestResult.IsTimeoutHit = true;
+                std::unique_lock lock{ m_bestResultMutex };
+                m_bestResult.IsTimeoutHit = true;
                 break;
             }
 
@@ -205,7 +250,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
             constraints.PopToModel(threadId, model);
 
-            if (model.Solve() != Status::Optimal)
+            remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+
+            if (model.Solve(remainingTime) != Status::Optimal)
             {
                 queue.NotifyNodeDone(threadId);
                 continue;
@@ -217,19 +264,19 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
             // do exploiting here
 
             {
-                std::unique_lock lock{ bestResultMutex };
+                std::unique_lock lock{ m_bestResultMutex };
 
-                const auto threadLowerBound = std::min(bestResult.UpperBound, currentLowerBound);
+                const auto threadLowerBound = std::min(m_bestResult.UpperBound, currentLowerBound);
 
-                bestResult.LowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
+                m_bestResult.LowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
 
-                if (bestResult.LowerBound >= bestResult.UpperBound)
+                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
                 {
                     queue.ClearAll();
                     break;
                 }
 
-                if (currentLowerBound >= bestResult.UpperBound)
+                if (currentLowerBound >= m_bestResult.UpperBound)
                 {
                     queue.NotifyNodeDone(threadId);
                     continue;
@@ -274,18 +321,18 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
             if (!fractionalVar.has_value())
             {
-                std::unique_lock lock{ bestResultMutex };
+                std::unique_lock lock{ m_bestResultMutex };
 
-                if (currentLowerBound >= bestResult.UpperBound) // another thread may have updated UpperBound since the last check
+                if (currentLowerBound >= m_bestResult.UpperBound) // another thread may have updated UpperBound since the last check
                 {
                     queue.NotifyNodeDone(threadId);
                     continue;
                 }
 
-                bestResult.UpperBound = currentLowerBound;
-                bestResult.Paths = CreatePathsFromVariables(model);
+                m_bestResult.UpperBound = currentLowerBound;
+                m_bestResult.Paths = CreatePathsFromVariables(model);
 
-                if (bestResult.LowerBound >= bestResult.UpperBound)
+                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
                 {
                     queue.ClearAll();
                     break;
@@ -310,16 +357,15 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
     try
     {
-        const auto heuristicTimeout = timeout -
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+        const auto heuristicTimeout = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
 
         auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
 
         if (!nearestInsertionPaths.empty())
         {
-            std::unique_lock lock{ bestResultMutex };
-            bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
-            bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
+            std::unique_lock lock{ m_bestResultMutex };
+            m_bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
+            m_bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
         }
 
         threadLoop(0); // main thread is working with threadId == 0
@@ -337,9 +383,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::chrono::milliseconds 
 
     //printer.request_stop();
 
-    bestResult.LowerBound = std::min(bestResult.LowerBound, bestResult.UpperBound);
+    if (m_bestResult.LowerBound < m_bestResult.UpperBound && std::chrono::steady_clock::now() >= m_endTime)
+        m_bestResult.IsTimeoutHit = true;
 
-    return bestResult;
+    m_bestResult.LowerBound = std::min(m_bestResult.LowerBound, m_bestResult.UpperBound);
+
+    return m_bestResult;
 }
 
 std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(const Model& model) const

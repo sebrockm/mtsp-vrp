@@ -3,6 +3,7 @@
 #include "Status.hpp"
 #include "Variable.hpp"
 
+#include <chrono>
 #include <memory>
 #include <span>
 #include <vector>
@@ -19,12 +20,12 @@ namespace tsplp
         friend class Variable; 
 
     private:
-        std::unique_ptr<ClpSimplex> m_spSimplexModel;
+        std::shared_ptr<ClpSimplex> m_spSimplexModel;
         std::vector<Variable> m_variables;
 
     public:
         explicit Model(size_t numberOfBinaryVariables);
-        ~Model();
+        ~Model() noexcept;
 
         Model(const Model& other);
         Model(Model&& other) noexcept;
@@ -36,7 +37,7 @@ namespace tsplp
         const std::vector<Variable>& GetVariables() const { return m_variables; }
         void SetObjective(const LinearVariableComposition& objective);
         void AddConstraints(std::span<const LinearConstraint> constraints);
-        Status Solve();
+        Status Solve(std::chrono::milliseconds timeout);
     };
 
     void swap(Model& m1, Model& m2) noexcept;

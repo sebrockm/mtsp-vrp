@@ -23,8 +23,8 @@ void tsplp::ConstraintDeque::PopToModel(size_t threadId, Model& model)
 
     m_readPositions[threadId] = m_deque.size();
 
-    const auto minReadPosition = static_cast<ptrdiff_t>(*std::min_element(begin(m_readPositions), end(m_readPositions)));
-    m_deque.erase(m_deque.begin(), m_deque.begin() + minReadPosition);
+    const auto minReadPosition = *std::min_element(begin(m_readPositions), end(m_readPositions));
+    m_deque.erase(m_deque.begin(), m_deque.begin() + static_cast<ptrdiff_t>(minReadPosition));
 
     for (auto& position : m_readPositions)
         position -= minReadPosition;

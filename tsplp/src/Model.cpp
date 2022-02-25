@@ -9,10 +9,12 @@
 #include <thread>
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
-    : m_spSimplexModel{ std::make_unique<ClpSimplex>() }, m_variables{}
+    : m_spSimplexModel{ std::make_shared<ClpSimplex>() }, m_spModelMutex{ std::make_shared<std::mutex>() }, m_variables{}
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
+
+    std::unique_lock lock{ *m_spModelMutex };
 
     m_spSimplexModel->setLogLevel(0);
     m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
@@ -29,12 +31,12 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
 tsplp::Model::~Model() noexcept = default;
 
 tsplp::Model::Model(const Model& other)
-    : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel)), m_variables(other.m_variables)
+    : m_spSimplexModel(std::make_shared<ClpSimplex>(*other.m_spSimplexModel)), m_spModelMutex{ std::make_shared<std::mutex>() }, m_variables(other.m_variables)
 {
 }
 
 tsplp::Model::Model(Model&& other) noexcept
-    : m_spSimplexModel(std::move(other.m_spSimplexModel)), m_variables(std::move(other.m_variables))
+    : m_spSimplexModel(std::move(other.m_spSimplexModel)), m_spModelMutex(std::move(other.m_spModelMutex)), m_variables(std::move(other.m_variables))
 {
 }
 
@@ -46,6 +48,8 @@ tsplp::Model& tsplp::Model::operator=(Model other)
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
+    std::unique_lock lock{ *m_spModelMutex };
+
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
     for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
@@ -81,13 +85,17 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
             columns.push_back(static_cast<int>(var.GetId()));
     }
 
+    std::unique_lock lock{ *m_spModelMutex };
+
     m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
 }
 
 tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
 {
-    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel, std::promise<void> promise)
+    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel, std::shared_ptr<std::mutex> spModelMutex, std::promise<void> promise)
     {
+        std::unique_lock lock{ *spModelMutex };
+
         spSimplexModel->dual();
         promise.set_value();
     };
@@ -95,7 +103,7 @@ tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
     std::promise<void> solverPromise;
     const auto solverFuture = solverPromise.get_future();
 
-    std::thread solverThread(solverTask, m_spSimplexModel, std::move(solverPromise));
+    std::thread solverThread(solverTask, m_spSimplexModel, m_spModelMutex, std::move(solverPromise));
 
     const auto futureStatus = solverFuture.wait_for(timeout);
 
@@ -123,5 +131,6 @@ void tsplp::swap(tsplp::Model& m1, tsplp::Model& m2) noexcept
     using std::swap;
 
     swap(m1.m_spSimplexModel, m2.m_spSimplexModel);
+    swap(m1.m_spModelMutex, m2.m_spModelMutex);
     swap(m1.m_variables, m2.m_variables);
 }

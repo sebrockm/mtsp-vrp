@@ -237,8 +237,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
             if (std::chrono::steady_clock::now() >= m_endTime)
             {
                 queue.ClearAll();
-                std::unique_lock lock{ m_bestResultMutex };
-                m_bestResult.IsTimeoutHit = true;
                 break;
             }
 
@@ -350,36 +348,11 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
     };
 
     std::vector<std::thread> threads;
-    for (size_t i = 1; i < threadCount; ++i)
+    for (size_t i = 0; i < threadCount; ++i)
         threads.emplace_back(threadLoop, i);
-
-    std::exception_ptr spException{};
-
-    try
-    {
-        const auto heuristicTimeout = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
-
-        auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
-
-        if (!nearestInsertionPaths.empty())
-        {
-            std::unique_lock lock{ m_bestResultMutex };
-            m_bestResult.Paths = m_weightManager.TransformPathsBack(std::move(nearestInsertionPaths));
-            m_bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-        }
-
-        threadLoop(0); // main thread is working with threadId == 0
-    }
-    catch (...)
-    {
-        spException = std::current_exception();
-    }
 
     for (auto& thread : threads)
         thread.join();
-
-    if (spException)
-        std::rethrow_exception(spException);
 
     //printer.request_stop();
 

@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <span>
 #include <vector>
 
@@ -21,6 +22,7 @@ namespace tsplp
 
     private:
         std::shared_ptr<ClpSimplex> m_spSimplexModel;
+        std::shared_ptr<std::mutex> m_spModelMutex;
         std::vector<Variable> m_variables;
 
     public:

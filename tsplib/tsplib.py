@@ -25,12 +25,13 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     start_positions = np.array(start_positions, dtype=np.uint64)
     end_positions = np.array(end_positions, dtype=np.uint64)
     weights = np.array(weights, dtype=np.int32)
+    number_of_threads = 0
     lb = c_double(0)
     ub = c_double(0)
     pathsBuffer = np.zeros(shape=(N,), dtype=np.uint64)
     offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
-    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, byref(lb), byref(ub), pathsBuffer, offsets)
+    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, number_of_threads, byref(lb), byref(ub), pathsBuffer, offsets)
     if result < 0:
         print(f'error: {result}')
         return None, None, result, result
@@ -63,6 +64,7 @@ def main(dll_path, timeout_ms):
         ndpointer(c_size_t, flags='C_CONTIGUOUS'), # end_positions
         ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
         c_int, # timeout
+        c_size_t, # numberOfThreads
         POINTER(c_double), # lowerBound
         POINTER(c_double), # upperBound
         ndpointer(c_size_t, flags='C_CONTIGUOUS'), # paths

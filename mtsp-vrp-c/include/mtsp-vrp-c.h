@@ -18,7 +18,7 @@
 extern "C"
 {
     MTSP_VRP_C_EXPORT int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions, const size_t* end_positions, const int* weights, int timeout_ms,
-        double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets);
+        size_t numberOfThreads, double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets);
 }
 
 #endif

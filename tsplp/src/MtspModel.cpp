@@ -190,7 +190,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
 {
     using namespace std::chrono_literals;
 
-    const auto threadCount = noOfThreads.value_or(std::thread::hardware_concurrency());
+    const auto threadCount = noOfThreads && *noOfThreads > 0 ? *noOfThreads : std::thread::hardware_concurrency();
 
     auto remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
 

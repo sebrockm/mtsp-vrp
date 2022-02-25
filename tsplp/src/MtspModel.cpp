@@ -203,20 +203,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
     BranchAndCutQueue queue;
     ConstraintDeque constraints(threadCount);
 
-    //std::jthread printer([&](std::stop_token token)
-    //{
-    //    while (!token.stop_requested())
-    //    {
-    //        std::this_thread::sleep_for(std::chrono::milliseconds{ 100 });
-    //        const auto [lb, ub] = [&]
-    //        {
-    //            std::unique_lock lock{ bestResultMutex };
-    //            return std::make_pair(bestResult.LowerBound, bestResult.UpperBound);
-    //        }();
-    //        printf("[%7.1lf, %7.1lf] S: %.4zd T: %.2zd      \r", lb , ub, queue.GetSize(), queue.GetWorkedOnSize());
-    //    }
-    //});
-
     const auto threadLoop = [&](const size_t threadId)
     {
         auto model = m_model;
@@ -353,8 +339,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
 
     for (auto& thread : threads)
         thread.join();
-
-    //printer.request_stop();
 
     if (m_bestResult.LowerBound < m_bestResult.UpperBound && std::chrono::steady_clock::now() >= m_endTime)
         m_bestResult.IsTimeoutHit = true;

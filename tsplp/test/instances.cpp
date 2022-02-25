@@ -4,8 +4,6 @@
 #include <catch2/catch.hpp>
 #include <chrono>
 
-#include <xtensor/xnpy.hpp>
-
 TEST_CASE("br17.atsp", "[instances]")
 {
     xt::xtensor<int, 2> weights =
@@ -142,30 +140,3 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     REQUIRE(result.LowerBound == Approx(1200));
     REQUIRE(result.UpperBound == Approx(1200));
 }
-
-//TEST_CASE("configurable bench", "[instances]")
-//{
-//    const auto weights = xt::load_npy<int>("C:\\Users\\sebas\\source\\repos\\mtsp-vrp\\tsplib\\tsplib\\tsp\\bayg29.tsp.weights.npy");
-//
-//    xt::xtensor<int, 1> startPositions{ 0 };
-//    xt::xtensor<int, 1> endPositions{ 0 };
-//
-//    tsplp::MtspModel model{ startPositions, endPositions, weights };
-//    auto result = model.BranchAndCutSolve(std::chrono::minutes{ 10 });
-//
-//    REQUIRE(result.LowerBound == Approx(1163));
-//    REQUIRE(result.UpperBound == Approx(1163));
-//}
-
-//TEST_CASE("configurable bench 4 agents vrp", "[instances]")
-//{
-//    const auto weights = xt::load_npy<int>("C:\\Users\\sebas\\source\\repos\\mtsp-vrp\\tsplib\\tsplib\\sop\\ft70.1.sop.weights.npy");
-//
-//    xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
-//    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
-//
-//    tsplp::MtspModel model{ startPositions, endPositions, weights };
-//    auto result = model.BranchAndCutSolve(std::chrono::seconds{ 10 });
-//
-//    REQUIRE(result.IsTimeoutHit);
-//}

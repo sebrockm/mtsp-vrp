@@ -8,8 +8,8 @@
 #include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>
 
-tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables, const xt::xtensor<int, 2>& weights)
-    : m_graph(variables.shape(1)), m_variables(variables), m_weights(weights)
+tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables, const xt::xtensor<int, 2>& weights, const Model& model)
+    : m_graph(variables.shape(1)), m_variables(variables), m_weights(weights), m_model(model)
 {
     const auto N = variables.shape(1);
     assert(variables.shape(2) == N);
@@ -64,7 +64,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
         // it turns out that this manual summing is much faster than the outcommented "nicer" version above
         double sum = 0.0;
         for (size_t a = 0; a < A; ++a)
-            sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph)).GetObjectiveValue();
+            sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph)).GetObjectiveValue(m_model);
         return sum;
     };
 

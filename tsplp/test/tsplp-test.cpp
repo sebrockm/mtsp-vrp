@@ -15,12 +15,12 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
     auto x2 = model.GetVariables()[1];
     auto x3 = model.GetVariables()[2];
 
-    x1.SetLowerBound(0);
-    x1.SetUpperBound(4);
-    x2.SetLowerBound(-1);
-    x2.SetUpperBound(1);
-    x3.SetLowerBound(-std::numeric_limits<double>::max());
-    x3.SetUpperBound(std::numeric_limits<double>::max());
+    x1.SetLowerBound(0, model);
+    x1.SetUpperBound(4, model);
+    x2.SetLowerBound(-1, model);
+    x2.SetUpperBound(1, model);
+    x3.SetLowerBound(-std::numeric_limits<double>::max(), model);
+    x3.SetUpperBound(std::numeric_limits<double>::max(), model);
 
     auto objective = x1 + 4 * x2 + 9 * x3 - 10;
     model.SetObjective(objective);
@@ -37,8 +37,8 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
     auto status = model.Solve(10ms);
 
     REQUIRE(status == tsplp::Status::Optimal);
-    REQUIRE(c1.Evaluate());
-    REQUIRE(c2.Evaluate());
-    REQUIRE(c3.Evaluate());
-    REQUIRE(objective.Evaluate() == Approx(44));
+    REQUIRE(c1.Evaluate(model));
+    REQUIRE(c2.Evaluate(model));
+    REQUIRE(c3.Evaluate(model));
+    REQUIRE(objective.Evaluate(model) == Approx(44));
 }

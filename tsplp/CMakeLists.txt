@@ -49,11 +49,13 @@ target_precompile_headers(tsplp
 		<algorithm>
 		<cassert>
 		<cmath>
+		<condition_variable>
 		<future>
 		<limits>
+		<mutex>
 		<optional>
-		<queue>
 		<stdexcept>
+		<thread>
 		<unordered_set>
 )
 

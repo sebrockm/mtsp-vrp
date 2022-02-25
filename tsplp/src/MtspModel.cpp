@@ -1,46 +1,50 @@
 #include "MtspModel.hpp"
+#include "BranchAndCutQueue.hpp"
+#include "ConstraintDeque.hpp"
 #include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <queue>
 #include <stdexcept>
+#include <thread>
+
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xview.hpp>
 
 namespace
 {
-    void FixVariables(std::span<tsplp::Variable> variables, double value)
+    void FixVariables(std::span<tsplp::Variable> variables, double value, tsplp::Model& model)
     {
         for (auto v : variables)
         {
-            v.SetLowerBound(value);
-            v.SetUpperBound(value);
+            v.SetLowerBound(value, model);
+            v.SetUpperBound(value, model);
         }
     }
 
-    void UnfixVariables(std::span<tsplp::Variable> variables)
+    void UnfixVariables(std::span<tsplp::Variable> variables, tsplp::Model& model)
     {
         for (auto v : variables)
         {
-            v.SetLowerBound(0.0);
-            v.SetUpperBound(1.0);
+            v.SetLowerBound(0.0, model);
+            v.SetUpperBound(1.0, model);
         }
     }
 
-    std::optional<tsplp::Variable> FindFractionalVariable(std::span<const tsplp::Variable> variables, double epsilon = 1.e-10)
+    std::optional<tsplp::Variable> FindFractionalVariable(const tsplp::Model& model, double epsilon = 1.e-10)
     {
         std::optional<tsplp::Variable> closest = std::nullopt;
         double minAbs = 1.0;
-        for (auto v : variables)
+        for (auto v : model.GetVariables())
         {
-            if (epsilon <= v.GetObjectiveValue() && v.GetObjectiveValue() <= 1.0 - epsilon)
+            if (epsilon <= v.GetObjectiveValue(model) && v.GetObjectiveValue(model) <= 1.0 - epsilon)
             {
-                if (std::abs(v.GetObjectiveValue() - 0.5) < minAbs)
+                if (std::abs(v.GetObjectiveValue(model) - 0.5) < minAbs)
                 {
-                    minAbs = std::abs(v.GetObjectiveValue() - 0.5);
+                    minAbs = std::abs(v.GetObjectiveValue(model) - 0.5);
                     closest = v;
                     if (minAbs < epsilon)
                         break;
@@ -182,9 +186,11 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_model.AddConstraints(constraints);
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads)
 {
     using namespace std::chrono_literals;
+
+    const auto threadCount = noOfThreads && *noOfThreads > 0 ? *noOfThreads : std::thread::hardware_concurrency();
 
     auto remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
 
@@ -194,117 +200,145 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
         return m_bestResult;
     }
 
-    if (const auto status = m_model.Solve(remainingTime); status != Status::Optimal)
-    {
-        if (status == Status::Timeout)
-        {
-            assert(std::chrono::steady_clock::now() >= m_endTime);
-            m_bestResult.IsTimeoutHit = true;
-        }
-        return m_bestResult;
-    }
+    BranchAndCutQueue queue;
+    ConstraintDeque constraints(threadCount);
 
-    m_bestResult.LowerBound = m_objective.Evaluate();
-    std::vector<Variable> fixedVariables0{};
-    std::vector<Variable> fixedVariables1{};
-
-    struct SData
+    const auto threadLoop = [&](const size_t threadId)
     {
-        double lowerBound = -std::numeric_limits<double>::max();
+        auto model = m_model;
+        graph::Separator separator(X, m_weightManager, model);
+
         std::vector<Variable> fixedVariables0{};
         std::vector<Variable> fixedVariables1{};
-        bool operator>(SData const& sd) const { return lowerBound > sd.lowerBound; }
+
+        while (true)
+        {
+            UnfixVariables(fixedVariables0, model);
+            UnfixVariables(fixedVariables1, model);
+
+            auto top = queue.Pop(threadId);
+            if (!top.has_value())
+                break;
+
+            if (std::chrono::steady_clock::now() >= m_endTime)
+            {
+                queue.ClearAll();
+                break;
+            }
+
+            fixedVariables0 = std::move(top->FixedVariables0);
+            fixedVariables1 = std::move(top->FixedVariables1);
+
+            FixVariables(fixedVariables0, 0.0, model);
+            FixVariables(fixedVariables1, 1.0, model);
+
+            constraints.PopToModel(threadId, model);
+
+            remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+
+            if (model.Solve(remainingTime) != Status::Optimal)
+            {
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
+            const auto currentLowerBound = std::ceil(m_objective.Evaluate(model) - 1.e-10);
+            queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
+
+            // do exploiting here
+
+            {
+                std::unique_lock lock{ m_bestResultMutex };
+
+                const auto threadLowerBound = std::min(m_bestResult.UpperBound, currentLowerBound);
+
+                m_bestResult.LowerBound = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
+
+                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
+                {
+                    queue.ClearAll();
+                    break;
+                }
+
+                if (currentLowerBound >= m_bestResult.UpperBound)
+                {
+                    queue.NotifyNodeDone(threadId);
+                    continue;
+                }
+            }
+
+            // fix variables according to reduced costs (dj)
+
+            if (auto ucut = separator.Ucut(); ucut.has_value())
+            {
+                constraints.Push(std::move(*ucut));
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
+            if (auto pisigma = separator.PiSigma(); pisigma.has_value())
+            {
+                constraints.Push(std::move(*pisigma));
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
+            if (auto pi = separator.Pi(); pi.has_value())
+            {
+                constraints.Push(std::move(*pi));
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
+            if (auto sigma = separator.Sigma(); sigma.has_value())
+            {
+                constraints.Push(std::move(*sigma));
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
+            const auto fractionalVar = FindFractionalVariable(model);
+
+            if (!fractionalVar.has_value())
+            {
+                std::unique_lock lock{ m_bestResultMutex };
+
+                if (currentLowerBound >= m_bestResult.UpperBound) // another thread may have updated UpperBound since the last check
+                {
+                    queue.NotifyNodeDone(threadId);
+                    continue;
+                }
+
+                m_bestResult.UpperBound = currentLowerBound;
+                m_bestResult.Paths = CreatePathsFromVariables(model);
+
+                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
+                {
+                    queue.ClearAll();
+                    break;
+                }
+                else
+                {
+                    queue.NotifyNodeDone(threadId);
+                    continue;
+                }
+            }
+
+            queue.PushBranch(currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value());
+            queue.NotifyNodeDone(threadId);
+        }
     };
 
-    std::priority_queue<SData, std::vector<SData>, std::greater<>> queue{};
-    queue.emplace(m_bestResult.LowerBound, fixedVariables0, fixedVariables1);
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < threadCount; ++i)
+        threads.emplace_back(threadLoop, i);
 
-    graph::Separator separator(X, m_weightManager);
-
-    while (!queue.empty() && std::chrono::steady_clock::now() < m_endTime)
-    {
-        UnfixVariables(fixedVariables0);
-        UnfixVariables(fixedVariables1);
-
-        m_bestResult.LowerBound = queue.top().lowerBound;
-        fixedVariables0 = queue.top().fixedVariables0;
-        fixedVariables1 = queue.top().fixedVariables1;
-        queue.pop();
-
-        FixVariables(fixedVariables0, 0.0);
-        FixVariables(fixedVariables1, 1.0);
-
-        remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
-
-        if (m_model.Solve(remainingTime) != Status::Optimal)
-            continue;
-
-        const auto currentLowerBound = std::ceil(m_objective.Evaluate() - 1.e-10);
-
-        // do exploiting here
-
-        m_bestResult.LowerBound = std::min(m_bestResult.UpperBound, currentLowerBound);
-        if (!queue.empty())
-            m_bestResult.LowerBound = std::min(currentLowerBound, queue.top().lowerBound);
-
-        if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
-            break;
-
-        if (currentLowerBound >= m_bestResult.UpperBound)
-            continue;
-
-        // fix variables according to reduced costs (dj)
-
-        if (const auto ucut = separator.Ucut(); ucut.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*ucut, &*ucut + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto pisigma = separator.PiSigma(); pisigma.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*pisigma, &*pisigma + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto pi = separator.Pi(); pi.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*pi, &*pi + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        if (const auto sigma = separator.Sigma(); sigma.has_value())
-        {
-            m_model.AddConstraints(std::span{ &*sigma, &*sigma + 1 });
-            queue.emplace(currentLowerBound, fixedVariables0, fixedVariables1);
-            continue;
-        }
-
-        const auto fractionalVar = FindFractionalVariable(m_model.GetVariables());
-
-        if (!fractionalVar.has_value())
-        {
-            m_bestResult.UpperBound = currentLowerBound;
-            m_bestResult.Paths = CreatePathsFromVariables();
-
-            if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
-                break;
-            else
-                continue;
-        }
-
-        auto newFixedVariables0 = fixedVariables0;
-        newFixedVariables0.push_back(fractionalVar.value());
-
-        auto newFixedVariables1 = fixedVariables1;
-        newFixedVariables1.push_back(fractionalVar.value());
-
-        queue.emplace(currentLowerBound, std::move(newFixedVariables0), fixedVariables1);
-        queue.emplace(currentLowerBound, fixedVariables0, std::move(newFixedVariables1));
-    }
+    for (auto& thread : threads)
+        thread.join();
 
     if (m_bestResult.LowerBound < m_bestResult.UpperBound && std::chrono::steady_clock::now() >= m_endTime)
         m_bestResult.IsTimeoutHit = true;
@@ -314,7 +348,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve()
     return m_bestResult;
 }
 
-std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables() const
+std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(const Model& model) const
 {
     std::vector<std::vector<size_t>> paths(A);
 
@@ -326,7 +360,7 @@ std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables() co
         {
             for (size_t n = 0; n < N; ++n)
             {
-                if (X(a, paths[a].back(), n).GetObjectiveValue() > 1 - 1.e-10)
+                if (X(a, paths[a].back(), n).GetObjectiveValue(model) > 1 - 1.e-10)
                 {
                     paths[a].push_back(n);
                     break;

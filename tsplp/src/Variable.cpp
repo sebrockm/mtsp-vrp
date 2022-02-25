@@ -1,35 +1,36 @@
 #include "Variable.hpp"
+#include "Model.hpp"
 
 #include <ClpSimplex.hpp>
 
-tsplp::Variable::Variable(ClpSimplex& model, size_t id)
-    : m_pModel(&model), m_id(id)
+tsplp::Variable::Variable(size_t id)
+    : m_id(id)
 {
 }
 
-double tsplp::Variable::GetUpperBound() const
+double tsplp::Variable::GetUpperBound(const Model& model) const
 {
-    return m_pModel->getColUpper()[m_id];
+    return model.m_spSimplexModel->getColUpper()[m_id];
 }
 
-double tsplp::Variable::GetLowerBound() const
+double tsplp::Variable::GetLowerBound(const Model& model) const
 {
-    return m_pModel->getColLower()[m_id];
+    return model.m_spSimplexModel->getColLower()[m_id];
 }
 
-void tsplp::Variable::SetUpperBound(double upperBound)
+void tsplp::Variable::SetUpperBound(double upperBound, Model& model) const
 {
-    m_pModel->setColumnUpper(static_cast<int>(m_id), upperBound);
+    model.m_spSimplexModel->setColumnUpper(static_cast<int>(m_id), upperBound);
 }
 
-void tsplp::Variable::SetLowerBound(double lowerBound)
+void tsplp::Variable::SetLowerBound(double lowerBound, Model& model) const
 {
-    m_pModel->setColumnLower(static_cast<int>(m_id), lowerBound);
+    model.m_spSimplexModel->setColumnLower(static_cast<int>(m_id), lowerBound);
 }
 
-double tsplp::Variable::GetObjectiveValue() const
+double tsplp::Variable::GetObjectiveValue(const Model& model) const
 {
-    return m_pModel->primalColumnSolution()[m_id];
+    return model.m_spSimplexModel->primalColumnSolution()[m_id];
 }
 
 size_t tsplp::Variable::GetId() const

@@ -7,6 +7,7 @@
 namespace tsplp
 {
     class LinearConstraint;
+    class Model;
     class Variable;
     class WeightManager;
 }
@@ -20,10 +21,11 @@ namespace tsplp::graph
     private:
         const xt::xtensor<Variable, 3>& m_variables;
         const WeightManager& m_weightManager;
+        const Model& m_model;
         std::unique_ptr<PiSigmaSupportGraph> m_spSupportGraph;
 
     public:
-        Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager);
+        Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager, const Model& model);
         ~Separator();
 
         std::optional<LinearConstraint> Ucut() const;

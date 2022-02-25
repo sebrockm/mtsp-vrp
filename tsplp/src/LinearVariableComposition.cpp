@@ -76,11 +76,11 @@ tsplp::LinearVariableComposition::LinearVariableComposition(const Variable& vari
 {
 }
 
-double tsplp::LinearVariableComposition::Evaluate() const
+double tsplp::LinearVariableComposition::Evaluate(const Model& model) const
 {
     double result = m_constant;
     for (size_t i = 0; i < m_coefficients.size(); ++i)
-        result += m_coefficients[i] * m_variables[i].GetObjectiveValue();
+        result += m_coefficients[i] * m_variables[i].GetObjectiveValue(model);
 
     return result;
 }

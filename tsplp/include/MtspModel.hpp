@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <limits>
+#include <mutex>
 #include <vector>
 #include <xtensor/xtensor.hpp>
 
@@ -37,14 +38,15 @@ namespace tsplp
         LinearVariableComposition m_objective;
 
         MtspResult m_bestResult{};
+        std::mutex m_bestResultMutex;
 
     public:
         MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions, xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
 
     public:
-        MtspResult BranchAndCutSolve();
+        MtspResult BranchAndCutSolve(std::optional<size_t> noOfThreads = std::nullopt);
 
     private:
-        std::vector<std::vector<size_t>> CreatePathsFromVariables() const;
+        std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
     };
 }

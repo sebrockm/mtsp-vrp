@@ -68,8 +68,11 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     const auto heuristicTimeout = timeout - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_startTime);
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
 
-    m_bestResult.UpperBound = static_cast<double>(nearestInsertionObjective);
-    m_bestResult.Paths = std::move(nearestInsertionPaths);
+    m_bestResult.UpperBound = nearestInsertionObjective;
+    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(nearestInsertionPaths), m_weightManager.W());
+
+    m_bestResult.Paths = std::move(twoOptedPaths);
+    m_bestResult.UpperBound -= twoOptImprovement;
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
@@ -245,7 +248,34 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
             const auto currentLowerBound = std::ceil(m_objective.Evaluate(model) - 1.e-10);
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            // do exploiting here
+            const auto currentUpperBound = [this]
+            {
+                std::unique_lock lock{ m_bestResultMutex };
+                return m_bestResult.UpperBound;
+            }();
+
+            if (2.5 * currentLowerBound > currentUpperBound)
+            {
+                const auto fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
+
+                remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+                auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
+                    fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), remainingTime);
+
+                if (!exploitedPaths.empty())
+                {
+                    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(exploitedPaths), m_weightManager.W());
+                    exploitedObjective -= twoOptImprovement;
+
+                    std::unique_lock lock{ m_bestResultMutex };
+
+                    if (exploitedObjective < m_bestResult.UpperBound)
+                    {
+                        m_bestResult.UpperBound = exploitedObjective;
+                        m_bestResult.Paths = std::move(twoOptedPaths);
+                    }
+                }
+            }
 
             {
                 std::unique_lock lock{ m_bestResultMutex };

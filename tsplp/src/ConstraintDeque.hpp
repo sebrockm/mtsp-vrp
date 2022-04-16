@@ -14,7 +14,7 @@ namespace tsplp
     {
     private:
         std::deque<LinearConstraint> m_deque;
-        std::vector<size_t> m_readPositions;
+        std::vector<ptrdiff_t> m_readPositions;
         std::mutex m_mutex;
 
     public:

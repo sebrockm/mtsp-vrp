@@ -18,13 +18,12 @@ void tsplp::ConstraintDeque::PopToModel(size_t threadId, Model& model)
 {
     std::unique_lock lock{ m_mutex };
 
-    for (auto position = m_readPositions[threadId]; position != m_deque.size(); ++position)
-        model.AddConstraints({ &m_deque[position], &m_deque[position] + 1 });
+    model.AddConstraints(m_deque.cbegin() + m_readPositions[threadId], m_deque.cend());
 
-    m_readPositions[threadId] = m_deque.size();
+    m_readPositions[threadId] = std::ssize(m_deque);
 
     const auto minReadPosition = *std::min_element(begin(m_readPositions), end(m_readPositions));
-    m_deque.erase(m_deque.begin(), m_deque.begin() + static_cast<ptrdiff_t>(minReadPosition));
+    m_deque.erase(m_deque.begin(), m_deque.begin() + minReadPosition);
 
     for (auto& position : m_readPositions)
         position -= minReadPosition;

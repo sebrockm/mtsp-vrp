@@ -42,7 +42,9 @@ target_precompile_headers(tsplp
 		<boost/range/iterator_range.hpp>
 
 		<xtensor/xadapt.hpp>
+		<xtensor/xarray.hpp>
 		<xtensor/xindex_view.hpp>
+		<xtensor/xmanipulation.hpp>
 		<xtensor/xvectorize.hpp>
 		<xtensor/xview.hpp>
 

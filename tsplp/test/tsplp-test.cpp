@@ -31,7 +31,7 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
 
     std::vector<tsplp::LinearConstraint> constraints{ c1, c2, c3 };
 
-    model.AddConstraints(constraints);
+    model.AddConstraints(constraints.cbegin(), constraints.cend());
 
     using namespace std::chrono_literals;
     auto status = model.Solve(10ms);

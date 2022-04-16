@@ -6,7 +6,6 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
-#include <span>
 #include <vector>
 
 class ClpSimplex;
@@ -38,7 +37,8 @@ namespace tsplp
 
         const std::vector<Variable>& GetVariables() const { return m_variables; }
         void SetObjective(const LinearVariableComposition& objective);
-        void AddConstraints(std::span<const LinearConstraint> constraints);
+        template <typename RandIterator>
+        void AddConstraints(RandIterator first, RandIterator last);
         Status Solve(std::chrono::milliseconds timeout);
     };
 

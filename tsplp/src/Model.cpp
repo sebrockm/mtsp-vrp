@@ -2,11 +2,15 @@
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 
+#include <boost/range/iterator_range.hpp>
+
 #include <ClpSimplex.hpp>
+#include <deque>
 #include <future>
 #include <limits>
 #include <stdexcept>
 #include <thread>
+#include <vector>
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel{ std::make_shared<ClpSimplex>() }, m_spModelMutex{ std::make_shared<std::mutex>() }, m_variables{}
@@ -56,23 +60,24 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
         m_spSimplexModel->setObjectiveCoefficient(static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
 }
 
-void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
+template <typename RandIterator>
+void tsplp::Model::AddConstraints(RandIterator first, RandIterator last)
 {
-    if (std::ssize(constraints) > std::numeric_limits<int>::max())
+    const auto numberOfConstraints = static_cast<size_t>(last - first);
+    if (numberOfConstraints > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many constraints");
 
     std::vector<double> lowerBounds, upperBounds;
-    lowerBounds.reserve(constraints.size());
-    upperBounds.reserve(constraints.size());
+    lowerBounds.reserve(numberOfConstraints);
+    upperBounds.reserve(numberOfConstraints);
 
     std::vector<int> rowStarts;
-    rowStarts.reserve(constraints.size() + 1);
+    rowStarts.reserve(numberOfConstraints + 1);
     rowStarts.push_back(0);
 
     std::vector<int> columns;
     std::vector<double> elements;
-
-    for (const auto& c : constraints)
+    for (const auto& c : boost::make_iterator_range(first, last))
     {
         lowerBounds.push_back(c.GetLowerBound());
         upperBounds.push_back(c.GetUpperBound());
@@ -87,8 +92,12 @@ void tsplp::Model::AddConstraints(std::span<const LinearConstraint> constraints)
 
     std::unique_lock lock{ *m_spModelMutex };
 
-    m_spSimplexModel->addRows(static_cast<int>(std::ssize(constraints)), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
+    m_spSimplexModel->addRows(static_cast<int>(numberOfConstraints), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
 }
+
+// do needed instantiations explicitly so the code can stay in cpp file
+template void tsplp::Model::AddConstraints(std::deque<tsplp::LinearConstraint>::const_iterator first, std::deque<tsplp::LinearConstraint>::const_iterator last);
+template void tsplp::Model::AddConstraints(std::vector<tsplp::LinearConstraint>::const_iterator first, std::vector<tsplp::LinearConstraint>::const_iterator last);
 
 tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
 {

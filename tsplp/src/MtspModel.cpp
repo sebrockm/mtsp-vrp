@@ -83,7 +83,6 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_model.SetObjective(m_objective);
 
     const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
-    const auto D = dependencies.size();
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {

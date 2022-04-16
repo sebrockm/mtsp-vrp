@@ -23,7 +23,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     const auto [heuristicPaths, _] = NearestInsertion((1 - fractionalSolution) * weights, startPositions, endPositions, timeout);
 
     if (heuristicPaths.empty())
-        return { {}, 0 };
+        return { heuristicPaths, 0 };
 
     double sum = 0.0;
     for (size_t a = 0; a < A; ++a)
@@ -98,7 +98,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     for (const auto n : boost::adaptors::reverse(order))
     {
         if (std::chrono::steady_clock::now() >= startTime + timeout)
-            return { {}, 0 };
+            return { std::vector<std::vector<size_t>>{}, 0 };
 
         if (std::find(startPositions.begin(), startPositions.end(), n) != startPositions.end()
             || std::find(endPositions.begin(), endPositions.end(), n) != endPositions.end())

@@ -63,7 +63,7 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 template <typename RandIterator>
 void tsplp::Model::AddConstraints(RandIterator first, RandIterator last)
 {
-    const auto numberOfConstraints = last - first;
+    const auto numberOfConstraints = static_cast<size_t>(last - first);
     if (numberOfConstraints > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many constraints");
 

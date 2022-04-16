@@ -91,9 +91,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
         return;
     }
 
-    std::deque<LinearConstraint> constraints;
-    const auto numberOfConstraints = A * N + 3 * N + 3 * A + D * (3 * A + 1) + N * (N - 1) / 2;
-    //constraints.reserve(numberOfConstraints);
+    std::vector<LinearConstraint> constraints;
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)

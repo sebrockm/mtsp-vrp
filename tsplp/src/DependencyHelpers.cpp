@@ -51,19 +51,19 @@ namespace tsplp
 
         for (size_t u = 0; u < N; ++u)
         {
-            const auto rangeBegin = m_outgoing.size();
+            const auto rangeBegin = ssize(m_outgoing);
 
             for (size_t v = 0; v < N; ++v)
                 if (weights(v, u) == -1)
                     m_outgoing.push_back(v);
 
-            const auto rangeEnd = m_outgoing.size();
+            const auto rangeEnd = ssize(m_outgoing);
             m_node2outgoingSpanMap.emplace_back(m_outgoing.cbegin() + rangeBegin, m_outgoing.cbegin() + rangeEnd);
         }
 
         for (size_t u = 0; u < N; ++u)
         {
-            const auto rangeBegin = m_incoming.size();
+            const auto rangeBegin = ssize(m_incoming);
 
             for (size_t v = 0; v < N; ++v)
             {
@@ -74,7 +74,7 @@ namespace tsplp
                 }
             }
 
-            const auto rangeEnd = m_incoming.size();
+            const auto rangeEnd = ssize(m_incoming);
             m_node2incomingSpanMap.emplace_back(m_incoming.cbegin() + rangeBegin, m_incoming.cbegin() + rangeEnd);
         }
     }

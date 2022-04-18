@@ -22,13 +22,11 @@ namespace tsplp::graph
     using UndirectedGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
 
     Separator::Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager, const Model& model)
-        : m_variables(variables), m_weightManager(weightManager), m_model(model), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.W(), model))
+        : m_variables(variables), m_weightManager(weightManager), m_model(model), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.W(), weightManager.Dependencies(), model))
     {
     }
 
-    Separator::~Separator()
-    {
-    }
+    Separator::~Separator() noexcept = default;
 
     std::optional<LinearConstraint> Separator::Ucut() const
     {
@@ -64,7 +62,7 @@ namespace tsplp::graph
 
     std::optional<LinearConstraint> Separator::Pi() const
     {
-        if (!m_weightManager.HasDependencies())
+        if (m_weightManager.Dependencies().GetArcs().empty())
             return std::nullopt;
 
         const auto N = m_weightManager.N();
@@ -72,8 +70,7 @@ namespace tsplp::graph
 
         for (size_t n = 0; n < N; ++n)
         {
-            const auto nDependsOn = equal(xt::view(m_weightManager.W(), n, xt::all()), -1);
-            if (!xt::any(nDependsOn))
+            if (m_weightManager.Dependencies().GetIncomingSpan(n).empty())
                 continue;
 
             for (size_t a = 0; a < A; ++a)
@@ -105,7 +102,7 @@ namespace tsplp::graph
 
     std::optional<LinearConstraint> Separator::Sigma() const
     {
-        if (!m_weightManager.HasDependencies())
+        if (m_weightManager.Dependencies().GetArcs().empty())
             return std::nullopt;
 
         const auto N = m_weightManager.N();
@@ -113,8 +110,7 @@ namespace tsplp::graph
 
         for (size_t n = 0; n < N; ++n)
         {
-            const auto dependsOnN = equal(xt::view(m_weightManager.W(), xt::all(), n), -1);
-            if (!xt::any(dependsOnN))
+            if (m_weightManager.Dependencies().GetOutgoingSpan(n).empty())
                 continue;
 
             for (size_t a = 0; a < A; ++a)
@@ -144,10 +140,10 @@ namespace tsplp::graph
 
     std::optional<LinearConstraint> Separator::PiSigma() const
     {
-        if (!m_weightManager.HasDependencies())
+        if (m_weightManager.Dependencies().GetArcs().empty())
             return std::nullopt;
 
-        for (const auto [t, s] : xt::argwhere(equal(m_weightManager.W(), -1)))
+        for (const auto [s, t] : m_weightManager.Dependencies().GetArcs())
         {
             const auto [cutSize, cutEdges] = m_spSupportGraph->FindMinCut(s, t, PiSigmaSupportGraph::ConstraintType::PiSigma);
 

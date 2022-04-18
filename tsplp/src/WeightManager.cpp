@@ -7,7 +7,7 @@
 #include <xtensor/xview.hpp>
 
 tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> originalStartPositions, xt::xtensor<size_t, 1> originalEndPositions)
-    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions), m_hasDependencies(xt::any(equal(m_weights, -1)))
+    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions)
 {
     if (m_startPositions.size() != m_endPositions.size())
         throw std::runtime_error("Start and end positions must have the same size.");
@@ -71,6 +71,7 @@ tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<siz
     }
 
     m_weights = CreateTransitiveDependencies(std::move(m_weights));
+    m_spDependencies = std::make_unique<DependencyGraph>(m_weights);
 }
 
 std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(std::vector<std::vector<size_t>> paths) const

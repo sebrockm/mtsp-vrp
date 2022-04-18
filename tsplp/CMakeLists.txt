@@ -56,6 +56,7 @@ target_precompile_headers(tsplp
 		<limits>
 		<mutex>
 		<optional>
+		<span>
 		<stdexcept>
 		<thread>
 		<unordered_set>

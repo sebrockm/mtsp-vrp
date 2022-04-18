@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+from tqdm import tqdm
 
 solve_mtsp_vrp = None
 
@@ -84,8 +85,10 @@ def main(dll_path, timeout_ms):
 
     missing_best_known_solutions = ['ESC11.sop']
 
-    for f in files:
+    progress_bar = tqdm(files)
+    for f in progress_bar:
         base_name = os.path.basename(f)
+        progress_bar.set_description(base_name)
         problem_name, ext = os.path.splitext(base_name)
         kind = ext[1:]
         if kind not in ['tsp', 'atsp', 'sop']:

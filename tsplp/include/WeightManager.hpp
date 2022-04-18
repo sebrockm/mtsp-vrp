@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DependencyHelpers.hpp"
+
 #include <xtensor/xtensor.hpp>
 
 #include <unordered_map>
@@ -14,7 +16,7 @@ namespace tsplp
         xt::xtensor<size_t, 1> m_startPositions;
         xt::xtensor<size_t, 1> m_endPositions;
         std::unordered_map<size_t, size_t> m_toOriginal;
-        bool m_hasDependencies;
+        std::unique_ptr<DependencyGraph> m_spDependencies;
 
     public:
         WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions);
@@ -24,7 +26,7 @@ namespace tsplp
         const auto& EndPositions() const { return m_endPositions; }
         const auto A() const { return m_startPositions.shape(0); };
         const auto N() const { return m_weights.shape(0); }
-        bool HasDependencies() const { return m_hasDependencies; }
+        const auto& Dependencies() const { return *m_spDependencies; }
 
         std::vector<std::vector<size_t>> TransformPathsBack(std::vector<std::vector<size_t>> paths) const;
     };

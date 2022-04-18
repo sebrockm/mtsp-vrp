@@ -8,8 +8,9 @@
 #include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>
 
-tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables, const xt::xtensor<int, 2>& weights, const Model& model)
-    : m_graph(variables.shape(1)), m_variables(variables), m_weights(weights), m_model(model)
+tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables,
+    const xt::xtensor<int, 2>& weights, const DependencyGraph& dependencies, const Model& model)
+    : m_graph(variables.shape(1)), m_variables(variables), m_weights(weights), m_dependencies(dependencies), m_model(model)
 {
     const auto N = variables.shape(1);
     assert(variables.shape(2) == N);
@@ -34,7 +35,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
 {
     struct Filter // cannot be a lambda because the filter must be default constructible
     {
-        const xt::xtensor<int, 2>* pw;
+        const DependencyGraph* d;
         ConstraintType x;
         PiSigmaVertex s;
         PiSigmaVertex t;
@@ -43,17 +44,17 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
         {
             switch (x)
             {
-            case ConstraintType::Pi: return (*pw)(s, v) != -1;
-            case ConstraintType::Sigma: return (*pw)(v, t) != -1;
-            case ConstraintType::PiSigma: return (*pw)(s, v) != -1 && (*pw)(v, t) != -1;
+            case ConstraintType::Pi: return !d->HasArc(v, s);
+            case ConstraintType::Sigma: return !d->HasArc(t, v);
+            case ConstraintType::PiSigma: return !d->HasArc(v, s) && !d->HasArc(t, v);
             }
             return true;
         }
     };
 
-    auto filteredSupportGraph = make_filtered_graph(m_graph, boost::keep_all{}, Filter{ &m_weights, x, s, t });
+    auto filteredSupportGraph = make_filtered_graph(m_graph, boost::keep_all{}, Filter{ &m_dependencies, x, s, t });
 
-    const auto getCapacity = [&](PiSigmaEdge e)
+    const auto getCapacity = [&](const PiSigmaEdge& e)
     {
         // const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });
         // const auto values = xt::view(m_variables, xt::all(), source(e, filteredSupportGraph), target(e, filteredSupportGraph));
@@ -68,7 +69,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
         return sum;
     };
 
-    const auto getReverseEdge = [&](PiSigmaEdge e)
+    const auto getReverseEdge = [&](const PiSigmaEdge& e)
     {
         return edge(target(e, filteredSupportGraph), source(e, filteredSupportGraph), filteredSupportGraph).first;
     };
@@ -94,7 +95,7 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
 
     std::vector<std::pair<PiSigmaVertex, PiSigmaVertex>> result;
     result.reserve(num_edges(filteredSupportGraph));
-    for (const auto edge : boost::make_iterator_range(edges(filteredSupportGraph)))
+    for (const auto& edge : boost::make_iterator_range(edges(filteredSupportGraph)))
     {
         const auto u = source(edge, filteredSupportGraph);
         const auto v = target(edge, filteredSupportGraph);

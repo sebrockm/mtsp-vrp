@@ -66,10 +66,11 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_objective(xt::sum(m_weightManager.W() * X)())
 {
     const auto heuristicTimeout = timeout - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_startTime);
-    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), heuristicTimeout);
+    auto [nearestInsertionPaths, nearestInsertionObjective]
+        = NearestInsertion(m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), m_weightManager.Dependencies(), heuristicTimeout);
 
     m_bestResult.UpperBound = nearestInsertionObjective;
-    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(nearestInsertionPaths), m_weightManager.W());
+    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies());
 
     m_bestResult.Paths = std::move(twoOptedPaths);
     m_bestResult.UpperBound -= twoOptImprovement;
@@ -81,8 +82,6 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     }
 
     m_model.SetObjective(m_objective);
-
-    const auto dependencies = xt::argwhere(equal(m_weightManager.W(), -1));
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
@@ -134,7 +133,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
         constraints.emplace_back(X(a, m_weightManager.EndPositions()[a], m_weightManager.StartPositions()[(a + 1) % A]) == 1); // artificial connections from end to next start
     }
 
-    for (const auto [v, u] : dependencies)
+    for (const auto [u, v] : m_weightManager.Dependencies().GetArcs())
     {
         assert(std::find(m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), v) == m_weightManager.StartPositions().end());
         assert(std::find(m_weightManager.EndPositions().begin(), m_weightManager.EndPositions().end(), u) == m_weightManager.EndPositions().end());
@@ -257,11 +256,11 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
 
                 remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
                 auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
-                    fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), remainingTime);
+                    fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), m_weightManager.Dependencies(), remainingTime);
 
                 if (!exploitedPaths.empty())
                 {
-                    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(exploitedPaths), m_weightManager.W());
+                    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(exploitedPaths), m_weightManager.W(), m_weightManager.Dependencies());
                     exploitedObjective -= twoOptImprovement;
 
                     std::unique_lock lock{ m_bestResultMutex };

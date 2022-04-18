@@ -1,4 +1,5 @@
 #include "Heuristics.hpp"
+#include "DependencyHelpers.hpp"
 #include "TsplpExceptions.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
@@ -12,7 +13,8 @@
 
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSolution(
     xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
-    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions, std::chrono::milliseconds timeout)
+    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
+    const DependencyGraph& dependencies, std::chrono::milliseconds timeout)
 {
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
@@ -20,7 +22,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     if (weights.dimension() == 2)
         weights = xt::repeat(xt::view(weights, xt::newaxis(), xt::all()), A, 0);
 
-    const auto [heuristicPaths, _] = NearestInsertion((1 - fractionalSolution) * weights, startPositions, endPositions, timeout);
+    const auto [heuristicPaths, _] = NearestInsertion((1 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
 
     if (heuristicPaths.empty())
         return { heuristicPaths, 0 };
@@ -34,7 +36,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
 }
 
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
-    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions, std::chrono::milliseconds timeout)
+    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
+    const DependencyGraph& dependencies, std::chrono::milliseconds timeout)
 {
     const auto startTime = std::chrono::steady_clock::now();
 
@@ -51,11 +54,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
 
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
     boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(N);
-    const auto dependencies = xt::argwhere(equal(xt::view(weights, 0), -1));
-    for (const auto& vu : dependencies)
+    for (const auto [u, v] : dependencies.GetArcs())
     {
-        const auto v = vu[0];
-        const auto u = vu[1];
         add_edge(u, v, dependencyGraph);
         add_edge(u, v, dependencyGraphUndirected);
     }
@@ -141,7 +141,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     return { paths, cost };
 }
 
-std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vector<std::vector<size_t>> paths, xt::xarray<double> weights)
+std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vector<std::vector<size_t>> paths,
+    xt::xarray<double> weights, const DependencyGraph& dependencies)
 {
     assert(weights.dimension() == 2);
 
@@ -168,8 +169,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                         const auto v = paths[a2][j];
                         
                         if (a1 != a2 &&
-                            (xt::any(equal(xt::view(weights, u), -1.0)) || xt::any(equal(xt::view(weights, v), -1.0)) ||
-                                xt::any(equal(xt::view(weights, xt::all(), u), -1.0)) || xt::any(equal(xt::view(weights, xt::all(), v), -1.0))))
+                            (!dependencies.GetIncomingSpan(u).empty() || !dependencies.GetIncomingSpan(v).empty() ||
+                                !dependencies.GetOutgoingSpan(u).empty() || !dependencies.GetOutgoingSpan(v).empty()))
                             continue;
 
                         if (a1 == a2)
@@ -177,7 +178,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                             bool wouldBreakDependency = false;
                             for (auto k = i; k < j; ++k)
                             {
-                                if (weights(paths[a1][k + 1], u) == -1.0 || weights(v, paths[a1][k]) == -1.0)
+                                if (dependencies.HasArc(u, paths[a1][k + 1]) || dependencies.HasArc(paths[a1][k], v))
                                 {
                                     wouldBreakDependency = true;
                                     break;

@@ -26,7 +26,7 @@ namespace tsplp::graph
 
     public:
         Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager, const Model& model);
-        ~Separator();
+        ~Separator() noexcept;
 
         std::optional<LinearConstraint> Ucut() const;
 

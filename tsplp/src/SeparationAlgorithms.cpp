@@ -22,7 +22,7 @@ namespace tsplp::graph
     using UndirectedGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
 
     Separator::Separator(const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager, const Model& model)
-        : m_variables(variables), m_weightManager(weightManager), m_model(model), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.W(), weightManager.Dependencies(), model))
+        : m_variables(variables), m_weightManager(weightManager), m_model(model), m_spSupportGraph(std::make_unique<PiSigmaSupportGraph>(variables, weightManager.Dependencies(), model))
     {
     }
 
@@ -85,7 +85,7 @@ namespace tsplp::graph
                 {
 
                     LinearVariableComposition sum;
-                    for (const auto [u, v] : cutEdges)
+                    for (const auto& [u, v] : cutEdges)
                         sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
                     assert(std::abs(sum.Evaluate(m_model) - cutSize) < 1.e-10);
@@ -124,7 +124,7 @@ namespace tsplp::graph
                 if (cutSize < 1.0 - 1.e-10)
                 {
                     LinearVariableComposition sum;
-                    for (const auto [u, v] : cutEdges)
+                    for (const auto& [u, v] : cutEdges)
                         sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
                     auto constraint = sum >= 1;
@@ -143,14 +143,14 @@ namespace tsplp::graph
         if (m_weightManager.Dependencies().GetArcs().empty())
             return std::nullopt;
 
-        for (const auto [s, t] : m_weightManager.Dependencies().GetArcs())
+        for (const auto& [s, t] : m_weightManager.Dependencies().GetArcs())
         {
             const auto [cutSize, cutEdges] = m_spSupportGraph->FindMinCut(s, t, PiSigmaSupportGraph::ConstraintType::PiSigma);
 
             if (cutSize < 1.0 - 1.e-10)
             {
                 LinearVariableComposition sum;
-                for (const auto [u, v] : cutEdges)
+                for (const auto& [u, v] : cutEdges)
                     sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
 
                 assert(std::abs(sum.Evaluate(m_model) - cutSize) < 1.e-10);

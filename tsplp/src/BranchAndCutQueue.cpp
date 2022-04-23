@@ -107,7 +107,7 @@ void tsplp::BranchAndCutQueue::Push(double lowerBound, std::vector<Variable> fix
 
         needsNotify = m_heap.empty();
 
-        m_heap.emplace_back(lowerBound, std::move(fixedVariables0), std::move(fixedVariables1));
+        m_heap.push_back({lowerBound, std::move(fixedVariables0), std::move(fixedVariables1)});
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -133,10 +133,10 @@ void tsplp::BranchAndCutQueue::PushBranch(double lowerBound, std::vector<Variabl
         fixedVariables0.push_back(branchingVariable);
         copyFixedVariables1.push_back(branchingVariable);
 
-        m_heap.emplace_back(lowerBound, std::move(fixedVariables0), std::move(fixedVariables1));
+        m_heap.push_back({lowerBound, std::move(fixedVariables0), std::move(fixedVariables1)});
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
 
-        m_heap.emplace_back(lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1));
+        m_heap.push_back({lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1)});
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 

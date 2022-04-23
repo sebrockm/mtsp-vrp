@@ -24,8 +24,8 @@ namespace tsplp
         const auto& W() const { return m_weights; }
         const auto& StartPositions() const { return m_startPositions; }
         const auto& EndPositions() const { return m_endPositions; }
-        const auto A() const { return m_startPositions.shape(0); };
-        const auto N() const { return m_weights.shape(0); }
+        auto A() const { return m_startPositions.shape(0); };
+        auto N() const { return m_weights.shape(0); }
         const auto& Dependencies() const { return *m_spDependencies; }
 
         std::vector<std::vector<size_t>> TransformPathsBack(std::vector<std::vector<size_t>> paths) const;

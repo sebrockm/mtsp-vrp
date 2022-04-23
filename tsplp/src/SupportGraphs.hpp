@@ -24,12 +24,11 @@ namespace tsplp::graph
     private:
         PiSigmaSupportGraphImpl m_graph;
         const xt::xtensor<Variable, 3>& m_variables;
-        const xt::xtensor<int, 2>& m_weights;
         const DependencyGraph& m_dependencies;
         const Model& m_model;
 
     public:
-        PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables, const xt::xtensor<int, 2>& weights, const DependencyGraph& dependencies, const Model& model);
+        PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables, const DependencyGraph& dependencies, const Model& model);
 
     public:
         enum class ConstraintType

@@ -9,13 +9,11 @@
 #include <xtensor/xview.hpp>
 
 tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables,
-    const xt::xtensor<int, 2>& weights, const DependencyGraph& dependencies, const Model& model)
-    : m_graph(variables.shape(1)), m_variables(variables), m_weights(weights), m_dependencies(dependencies), m_model(model)
+    const DependencyGraph& dependencies, const Model& model)
+    : m_graph(variables.shape(1)), m_variables(variables), m_dependencies(dependencies), m_model(model)
 {
     const auto N = variables.shape(1);
     assert(variables.shape(2) == N);
-    assert(weights.shape(0) == N);
-    assert(weights.shape(1) == N);
 
     for (size_t u = 0; u < N; ++u)
     {

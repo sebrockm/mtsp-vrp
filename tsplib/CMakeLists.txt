@@ -16,19 +16,24 @@ set(testenv "${CMAKE_CURRENT_BINARY_DIR}/testenv")
 if (WIN32)
 	set(activate_command "\"${testenv}/Scripts/activate.bat\"")
 else()
-	set(activate_command . "\"${testenv}/bin/activate\"")
+	set(activate_command "source \"${testenv}/bin/activate\"")
 endif()
 
-file(GENERATE OUTPUT bench_script.sh CONTENT "\
+set(bench_script "${CMAKE_CURRENT_BINARY_DIR}/bench_script.sh")
+
+file(GENERATE
+	OUTPUT ${bench_script}
+	CONTENT "\
 \"${Python3_EXECUTABLE}\" -m venv \"${testenv}\"\n\
 ${activate_command}\n\
 pip install -r \"${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\"\n\
 python \"${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py\" \"$<TARGET_FILE:mtsp-vrp-c>\" 60000"
+	FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 
 add_custom_target(tsplib-bench
 	COMMENT "setting up virtual python environment and running tsplib.py"
-	COMMAND ./bench_script.sh
+	COMMAND "${bench_script}"
 	VERBATIM
 	USES_TERMINAL
 	SOURCES requirements.txt tsplib.py tsplib/best-known-solutions.json

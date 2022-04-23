@@ -54,7 +54,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
 
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
     boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(N);
-    for (const auto [u, v] : dependencies.GetArcs())
+    for (const auto& [u, v] : dependencies.GetArcs())
     {
         add_edge(u, v, dependencyGraph);
         add_edge(u, v, dependencyGraphUndirected);
@@ -66,7 +66,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
         add_edge(startPositions[a], endPositions[a], dependencyGraphUndirected);
     }
 
-    assert(num_edges(dependencyGraph) >= size(dependencies));
+    assert(num_edges(dependencyGraph) >= size(dependencies.GetArcs()));
 
     std::vector<size_t> componentIds(N);
     const auto numberOfComponents = boost::connected_components(dependencyGraphUndirected, componentIds.data());

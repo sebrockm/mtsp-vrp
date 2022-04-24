@@ -58,7 +58,7 @@ namespace tsplp
                     m_outgoing.push_back(v);
 
             const auto rangeEnd = ssize(m_outgoing);
-            m_node2outgoingSpanMap.emplace_back(m_outgoing.cbegin() + rangeBegin, m_outgoing.cbegin() + rangeEnd);
+            m_node2outgoingSpanMap.emplace_back(m_outgoing.data() + rangeBegin, m_outgoing.data() + rangeEnd);
         }
 
         for (size_t u = 0; u < N; ++u)
@@ -75,7 +75,7 @@ namespace tsplp
             }
 
             const auto rangeEnd = ssize(m_incoming);
-            m_node2incomingSpanMap.emplace_back(m_incoming.cbegin() + rangeBegin, m_incoming.cbegin() + rangeEnd);
+            m_node2incomingSpanMap.emplace_back(m_incoming.data() + rangeBegin, m_incoming.data() + rangeEnd);
         }
     }
 }

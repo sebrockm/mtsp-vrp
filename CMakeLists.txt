@@ -18,7 +18,10 @@ else()
     set(warning_flags
         -pedantic -Wall -Wextra
         -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion -Wmisleading-indentation
-        -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wnull-dereference -Wuseless-cast -Wdouble-promotion -Wformat=2)
+        -Wnull-dereference -Wdouble-promotion -Wformat=2)
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(warning_flags ${warning_flags} -Wduplicated-cond -Wduplicated-branches -Wlogical-op -Wuseless-cast)
+    endif()
     set(warnings_as_erros_flag -Werror)
     set(no_warnings_as_erros_flag -Wno-error)
 endif()

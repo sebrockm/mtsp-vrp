@@ -1,12 +1,13 @@
 import tsplib95 as tsplib
 import numpy as np
-from numpy.ctypeslib import ndpointer
+from numpy.ctypeslib import ndpointer, as_array
 from ctypes import *
 import json
 import os
 import sys
 import time
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 solve_mtsp_vrp = None
 
@@ -19,6 +20,36 @@ def timing(f):
         return ret, time2 - time1
     return wrap
 
+def draw_fractional_solution(fractional_values, node_coords, name):
+    A, N, _ = np.shape(fractional_values)
+    agents, s_ids, t_ids = np.where(fractional_values > 1e-10)
+    values = fractional_values[agents, s_ids, t_ids]
+    s_ids[s_ids == N-1] = 0
+    t_ids[t_ids == N-1] = 0
+
+    names, points = zip(*node_coords.items())
+    X, Y = zip(*points)
+    X, Y = np.array(X), np.array(Y)
+
+    plt.switch_backend('Agg')
+    plt.figure(figsize=(50, 50))
+
+    plt.plot(X, Y, '.')
+    for p, n in zip(points, names):
+        plt.annotate(str(n), p)
+
+    for s, t, v in zip(s_ids, t_ids, values):
+        xx = X[[s, t]]
+        yy = Y[[s, t]]
+        if v > 1 - 1e-10:
+            plt.plot(xx, yy, 'g-')
+        else:
+            plt.plot(xx, yy, 'g--')
+        plt.annotate(f'{v:3.2f}', (np.mean(xx), np.mean(yy)))
+
+    plt.grid()
+    plt.savefig(name)
+
 @timing
 def solve_mtsp(start_positions, end_positions, weights, timeout):
     A = len(start_positions)
@@ -26,13 +57,20 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
     start_positions = np.array(start_positions, dtype=np.uint64)
     end_positions = np.array(end_positions, dtype=np.uint64)
     weights = np.array(weights, dtype=np.int32)
-    number_of_threads = 0
+    number_of_threads = 1
     lb = c_double(0)
     ub = c_double(0)
     pathsBuffer = np.zeros(shape=(N,), dtype=np.uint64)
     offsets = np.zeros(shape=(A,), dtype=np.uint64)
 
-    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, number_of_threads, byref(lb), byref(ub), pathsBuffer, offsets)
+    fractionals = []
+    @CFUNCTYPE(c_int, POINTER(c_double), c_size_t, c_size_t)
+    def store_fractional_solution(fractional_values, A, N):
+        fractionals.append(np.copy(as_array(fractional_values, shape=(A, N, N))))
+        return 0
+
+    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout,
+                            number_of_threads, byref(lb), byref(ub), pathsBuffer, offsets, store_fractional_solution)
     if result < 0:
         print(f'error: {result}')
         return None, None, result, result
@@ -52,7 +90,7 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
         paths.append(path)
         lengths.append(length)
 
-    return paths, lengths, lb.value, ub.value
+    return paths, lengths, lb.value, ub.value, fractionals
 
 def main(dll_path, timeout_ms):
     global solve_mtsp_vrp
@@ -69,7 +107,8 @@ def main(dll_path, timeout_ms):
         POINTER(c_double), # lowerBound
         POINTER(c_double), # upperBound
         ndpointer(c_size_t, flags='C_CONTIGUOUS'), # paths
-        ndpointer(c_size_t, flags='C_CONTIGUOUS') # pathOffsets
+        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # pathOffsets
+        c_void_p
     ]
     base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tsplib')
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]
@@ -89,6 +128,8 @@ def main(dll_path, timeout_ms):
     for f in progress_bar:
         base_name = os.path.basename(f)
         progress_bar.set_description(base_name)
+        if base_name != 'linhp318.tsp':
+            continue
         problem_name, ext = os.path.splitext(base_name)
         kind = ext[1:]
         if kind not in ['tsp', 'atsp', 'sop']:
@@ -124,7 +165,12 @@ def main(dll_path, timeout_ms):
                         weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
             print(f'starting solving {f} ...')
-            (paths, lengths, lb, ub), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
+            (paths, lengths, lb, ub, fractionals), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
+
+            if hasattr(P, 'node_coords') and P.node_coords:
+                for i, fractional in tqdm(list(enumerate(fractionals))):
+                    draw_fractional_solution(fractional, P.node_coords, f'{base_name}_{i}.png')
+
             if paths is None:
                 print('solve_mtsp error:', lb)
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'

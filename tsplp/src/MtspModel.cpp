@@ -185,7 +185,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_model.AddConstraints(cbegin(constraints), cend(constraints));
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads)
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads, int (*fractional_callback)(const double*, size_t, size_t))
 {
     using namespace std::chrono_literals;
 
@@ -250,10 +250,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
                 return m_bestResult.UpperBound;
             }();
 
+            const xt::xtensor<double, 3> fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
+            if (fractional_callback)
+                fractional_callback(fractionalValues.data(), A, N);
+
             if (2.5 * currentLowerBound > currentUpperBound)
             {
-                const auto fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
-
                 remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
                 auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
                     fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), m_weightManager.Dependencies(), remainingTime);

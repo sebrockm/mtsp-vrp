@@ -21,8 +21,9 @@ def timing(f):
     return wrap
 
 def draw_fractional_solution(fractional_values, node_coords, name):
+    epsilon = 1e-10
     A, N, _ = np.shape(fractional_values)
-    agents, s_ids, t_ids = np.where(fractional_values > 1e-10)
+    agents, s_ids, t_ids = np.where(fractional_values > epsilon)
     values = fractional_values[agents, s_ids, t_ids]
     s_ids[s_ids == N-1] = 0
     t_ids[t_ids == N-1] = 0
@@ -31,8 +32,14 @@ def draw_fractional_solution(fractional_values, node_coords, name):
     X, Y = zip(*points)
     X, Y = np.array(X), np.array(Y)
 
+    X -= np.min(X)
+    Y -= np.min(Y)
+    m = max(np.max(X), np.max(Y))
+    X *= 100 / m
+    Y *= 100 / m
+
     plt.switch_backend('Agg')
-    plt.figure(figsize=(50, 50))
+    plt.figure(figsize=(20, 20))
 
     plt.plot(X, Y, '.')
     for p, n in zip(points, names):
@@ -41,12 +48,15 @@ def draw_fractional_solution(fractional_values, node_coords, name):
     for s, t, v in zip(s_ids, t_ids, values):
         xx = X[[s, t]]
         yy = Y[[s, t]]
-        if v > 1 - 1e-10:
+        if v > 1 - epsilon:
             plt.plot(xx, yy, 'g-')
         else:
-            plt.plot(xx, yy, 'g--')
+            plt.plot(xx, yy, 'g:')
         plt.annotate(f'{v:3.2f}', (np.mean(xx), np.mean(yy)))
 
+    plt.xlim(0, 100)
+    plt.ylim(0, 100)
+    plt.axis('square')
     plt.grid()
     plt.savefig(name)
 
@@ -128,7 +138,7 @@ def main(dll_path, timeout_ms):
     for f in progress_bar:
         base_name = os.path.basename(f)
         progress_bar.set_description(base_name)
-        if base_name != 'linhp318.tsp':
+        if base_name != 'berlin52.tsp':
             continue
         problem_name, ext = os.path.splitext(base_name)
         kind = ext[1:]

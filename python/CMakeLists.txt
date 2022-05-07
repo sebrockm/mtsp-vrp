@@ -5,7 +5,7 @@ include(FindPython3)
 if (${Python3_FOUND})
 	message("Found python3: ${Python3_EXECUTABLE}")
 else()
-	message(FATAL_ERROR "python3 was not found, aborting tsplib test")
+	message(FATAL_ERROR "python3 was not found")
 endif()
 
 if (${Python3_VERSION} VERSION_LESS 3.4)
@@ -18,23 +18,33 @@ if (WIN32)
 else()
 	set(activate_command "source \"${testenv}/bin/activate\"")
 endif()
-
-set(bench_script "${CMAKE_CURRENT_BINARY_DIR}/bench_script.sh")
+set(mtsp_vrp_c_lib_path_file "${CMAKE_CURRENT_SOURCE_DIR}/_mtsp_vrp_c_lib_path.txt")
 
 file(GENERATE
-	OUTPUT ${bench_script}
+	OUTPUT ${mtsp_vrp_c_lib_path_file}
+	CONTENT "$<TARGET_FILE:mtsp-vrp-c>"
+)
+
+add_custom_target(mtsp-vrp-python-package ALL
+	COMMENT "Creating python package"
+	DEPENDS ${mtsp_vrp_c_lib_path_file}
+	SOURCES mtsp_vrp.py
+)
+
+add_dependencies(mtsp-vrp-python-package mtsp-vrp-c)
+
+set(test_script "${CMAKE_CURRENT_BINARY_DIR}/test_script.sh")
+
+file(GENERATE
+	OUTPUT "${test_script}"
 	CONTENT "\
 \"${Python3_EXECUTABLE}\" -m venv \"${testenv}\"\n\
 ${activate_command}\n\
-pip install -r \"${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\"\n\
-python \"${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py\" \"$<TARGET_FILE:mtsp-vrp-c>\" 60000"
+python -c \"import mtsp_vrp; assert(mtsp_vrp.solve_mtsp_vrp);\"\n
+"
 	FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
 
-add_custom_target(tsplib-bench
-	COMMENT "setting up virtual python environment and running tsplib.py"
-	COMMAND "${bench_script}"
-	VERBATIM
-	USES_TERMINAL
-	SOURCES requirements.txt tsplib.py tsplib/best-known-solutions.json
-)
+add_test(NAME package-test COMMAND "${test_script}")
+
+add_subdirectory(tsplib)

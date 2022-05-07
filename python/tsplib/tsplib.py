@@ -1,6 +1,6 @@
 import tsplib95 as tsplib
 import numpy as np
-from numpy.ctypeslib import ndpointer, as_array
+from numpy.ctypeslib import as_array
 from ctypes import *
 import json
 import os
@@ -9,7 +9,11 @@ import time
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-solve_mtsp_vrp = None
+if __name__ == '__main__':
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+    from mtsp_vrp import solve_mtsp_vrp
+
 
 def timing(f):
     def wrap(*args, **kwargs):
@@ -102,25 +106,8 @@ def solve_mtsp(start_positions, end_positions, weights, timeout):
 
     return paths, lengths, lb.value, ub.value, fractionals
 
-def main(dll_path, timeout_ms):
-    global solve_mtsp_vrp
-    solve_mtsp_vrp = cdll.LoadLibrary(dll_path).solve_mtsp_vrp
-    solve_mtsp_vrp.restype = c_int
-    solve_mtsp_vrp.argtypes = [
-        c_size_t, # numberOfAgents
-        c_size_t, # numberOfNodes
-        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # start_positions
-        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # end_positions
-        ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
-        c_int, # timeout
-        c_size_t, # numberOfThreads
-        POINTER(c_double), # lowerBound
-        POINTER(c_double), # upperBound
-        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # paths
-        ndpointer(c_size_t, flags='C_CONTIGUOUS'), # pathOffsets
-        c_void_p
-    ]
-    base = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tsplib')
+def main(timeout_ms):
+    base = os.path.dirname(os.path.abspath(__file__))
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]
 
     with open(os.path.join(base, 'best-known-solutions.json')) as f:
@@ -203,4 +190,4 @@ def main(dll_path, timeout_ms):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], int(sys.argv[2]))
+    main(int(sys.argv[1]))

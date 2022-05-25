@@ -41,5 +41,5 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 add_subdirectory(mtsp-vrp-c)
-add_subdirectory(tsplib)
+add_subdirectory(python)
 add_subdirectory(tsplp)

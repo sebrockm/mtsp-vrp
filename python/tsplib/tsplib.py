@@ -1,6 +1,5 @@
 import tsplib95 as tsplib
 import numpy as np
-from numpy.ctypeslib import as_array
 from ctypes import *
 import json
 import os
@@ -10,19 +9,8 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
-    from os import sys, path
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+    os.sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from mtsp_vrp import solve_mtsp_vrp
-
-
-def timing(f):
-    def wrap(*args, **kwargs):
-        time1 = time.time()
-        ret = f(*args, **kwargs)
-        time2 = time.time()
-
-        return ret, time2 - time1
-    return wrap
 
 def draw_fractional_solution(fractional_values, node_coords, name):
     epsilon = 1e-10
@@ -64,47 +52,6 @@ def draw_fractional_solution(fractional_values, node_coords, name):
     plt.grid()
     plt.savefig(name)
 
-@timing
-def solve_mtsp(start_positions, end_positions, weights, timeout):
-    A = len(start_positions)
-    N = len(weights)
-    start_positions = np.array(start_positions, dtype=np.uint64)
-    end_positions = np.array(end_positions, dtype=np.uint64)
-    weights = np.array(weights, dtype=np.int32)
-    number_of_threads = 1
-    lb = c_double(0)
-    ub = c_double(0)
-    pathsBuffer = np.zeros(shape=(N,), dtype=np.uint64)
-    offsets = np.zeros(shape=(A,), dtype=np.uint64)
-
-    fractionals = []
-    @CFUNCTYPE(c_int, POINTER(c_double), c_size_t, c_size_t)
-    def store_fractional_solution(fractional_values, A, N):
-        fractionals.append(np.copy(as_array(fractional_values, shape=(A, N, N))))
-        return 0
-
-    result = solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout,
-                            number_of_threads, byref(lb), byref(ub), pathsBuffer, offsets, store_fractional_solution)
-    if result < 0:
-        print(f'error: {result}')
-        return None, None, result, result
-
-    print(pathsBuffer)
-    print(offsets)
-
-    paths = []
-    lengths = []
-    for a in range(A):
-        start = offsets[a]
-        end = offsets[a+1] if a+1 < A else N
-        path = np.array(pathsBuffer[start:end])
-        length = np.sum(weights[path[:-1], path[1:]])
-        if start_positions[a] == end_positions[a]:
-            length += weights[path[-1], path[0]]
-        paths.append(path)
-        lengths.append(length)
-
-    return paths, lengths, lb.value, ub.value, fractionals
 
 def main(timeout_ms):
     base = os.path.dirname(os.path.abspath(__file__))
@@ -162,7 +109,11 @@ def main(timeout_ms):
                         weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
             print(f'starting solving {f} ...')
-            (paths, lengths, lb, ub, fractionals), seconds = solve_mtsp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
+            fractionals = []
+            star_time = time.time()
+            paths, lengths, lb, ub = solve_mtsp_vrp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms,
+                                                    fractional_callback=lambda frac: fractionals.append(frac))
+            seconds = time.time() - star_time
 
             if hasattr(P, 'node_coords') and P.node_coords:
                 for i, fractional in tqdm(list(enumerate(fractionals))):

@@ -33,18 +33,4 @@ add_custom_target(mtsp-vrp-python-package ALL
 
 add_dependencies(mtsp-vrp-python-package mtsp-vrp-c)
 
-set(test_script "${CMAKE_CURRENT_BINARY_DIR}/test_script.sh")
-
-file(GENERATE
-	OUTPUT "${test_script}"
-	CONTENT "\
-\"${Python3_EXECUTABLE}\" -m venv \"${testenv}\"\n\
-${activate_command}\n\
-python -c \"import mtsp_vrp; assert(mtsp_vrp.solve_mtsp_vrp);\"\n
-"
-	FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
-)
-
-add_test(NAME package-test COMMAND "${test_script}")
-
 add_subdirectory(tsplib)

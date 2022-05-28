@@ -11,7 +11,7 @@ if __name__ == '__main__':
     os.sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from mtsp_vrp import solve_mtsp_vrp
 
-    
+
 def main(timeout_ms):
     base = os.path.dirname(os.path.abspath(__file__))
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]

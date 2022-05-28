@@ -11,6 +11,7 @@ if __name__ == '__main__':
     os.sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from mtsp_vrp import solve_mtsp_vrp
 
+    
 def main(timeout_ms):
     base = os.path.dirname(os.path.abspath(__file__))
     files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]
@@ -68,7 +69,6 @@ def main(timeout_ms):
             star_time = time.time()
             paths, lengths, lb, ub = solve_mtsp_vrp(start_positions=[0], end_positions=[0], weights=weights, timeout=timeout_ms)
             seconds = time.time() - star_time
-
             if paths is None:
                 print('solve_mtsp error:', lb)
                 result_string = f'{base_name:<15s} N={N:>5d} A=1 mode=sum time=-------s result=-------- gap=-------\n'

@@ -4,16 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-if __name__ == '__main__':
-    os.sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from mtsp_vrp import solve_mtsp_vrp
+os.sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from mtsp_vrp import solve_mtsp_vrp
+
 
 def draw_fractional_solution(fractional_values, node_coords, name):
     epsilon = 1e-10
     A, N, _ = np.shape(fractional_values)
     agents, s_ids, t_ids = np.where(fractional_values > epsilon)
     values = fractional_values[agents, s_ids, t_ids]
-    s_ids[s_ids == N-1] = 0
+    s_ids[s_ids == N-1] = 0 # TODO: This is a hack. Resolve this issue correctly
     t_ids[t_ids == N-1] = 0
 
     names, points = zip(*node_coords.items())

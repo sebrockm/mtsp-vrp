@@ -4,73 +4,6 @@
 #include <catch2/catch.hpp>
 #include <chrono>
 
-#include <xtensor/xnpy.hpp>
-#include <fstream>
-
-// TEST_CASE("specific instance", "[instances]")
-// {
-//     std::ifstream stream("/Users/sebastian/repos/mtsp-vrp/tsplib/tsplib/tsp/linhp318.tsp.weights.npy");
-//     const auto weights = xt::load_npy<int>(stream);
-
-//     xt::xtensor<int, 1> startPositions{ 0 };
-//     xt::xtensor<int, 1> endPositions{ 0 };
-
-//     tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::minutes{ 5 } };
-//     auto result = model.BranchAndCutSolve();
-
-//     REQUIRE(result.LowerBound <= Approx(41345));
-//     REQUIRE(result.UpperBound >= Approx(41345));
-// }
-
-void CheckResult(tsplp::MtspResult const& result, xt::xtensor<size_t, 1> const& sp, xt::xtensor<size_t, 1> const& ep, xt::xtensor<int, 2> const& weights)
-{
-    const auto N = weights.shape(0);
-    const auto A = sp.size();
-
-    double sum = 0;
-    std::vector<size_t> visited(N, A);
-
-    for (size_t a = 0; a < A; ++a)
-    {
-        CHECK(result.Paths[a].front() == sp[a]);
-        if (sp[a] != ep[a])
-            CHECK(result.Paths[a].back() == ep[a]);
-        
-        for (size_t i = 0; i + 1 < result.Paths[a].size(); ++i)
-        {
-            const auto w = weights(result.Paths[a][i], result.Paths[a][i+1]);
-            CAPTURE(a, i, result.Paths[a][i], result.Paths[a][i+1]);
-            CHECK(w >= 0);
-
-            sum += w;
-            
-            if (result.Paths[a][i] != sp[a] && result.Paths[a][i] != ep[a])
-                CHECK(visited[result.Paths[a][i]] == A);
-            visited[result.Paths[a][i]] = a;
-        }
-
-        if (sp[a] != ep[a])
-        {
-            CHECK(visited[result.Paths[a].back()] == A);
-            visited[result.Paths[a].back()] = a;
-        }
-        else
-        {
-            const auto w = weights(result.Paths[a].back(), result.Paths[a].front());
-            CHECK(w >= 0);
-            sum += w;
-        }
-    }
-
-    for (const auto v : visited)
-    {
-        CHECK(v != A);
-    }
-
-    CHECK(result.LowerBound <= Approx(sum));
-    CHECK(Approx(sum) <= result.UpperBound);
-}
-
 TEST_CASE("br17.atsp", "[instances]")
 {
     xt::xtensor<int, 2> weights =
@@ -99,8 +32,6 @@ TEST_CASE("br17.atsp", "[instances]")
 
     tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
     auto result = model.BranchAndCutSolve();
-
-    CheckResult(result, startPositions, endPositions, weights);
     
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
@@ -135,8 +66,6 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
     auto result = model.BranchAndCutSolve();
 
-    CheckResult(result, startPositions, endPositions, weights);
-
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
 }
@@ -157,12 +86,10 @@ TEST_CASE("ESC07.sop", "[instances]")
     };
 
     xt::xtensor<int, 1> startPositions{ 0 };
-    xt::xtensor<int, 1> endPositions{ 8 };
+    xt::xtensor<int, 1> endPositions{ 0 };
 
     tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
     auto result = model.BranchAndCutSolve();
-
-    CheckResult(result, startPositions, endPositions, weights);
 
     REQUIRE(result.LowerBound == Approx(2125));
     REQUIRE(result.UpperBound == Approx(2125));
@@ -184,7 +111,7 @@ TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
     };
 
     xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
-    xt::xtensor<int, 1> endPositions{ 8, 8, 8, 8 };
+    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
     REQUIRE_THROWS_AS(tsplp::MtspModel(startPositions, endPositions, weights, std::chrono::seconds{ 1 }), tsplp::IncompatibleDependenciesException);
 }
@@ -207,10 +134,8 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::minutes{ 1 } };
+    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
     auto result = model.BranchAndCutSolve();
-
-    CheckResult(result, startPositions, endPositions, weights);
 
     REQUIRE(result.LowerBound == Approx(1200));
     REQUIRE(result.UpperBound == Approx(1200));

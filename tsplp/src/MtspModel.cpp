@@ -42,9 +42,9 @@ namespace
         {
             if (epsilon <= v.GetObjectiveValue(model) && v.GetObjectiveValue(model) <= 1.0 - epsilon)
             {
-                if (std::abs(v.GetObjectiveValue(model) - 0.5) < minAbs)
+                if (const auto abs = std::abs(v.GetObjectiveValue(model) - 0.5); abs < minAbs)
                 {
-                    minAbs = std::abs(v.GetObjectiveValue(model) - 0.5);
+                    minAbs = abs;
                     closest = v;
                     if (minAbs < epsilon)
                         break;
@@ -185,7 +185,7 @@ tsplp::MtspModel::MtspModel(xt::xtensor<size_t, 1> startPositions, xt::xtensor<s
     m_model.AddConstraints(cbegin(constraints), cend(constraints));
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads, int (*fractional_callback)(const double*, size_t, size_t))
+tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOfThreads, std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback)
 {
     using namespace std::chrono_literals;
 
@@ -250,27 +250,31 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
                 return m_bestResult.UpperBound;
             }();
 
-            const xt::xtensor<double, 3> fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
-            if (fractional_callback)
-                fractional_callback(fractionalValues.data(), A, N);
-
-            if (2.5 * currentLowerBound > currentUpperBound)
+            if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
             {
-                remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
-                auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
-                    fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), m_weightManager.Dependencies(), remainingTime);
+                const xt::xtensor<double, 3> fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
 
-                if (!exploitedPaths.empty())
+                if (fractionalCallback != nullptr)
+                    fractionalCallback(m_weightManager.TransformTensorBack(fractionalValues));
+                
+                if (2.5 * currentLowerBound > currentUpperBound)
                 {
-                    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(exploitedPaths), m_weightManager.W(), m_weightManager.Dependencies());
-                    exploitedObjective -= twoOptImprovement;
+                    remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(m_endTime - std::chrono::steady_clock::now());
+                    auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
+                        fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(), m_weightManager.Dependencies(), remainingTime);
 
-                    std::unique_lock lock{ m_bestResultMutex };
-
-                    if (exploitedObjective < m_bestResult.UpperBound)
+                    if (!exploitedPaths.empty())
                     {
-                        m_bestResult.UpperBound = exploitedObjective;
-                        m_bestResult.Paths = std::move(twoOptedPaths);
+                        auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(std::move(exploitedPaths), m_weightManager.W(), m_weightManager.Dependencies());
+                        exploitedObjective -= twoOptImprovement;
+
+                        std::unique_lock lock{ m_bestResultMutex };
+
+                        if (exploitedObjective < m_bestResult.UpperBound)
+                        {
+                            m_bestResult.UpperBound = exploitedObjective;
+                            m_bestResult.Paths = std::move(twoOptedPaths);
+                        }
                     }
                 }
             }

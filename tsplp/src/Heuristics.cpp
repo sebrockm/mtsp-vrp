@@ -22,7 +22,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     if (weights.dimension() == 2)
         weights = xt::repeat(xt::view(weights, xt::newaxis(), xt::all()), A, 0);
 
-    const auto [heuristicPaths, _] = NearestInsertion((1 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
+    const auto [heuristicPaths, _] = NearestInsertion((1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
 
     if (heuristicPaths.empty())
         return { heuristicPaths, 0 };

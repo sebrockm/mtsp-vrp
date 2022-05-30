@@ -13,8 +13,6 @@ def draw_fractional_solution(fractional_values, node_coords, name):
     A, N, _ = np.shape(fractional_values)
     agents, s_ids, t_ids = np.where(fractional_values > epsilon)
     values = fractional_values[agents, s_ids, t_ids]
-    s_ids[s_ids == N-1] = 0 # TODO: This is a hack. Resolve this issue correctly
-    t_ids[t_ids == N-1] = 0
 
     names, points = zip(*node_coords.items())
     X, Y = zip(*points)

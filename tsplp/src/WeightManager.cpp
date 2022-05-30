@@ -7,7 +7,7 @@
 #include <xtensor/xview.hpp>
 
 tsplp::WeightManager::WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> originalStartPositions, xt::xtensor<size_t, 1> originalEndPositions)
-    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions)
+    : m_weights(std::move(weights)), m_startPositions(originalStartPositions), m_endPositions(originalEndPositions), m_originalN(m_weights.shape(0))
 {
     if (m_startPositions.size() != m_endPositions.size())
         throw std::runtime_error("Start and end positions must have the same size.");
@@ -82,4 +82,26 @@ std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(std::v
                 i = m_toOriginal.at(i);
 
     return paths;
+}
+
+xt::xtensor<double, 3> tsplp::WeightManager::TransformTensorBack(const xt::xtensor<double, 3>& tensor) const
+{
+    using namespace xt::placeholders;
+
+    xt::xtensor<double, 3> result = xt::view(tensor, xt::all(), xt::range(_, m_originalN), xt::range(_, m_originalN));
+
+    for (const auto *pSpecialPositions : {&m_startPositions, &m_endPositions})
+    {
+        for (const auto p : *pSpecialPositions)
+        {
+            if (p < m_originalN)
+                continue;
+
+            const auto op = m_toOriginal.at(p);
+            xt::view(result, xt::all(), xt::all(), op) += xt::view(tensor, xt::all(), xt::range(_, m_originalN), p);
+            xt::view(result, xt::all(), op, xt::all()) += xt::view(tensor, xt::all(), p, xt::range(_, m_originalN));
+        }
+    }
+
+    return result;
 }

@@ -36,13 +36,16 @@ def draw_fractional_solution(fractional_values, weights, start_positions, end_po
     plt.annotate(f'objective: {np.sum(weights * fractional_values)}', (90, 90))
 
     plt.plot(X, Y, '.')
+    for s, e, c in zip(start_positions, end_positions, colors):
+        plt.plot(X[s], Y[s], 'o', c=c)
+        plt.plot(X[e], Y[e], '>', c=c)
     for x, y, n in zip(X, Y, names):
         plt.annotate(str(n), (x, y))
 
     for a, s, t, v in zip(a_ids, s_ids, t_ids, values):
         xx = X[[s, t]]
         yy = Y[[s, t]]
-        style = '->' if v > 1 - epsilon else ':>'
+        style = '-' if v > 1 - epsilon else ':'
         plt.plot(xx, yy, style, c=colors[a])
         plt.annotate(f'{v:3.2f}', (np.mean(xx), np.mean(yy)), c=colors[a])
 

@@ -22,7 +22,7 @@ def draw_fractional_solution(fractional_values, weights, start_positions, end_po
 
     names, points = zip(*node_coords.items())
     X, Y = zip(*points)
-    X, Y = np.array(X), np.array(Y)
+    X, Y = np.array(X, dtype='float64'), np.array(Y, dtype='float64')
 
     X -= np.min(X)
     Y -= np.min(Y)
@@ -68,7 +68,7 @@ def callback(fractional):
 
 sp = [0, 0]
 ep = [0, 0]
-solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, timeout=600000, number_of_threads=1, fractional_callback=callback)
+solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, timeout=600000, fractional_callback=callback)
 
 for i, fractional in enumerate(tqdm(fractionals)):
     draw_fractional_solution(fractional, weights, sp, ep, P.node_coords, f'{instance}_{i}.png')

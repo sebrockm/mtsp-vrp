@@ -199,6 +199,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
         return m_bestResult;
     }
 
+    auto callbackMutex = fractionalCallback != nullptr ? std::make_optional<std::mutex>() : std::nullopt;
+
     BranchAndCutQueue queue;
     ConstraintDeque constraints(threadCount);
 
@@ -255,7 +257,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(std::optional<size_t> noOf
                 const xt::xtensor<double, 3> fractionalValues = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
 
                 if (fractionalCallback != nullptr)
+                {
+                    std::unique_lock lock{ *callbackMutex };
                     fractionalCallback(m_weightManager.TransformTensorBack(fractionalValues));
+                }
                 
                 if (2.5 * currentLowerBound > currentUpperBound)
                 {

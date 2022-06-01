@@ -56,7 +56,7 @@ def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_t
         end = offsets[a+1] if a+1 < A else N
         path = np.array(pathsBuffer[start:end])
         length = np.sum(weights[path[:-1], path[1:]])
-        if start_positions[a] == end_positions[a]:
+        if len(path) >= 2 and start_positions[a] == end_positions[a]:
             length += weights[path[-1], path[0]]
         paths.append(path)
         lengths.append(length)

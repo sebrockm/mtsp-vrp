@@ -19,7 +19,7 @@ namespace tsplp
         std::unique_ptr<DependencyGraph> m_spDependencies;
         size_t m_originalN;
 
-      public:
+    public:
         WeightManager(xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions);
 
         const auto& W() const { return m_weights; }

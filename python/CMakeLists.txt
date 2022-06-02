@@ -33,4 +33,5 @@ add_custom_target(mtsp-vrp-python-package ALL
 
 add_dependencies(mtsp-vrp-python-package mtsp-vrp-c)
 
+add_subdirectory(demos)
 add_subdirectory(tsplib)

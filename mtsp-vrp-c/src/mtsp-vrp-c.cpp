@@ -4,10 +4,11 @@
 
 #include <array>
 #include <chrono>
+#include <functional>
 #include <xtensor/xadapt.hpp>
 
 int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions, const size_t* end_positions, const int* weights, int timeout_ms,
-    size_t numberOfThreads, double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets)
+    size_t numberOfThreads, double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets, int (*fractional_callback)(const double*))
 {
     const auto startTime = std::chrono::steady_clock::now();
 
@@ -32,7 +33,10 @@ int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* st
 
         tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
 
-        const auto result = model.BranchAndCutSolve(numberOfThreads);
+        const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback
+            ? [=](const xt::xtensor<double, 3>& tensor) { fractional_callback(tensor.data()); }
+            : std::function<void(const xt::xtensor<double, 3>&)>{};
+        const auto result = model.BranchAndCutSolve(numberOfThreads, callback);
 
         *lowerBound = result.LowerBound;
         *upperBound = result.UpperBound;

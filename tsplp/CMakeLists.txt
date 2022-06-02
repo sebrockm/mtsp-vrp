@@ -16,6 +16,7 @@ target_precompile_headers(tsplp
 		<chrono>
 		<cstddef>
 		<exception>
+		<functional>
 		<limits>
 		<memory>
 		<span>

@@ -1,10 +1,12 @@
 #include "Model.hpp"
+
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 
+#include <ClpSimplex.hpp>
+
 #include <boost/range/iterator_range.hpp>
 
-#include <ClpSimplex.hpp>
 #include <deque>
 #include <future>
 #include <limits>
@@ -13,15 +15,19 @@
 #include <vector>
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
-    : m_spSimplexModel{ std::make_shared<ClpSimplex>() }, m_spModelMutex{ std::make_shared<std::mutex>() }, m_variables{}
+    : m_spSimplexModel { std::make_shared<ClpSimplex>() }
+    , m_spModelMutex { std::make_shared<std::mutex>() }
+    , m_variables {}
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
 
-    std::unique_lock lock{ *m_spModelMutex };
+    std::unique_lock lock { *m_spModelMutex };
 
     m_spSimplexModel->setLogLevel(0);
-    m_spSimplexModel->addColumns(static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    m_spSimplexModel->addColumns(
+        static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr,
+        nullptr);
 
     m_variables.reserve(numberOfBinaryVariables);
     for (size_t i = 0; i < numberOfBinaryVariables; ++i)
@@ -35,12 +41,16 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
 tsplp::Model::~Model() noexcept = default;
 
 tsplp::Model::Model(const Model& other)
-    : m_spSimplexModel(std::make_shared<ClpSimplex>(*other.m_spSimplexModel)), m_spModelMutex{ std::make_shared<std::mutex>() }, m_variables(other.m_variables)
+    : m_spSimplexModel(std::make_shared<ClpSimplex>(*other.m_spSimplexModel))
+    , m_spModelMutex { std::make_shared<std::mutex>() }
+    , m_variables(other.m_variables)
 {
 }
 
 tsplp::Model::Model(Model&& other) noexcept
-    : m_spSimplexModel(std::move(other.m_spSimplexModel)), m_spModelMutex(std::move(other.m_spModelMutex)), m_variables(std::move(other.m_variables))
+    : m_spSimplexModel(std::move(other.m_spSimplexModel))
+    , m_spModelMutex(std::move(other.m_spModelMutex))
+    , m_variables(std::move(other.m_variables))
 {
 }
 
@@ -52,12 +62,13 @@ tsplp::Model& tsplp::Model::operator=(Model other)
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
-    std::unique_lock lock{ *m_spModelMutex };
+    std::unique_lock lock { *m_spModelMutex };
 
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
     for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
-        m_spSimplexModel->setObjectiveCoefficient(static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
+        m_spSimplexModel->setObjectiveCoefficient(
+            static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
 }
 
 template <typename RandIterator>
@@ -90,20 +101,27 @@ void tsplp::Model::AddConstraints(RandIterator first, RandIterator last)
             columns.push_back(static_cast<int>(var.GetId()));
     }
 
-    std::unique_lock lock{ *m_spModelMutex };
+    std::unique_lock lock { *m_spModelMutex };
 
-    m_spSimplexModel->addRows(static_cast<int>(numberOfConstraints), lowerBounds.data(), upperBounds.data(), rowStarts.data(), columns.data(), elements.data());
+    m_spSimplexModel->addRows(
+        static_cast<int>(numberOfConstraints), lowerBounds.data(), upperBounds.data(),
+        rowStarts.data(), columns.data(), elements.data());
 }
 
 // do needed instantiations explicitly so the code can stay in cpp file
-template void tsplp::Model::AddConstraints(std::deque<tsplp::LinearConstraint>::const_iterator first, std::deque<tsplp::LinearConstraint>::const_iterator last);
-template void tsplp::Model::AddConstraints(std::vector<tsplp::LinearConstraint>::const_iterator first, std::vector<tsplp::LinearConstraint>::const_iterator last);
+template void tsplp::Model::AddConstraints(
+    std::deque<tsplp::LinearConstraint>::const_iterator first,
+    std::deque<tsplp::LinearConstraint>::const_iterator last);
+template void tsplp::Model::AddConstraints(
+    std::vector<tsplp::LinearConstraint>::const_iterator first,
+    std::vector<tsplp::LinearConstraint>::const_iterator last);
 
 tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
 {
-    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel, std::shared_ptr<std::mutex> spModelMutex, std::promise<void> promise)
+    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel,
+                               std::shared_ptr<std::mutex> spModelMutex, std::promise<void> promise)
     {
-        std::unique_lock lock{ *spModelMutex };
+        std::unique_lock lock { *spModelMutex };
 
         spSimplexModel->dual();
         promise.set_value();
@@ -112,7 +130,8 @@ tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
     std::promise<void> solverPromise;
     const auto solverFuture = solverPromise.get_future();
 
-    std::thread solverThread(solverTask, m_spSimplexModel, m_spModelMutex, std::move(solverPromise));
+    std::thread solverThread(
+        solverTask, m_spSimplexModel, m_spModelMutex, std::move(solverPromise));
 
     const auto futureStatus = solverFuture.wait_for(timeout);
 
@@ -128,10 +147,14 @@ tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
 
     switch (modelStatus)
     {
-    case 0: return Status::Optimal;
-    case 1: return Status::Infeasible;
-    case 2: return Status::Unbounded;
-    default: return Status::Error;
+    case 0:
+        return Status::Optimal;
+    case 1:
+        return Status::Infeasible;
+    case 2:
+        return Status::Unbounded;
+    default:
+        return Status::Error;
     }
 }
 

@@ -9,14 +9,14 @@ tsplp::ConstraintDeque::ConstraintDeque(size_t numberOfThreads)
 
 void tsplp::ConstraintDeque::Push(LinearConstraint constraint)
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     m_deque.push_back(std::move(constraint));
 }
 
 void tsplp::ConstraintDeque::PopToModel(size_t threadId, Model& model)
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     model.AddConstraints(m_deque.cbegin() + m_readPositions[threadId], m_deque.cend());
 

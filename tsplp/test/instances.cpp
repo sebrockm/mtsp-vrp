@@ -2,10 +2,12 @@
 #include "TsplpExceptions.hpp"
 
 #include <catch2/catch.hpp>
+
 #include <chrono>
 
 TEST_CASE("br17.atsp", "[instances]")
 {
+    // clang-format off
     xt::xtensor<int, 2> weights =
     {
         {9999, 3, 5, 48, 48, 8, 8, 5, 5, 3, 3, 0, 3, 5, 8, 8, 5},
@@ -26,19 +28,21 @@ TEST_CASE("br17.atsp", "[instances]")
         {8, 8, 50, 6, 6, 0, 0, 8, 8, 8, 8, 8, 8, 50, 0, 9999, 8},
         {5, 5, 26, 12, 12, 8, 8, 0, 0, 5, 5, 5, 5, 26, 8, 8, 9999}
     };
+    // clang-format on
 
-    xt::xtensor<int, 1> startPositions{ 0 };
-    xt::xtensor<int, 1> endPositions{ 0 };
+    xt::xtensor<int, 1> startPositions { 0 };
+    xt::xtensor<int, 1> endPositions { 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    tsplp::MtspModel model { startPositions, endPositions, weights, std::chrono::seconds { 1 } };
     auto result = model.BranchAndCutSolve();
-    
+
     REQUIRE(result.LowerBound == Approx(39));
     REQUIRE(result.UpperBound == Approx(39));
 }
 
 TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
 {
+    // clang-format off
     xt::xtensor<int, 2> weights =
     {
         {9999, 3, 5, 48, 48, 8, 8, 5, 5, 3, 3, 0, 3, 5, 8, 8, 5},
@@ -59,11 +63,12 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
         {8, 8, 50, 6, 6, 0, 0, 8, 8, 8, 8, 8, 8, 50, 0, 9999, 8},
         {5, 5, 26, 12, 12, 8, 8, 0, 0, 5, 5, 5, 5, 26, 8, 8, 9999}
     };
+    // clang-format on
 
-    xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
-    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
+    xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
+    xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    tsplp::MtspModel model { startPositions, endPositions, weights, std::chrono::seconds { 1 } };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(39));
@@ -72,6 +77,7 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
 
 TEST_CASE("ESC07.sop", "[instances]")
 {
+    // clang-format off
     xt::xtensor<int, 2> weights =
     {
         {  0,   0,    0,    0,    0,    0,    0,    0, 1000000 },
@@ -84,11 +90,12 @@ TEST_CASE("ESC07.sop", "[instances]")
         { -1,  -1,    0,  500,  325,  400,  600,    0, 0 },
         { -1,  -1,   -1,   -1,   -1,   -1,   -1,   -1, 0 }
     };
+    // clang-format on
 
-    xt::xtensor<int, 1> startPositions{ 0 };
-    xt::xtensor<int, 1> endPositions{ 0 };
+    xt::xtensor<int, 1> startPositions { 0 };
+    xt::xtensor<int, 1> endPositions { 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    tsplp::MtspModel model { startPositions, endPositions, weights, std::chrono::seconds { 1 } };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(2125));
@@ -97,6 +104,7 @@ TEST_CASE("ESC07.sop", "[instances]")
 
 TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
 {
+    // clang-format off
     xt::xtensor<int, 2> weights =
     {
         {  0,   0,    0,    0,    0,    0,    0,    0, 1000000 },
@@ -109,15 +117,19 @@ TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
         { -1,  -1,    0,  500,  325,  400,  600,    0, 0 },
         { -1,  -1,   -1,   -1,   -1,   -1,   -1,   -1, 0 }
     };
+    // clang-format on
 
-    xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
-    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
+    xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
+    xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    REQUIRE_THROWS_AS(tsplp::MtspModel(startPositions, endPositions, weights, std::chrono::seconds{ 1 }), tsplp::IncompatibleDependenciesException);
+    REQUIRE_THROWS_AS(
+        tsplp::MtspModel(startPositions, endPositions, weights, std::chrono::seconds { 1 }),
+        tsplp::IncompatibleDependenciesException);
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
 {
+    // clang-format off
     xt::xtensor<int, 2> weights =
     {
         {   0,   0,    0,    0,    0,    0,    0,    0, 1000000 },
@@ -130,11 +142,12 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
         { 100,  -1,    0,  500,  325,  400,  600,    0, 0 },
         { 100, 100,  100,  100,  100,  100,  100,  100, 0 }
     };
+    // clang-format on
 
-    xt::xtensor<int, 1> startPositions{ 0, 0, 0, 0 };
-    xt::xtensor<int, 1> endPositions{ 0, 0, 0, 0 };
+    xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
+    xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model{ startPositions, endPositions, weights, std::chrono::seconds{ 1 } };
+    tsplp::MtspModel model { startPositions, endPositions, weights, std::chrono::seconds { 1 } };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(1200));

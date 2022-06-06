@@ -2,15 +2,12 @@
 
 #include "Model.hpp"
 
-tsplp::BranchAndCutQueue::BranchAndCutQueue()
-{
-    m_heap.emplace_back();
-}
+tsplp::BranchAndCutQueue::BranchAndCutQueue() { m_heap.emplace_back(); }
 
 void tsplp::BranchAndCutQueue::ClearAll()
 {
     {
-        std::unique_lock lock{ m_mutex };
+        std::unique_lock lock { m_mutex };
         m_isCleared = true;
     }
 
@@ -22,7 +19,7 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
     bool needsNotify = false;
 
     {
-        std::unique_lock lock{ m_mutex };
+        std::unique_lock lock { m_mutex };
         [[maybe_unused]] const auto removedCount = m_currentlyWorkedOnLowerBounds.erase(threadId);
         assert(removedCount == 1);
         needsNotify = m_currentlyWorkedOnLowerBounds.empty();
@@ -34,12 +31,17 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
 
 std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
-    const auto lbHeap = m_heap.empty() ? std::nullopt : std::make_optional(m_heap.front().LowerBound);
+    const auto lbHeap
+        = m_heap.empty() ? std::nullopt : std::make_optional(m_heap.front().LowerBound);
 
-    const auto minIter = std::min_element(begin(m_currentlyWorkedOnLowerBounds), end(m_currentlyWorkedOnLowerBounds), [](auto p1, auto p2) { return p1.second < p2.second; });
-    const auto lbUsed = minIter == m_currentlyWorkedOnLowerBounds.end() ? std::nullopt : std::make_optional(minIter->second);
+    const auto minIter = std::min_element(
+        begin(m_currentlyWorkedOnLowerBounds), end(m_currentlyWorkedOnLowerBounds),
+        [](auto p1, auto p2) { return p1.second < p2.second; });
+    const auto lbUsed = minIter == m_currentlyWorkedOnLowerBounds.end()
+        ? std::nullopt
+        : std::make_optional(minIter->second);
 
     if (lbHeap.has_value() && lbUsed.has_value())
         return std::min(lbHeap, lbUsed);
@@ -55,7 +57,7 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
 
 void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double currentLowerBound)
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     assert(m_currentlyWorkedOnLowerBounds.contains(threadId));
     m_currentlyWorkedOnLowerBounds[threadId] = currentLowerBound;
@@ -63,21 +65,21 @@ void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double c
 
 size_t tsplp::BranchAndCutQueue::GetSize() const
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     return m_heap.size();
 }
 
 size_t tsplp::BranchAndCutQueue::GetWorkedOnSize() const
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     return m_currentlyWorkedOnLowerBounds.size();
 }
 
 std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
 {
-    std::unique_lock lock{ m_mutex };
+    std::unique_lock lock { m_mutex };
 
     while (!m_isCleared && m_heap.empty() && !m_currentlyWorkedOnLowerBounds.empty())
         m_cv.wait(lock);
@@ -86,7 +88,7 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
         return std::nullopt;
 
     std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
-    
+
     std::optional result = std::move(m_heap.back());
     m_heap.pop_back();
 
@@ -95,19 +97,20 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
     return result;
 }
 
-void tsplp::BranchAndCutQueue::Push(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1)
+void tsplp::BranchAndCutQueue::Push(
+    double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1)
 {
     bool needsNotify = false;
 
     {
-        std::unique_lock lock{ m_mutex };
+        std::unique_lock lock { m_mutex };
 
         if (m_isCleared)
             return;
 
         needsNotify = m_heap.empty();
 
-        m_heap.push_back({lowerBound, std::move(fixedVariables0), std::move(fixedVariables1)});
+        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -115,12 +118,14 @@ void tsplp::BranchAndCutQueue::Push(double lowerBound, std::vector<Variable> fix
         m_cv.notify_one();
 }
 
-void tsplp::BranchAndCutQueue::PushBranch(double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1, Variable branchingVariable)
+void tsplp::BranchAndCutQueue::PushBranch(
+    double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1,
+    Variable branchingVariable)
 {
     bool needsNotify = false;
 
     {
-        std::unique_lock lock{ m_mutex };
+        std::unique_lock lock { m_mutex };
 
         if (m_isCleared)
             return;
@@ -133,10 +138,11 @@ void tsplp::BranchAndCutQueue::PushBranch(double lowerBound, std::vector<Variabl
         fixedVariables0.push_back(branchingVariable);
         copyFixedVariables1.push_back(branchingVariable);
 
-        m_heap.push_back({lowerBound, std::move(fixedVariables0), std::move(fixedVariables1)});
+        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
 
-        m_heap.push_back({lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1)});
+        m_heap.push_back(
+            { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 

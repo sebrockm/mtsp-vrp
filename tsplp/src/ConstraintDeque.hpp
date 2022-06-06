@@ -8,20 +8,20 @@
 
 namespace tsplp
 {
-    class Model;
+class Model;
 
-    class ConstraintDeque
-    {
-    private:
-        std::deque<LinearConstraint> m_deque;
-        std::vector<ptrdiff_t> m_readPositions;
-        std::mutex m_mutex;
+class ConstraintDeque
+{
+private:
+    std::deque<LinearConstraint> m_deque;
+    std::vector<ptrdiff_t> m_readPositions;
+    std::mutex m_mutex;
 
-    public:
-        ConstraintDeque(size_t numberOfThreads);
+public:
+    ConstraintDeque(size_t numberOfThreads);
 
-    public:
-        void Push(LinearConstraint constraint);
-        void PopToModel(size_t threadId, Model& model);
-    };
+public:
+    void Push(LinearConstraint constraint);
+    void PopToModel(size_t threadId, Model& model);
+};
 }

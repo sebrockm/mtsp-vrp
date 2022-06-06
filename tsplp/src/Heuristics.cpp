@@ -1,4 +1,5 @@
 #include "Heuristics.hpp"
+
 #include "DependencyHelpers.hpp"
 #include "TsplpExceptions.hpp"
 
@@ -6,10 +7,9 @@
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/reversed.hpp>
+#include <xtensor/xmanipulation.hpp>
 
 #include <unordered_set>
-
-#include <xtensor/xmanipulation.hpp>
 
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSolution(
     xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
@@ -22,7 +22,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     if (weights.dimension() == 2)
         weights = xt::repeat(xt::view(weights, xt::newaxis(), xt::all()), A, 0);
 
-    const auto [heuristicPaths, _] = NearestInsertion((1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
+    const auto [heuristicPaths, _] = NearestInsertion(
+        (1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
 
     if (heuristicPaths.empty())
         return { heuristicPaths, 0 };
@@ -36,8 +37,9 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
 }
 
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
-    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
-    const DependencyGraph& dependencies, std::chrono::milliseconds timeout)
+    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
+    const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
+    std::chrono::milliseconds timeout)
 {
     const auto startTime = std::chrono::steady_clock::now();
 
@@ -53,7 +55,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     assert(weights.shape(2) == N);
 
     boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS> dependencyGraph(N);
-    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(N);
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> dependencyGraphUndirected(
+        N);
     for (const auto& [u, v] : dependencies.GetArcs())
     {
         add_edge(u, v, dependencyGraph);
@@ -69,7 +72,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     assert(num_edges(dependencyGraph) >= size(dependencies.GetArcs()));
 
     std::vector<size_t> componentIds(N);
-    const auto numberOfComponents = boost::connected_components(dependencyGraphUndirected, componentIds.data());
+    const auto numberOfComponents
+        = boost::connected_components(dependencyGraphUndirected, componentIds.data());
 
     std::vector<size_t> order;
     boost::topological_sort(dependencyGraph, std::back_inserter(order));
@@ -98,7 +102,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     for (const auto n : boost::adaptors::reverse(order))
     {
         if (std::chrono::steady_clock::now() >= startTime + timeout)
-            return { std::vector<std::vector<size_t>>{}, 0 };
+            return { std::vector<std::vector<size_t>> {}, 0 };
 
         if (std::find(startPositions.begin(), startPositions.end(), n) != startPositions.end()
             || std::find(endPositions.begin(), endPositions.end(), n) != endPositions.end())
@@ -141,8 +145,9 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     return { paths, cost };
 }
 
-std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vector<std::vector<size_t>> paths,
-    xt::xarray<double> weights, const DependencyGraph& dependencies)
+std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(
+    std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
+    const DependencyGraph& dependencies)
 {
     assert(weights.dimension() == 2);
 
@@ -167,10 +172,12 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                     {
                         const auto u = paths[a1][i];
                         const auto v = paths[a2][j];
-                        
-                        if (a1 != a2 &&
-                            (!dependencies.GetIncomingSpan(u).empty() || !dependencies.GetIncomingSpan(v).empty() ||
-                                !dependencies.GetOutgoingSpan(u).empty() || !dependencies.GetOutgoingSpan(v).empty()))
+
+                        if (a1 != a2
+                            && (!dependencies.GetIncomingSpan(u).empty()
+                                || !dependencies.GetIncomingSpan(v).empty()
+                                || !dependencies.GetOutgoingSpan(u).empty()
+                                || !dependencies.GetOutgoingSpan(v).empty()))
                             continue;
 
                         if (a1 == a2)
@@ -178,7 +185,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                             bool wouldBreakDependency = false;
                             for (auto k = i; k < j; ++k)
                             {
-                                if (dependencies.HasArc(u, paths[a1][k + 1]) || dependencies.HasArc(paths[a1][k], v))
+                                if (dependencies.HasArc(u, paths[a1][k + 1])
+                                    || dependencies.HasArc(paths[a1][k], v))
                                 {
                                     wouldBreakDependency = true;
                                     break;
@@ -193,6 +201,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
 
                         if (a1 == a2 && j == i + 1)
                         {
+                            // clang-format off
                             const auto before1 = weights(paths[a1][i - 1], paths[a1][i    ]);
                             const auto before2 = weights(paths[a1][i    ], paths[a1][i + 1]);
                             const auto before4 = weights(paths[a1][i + 1], paths[a1][i + 2]);
@@ -200,9 +209,11 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                             const auto after2  = weights(paths[a1][i + 1], paths[a1][i    ]);
                             const auto after4  = weights(paths[a1][i    ], paths[a1][i + 2]);
                             improvement = before1 + before2 + before4 - after1 - after2 - after4;
+                            // clang-format on
                         }
                         else
                         {
+                            // clang-format off
                             const auto before1 = weights(paths[a1][i - 1], paths[a1][i    ]);
                             const auto before2 = weights(paths[a1][i    ], paths[a1][i + 1]);
                             const auto before3 = weights(paths[a2][j - 1], paths[a2][j    ]);
@@ -214,6 +225,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(std::vec
                             const auto a1Imp = before1 + before2 - after1 - after2;
                             const auto a2Imp = before3 + before4 - after3 - after4;
                             improvement = a1Imp + a2Imp;
+                            // clang-format on
                         }
 
                         assert(weights(paths[a1][i], paths[a1][i]) == 0);

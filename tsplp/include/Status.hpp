@@ -2,12 +2,12 @@
 
 namespace tsplp
 {
-    enum class Status
-    {
-        Optimal,
-        Infeasible,
-        Unbounded,
-        Timeout,
-        Error
-    };
+enum class Status
+{
+    Optimal,
+    Infeasible,
+    Unbounded,
+    Timeout,
+    Error
+};
 }

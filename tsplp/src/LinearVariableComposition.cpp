@@ -1,9 +1,11 @@
 #include "LinearVariableComposition.hpp"
+
 #include "Variable.hpp"
 
 #include <algorithm>
 
-tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableComposition linearComp)
+tsplp::LinearVariableComposition tsplp::operator*(
+    double factor, LinearVariableComposition linearComp)
 {
     for (auto& coef : linearComp.m_coefficients)
         coef *= factor;
@@ -13,7 +15,8 @@ tsplp::LinearVariableComposition tsplp::operator*(double factor, LinearVariableC
     return linearComp;
 }
 
-tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs, LinearVariableComposition rhs)
+tsplp::LinearVariableComposition tsplp::operator+(
+    LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     auto& biggerOne = lhs.m_coefficients.size() > rhs.m_coefficients.size() ? lhs : rhs;
     const auto& smallerOne = lhs.m_coefficients.size() > rhs.m_coefficients.size() ? rhs : lhs;
@@ -27,11 +30,13 @@ tsplp::LinearVariableComposition tsplp::operator+(LinearVariableComposition lhs,
     return lhs;
 }
 
-tsplp::LinearVariableComposition& tsplp::operator+=(LinearVariableComposition& lhs, LinearVariableComposition const& rhs)
+tsplp::LinearVariableComposition& tsplp::operator+=(
+    LinearVariableComposition& lhs, LinearVariableComposition const& rhs)
 {
     for (size_t i = 0; i < rhs.m_variables.size(); ++i)
     {
-        const auto iter = std::upper_bound(lhs.m_variables.begin(), lhs.m_variables.end(), rhs.m_variables[i], VariableLess{});
+        const auto iter = std::upper_bound(
+            lhs.m_variables.begin(), lhs.m_variables.end(), rhs.m_variables[i], VariableLess {});
 
         if (iter != lhs.m_variables.end() && iter->GetId() == rhs.m_variables[i].GetId())
         {
@@ -61,7 +66,8 @@ tsplp::LinearVariableComposition tsplp::operator-(LinearVariableComposition oper
     return operand;
 }
 
-tsplp::LinearVariableComposition tsplp::operator-(LinearVariableComposition lhs, LinearVariableComposition rhs)
+tsplp::LinearVariableComposition tsplp::operator-(
+    LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     return std::move(lhs) + (-std::move(rhs));
 }
@@ -72,7 +78,8 @@ tsplp::LinearVariableComposition::LinearVariableComposition(double constant)
 }
 
 tsplp::LinearVariableComposition::LinearVariableComposition(const Variable& variable)
-    : m_variables{ variable }, m_coefficients{ 1 }
+    : m_variables { variable }
+    , m_coefficients { 1 }
 {
 }
 

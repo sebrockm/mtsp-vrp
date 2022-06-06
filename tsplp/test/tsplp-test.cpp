@@ -1,13 +1,14 @@
-#include "Model.hpp"
-#include "Variable.hpp"
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
+#include "Model.hpp"
 #include "Status.hpp"
+#include "Variable.hpp"
 
-#include <vector>
 #include <catch2/catch.hpp>
 
-TEST_CASE("3 variables, 3 constraints", "[lp]") 
+#include <vector>
+
+TEST_CASE("3 variables, 3 constraints", "[lp]")
 {
     tsplp::Model model(3);
 
@@ -25,11 +26,11 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
     auto objective = x1 + 4 * x2 + 9 * x3 - 10;
     model.SetObjective(objective);
 
-    auto c1 = x1 + x2      <=  5;
-    auto c2 = x1 +      x3 >= 10;
-    auto c3 =    - x2 + x3 ==  7;
+    auto c1 = x1 + x2 <= 5;
+    auto c2 = x1 + x3 >= 10;
+    auto c3 = -x2 + x3 == 7;
 
-    std::vector<tsplp::LinearConstraint> constraints{ c1, c2, c3 };
+    std::vector<tsplp::LinearConstraint> constraints { c1, c2, c3 };
 
     model.AddConstraints(constraints.cbegin(), constraints.cend());
 

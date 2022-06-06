@@ -1,9 +1,11 @@
 #include "LinearConstraint.hpp"
+
 #include "LinearVariableComposition.hpp"
 
 #include <CoinFinite.hpp>
 
-tsplp::LinearConstraint tsplp::operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs)
+tsplp::LinearConstraint tsplp::operator<=(
+    LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     LinearConstraint result = lhs - rhs;
     result.m_upperBound *= -1;
@@ -11,7 +13,8 @@ tsplp::LinearConstraint tsplp::operator<=(LinearVariableComposition lhs, LinearV
     return result;
 }
 
-tsplp::LinearConstraint tsplp::operator>=(LinearVariableComposition lhs, LinearVariableComposition rhs)
+tsplp::LinearConstraint tsplp::operator>=(
+    LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     LinearConstraint result = lhs - rhs;
     result.m_lowerBound = -result.m_upperBound;
@@ -19,7 +22,8 @@ tsplp::LinearConstraint tsplp::operator>=(LinearVariableComposition lhs, LinearV
     return result;
 }
 
-tsplp::LinearConstraint tsplp::operator==(LinearVariableComposition lhs, LinearVariableComposition rhs)
+tsplp::LinearConstraint tsplp::operator==(
+    LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     LinearConstraint result = lhs - rhs;
     result.m_upperBound *= -1;
@@ -28,7 +32,9 @@ tsplp::LinearConstraint tsplp::operator==(LinearVariableComposition lhs, LinearV
 }
 
 tsplp::LinearConstraint::LinearConstraint(LinearVariableComposition&& convertee)
-    : m_variables(std::move(convertee.m_variables)), m_coefficients(std::move(convertee.m_coefficients)), m_upperBound(convertee.m_constant)
+    : m_variables(std::move(convertee.m_variables))
+    , m_coefficients(std::move(convertee.m_coefficients))
+    , m_upperBound(convertee.m_constant)
 {
 }
 

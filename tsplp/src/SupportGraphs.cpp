@@ -4,13 +4,16 @@
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/property_map/function_property_map.hpp>
-
 #include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>
 
-tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(const xt::xtensor<Variable, 3>& variables,
-    const DependencyGraph& dependencies, const Model& model)
-    : m_graph(variables.shape(1)), m_variables(variables), m_dependencies(dependencies), m_model(model)
+tsplp::graph::PiSigmaSupportGraph::PiSigmaSupportGraph(
+    const xt::xtensor<Variable, 3>& variables, const DependencyGraph& dependencies,
+    const Model& model)
+    : m_graph(variables.shape(1))
+    , m_variables(variables)
+    , m_dependencies(dependencies)
+    , m_model(model)
 {
     const auto N = variables.shape(1);
     assert(variables.shape(2) == N);
@@ -42,45 +45,54 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
         {
             switch (x)
             {
-            case ConstraintType::Pi: return !d->HasArc(v, s);
-            case ConstraintType::Sigma: return !d->HasArc(t, v);
-            case ConstraintType::PiSigma: return !d->HasArc(v, s) && !d->HasArc(t, v);
+            case ConstraintType::Pi:
+                return !d->HasArc(v, s);
+            case ConstraintType::Sigma:
+                return !d->HasArc(t, v);
+            case ConstraintType::PiSigma:
+                return !d->HasArc(v, s) && !d->HasArc(t, v);
             }
             return true;
         }
     };
 
-    auto filteredSupportGraph = make_filtered_graph(m_graph, boost::keep_all{}, Filter{ &m_dependencies, x, s, t });
+    auto filteredSupportGraph
+        = make_filtered_graph(m_graph, boost::keep_all {}, Filter { &m_dependencies, x, s, t });
 
     const auto getCapacity = [&](const PiSigmaEdge& e)
     {
         // const auto vf = xt::vectorize([](Variable v) { return v.GetObjectiveValue(); });
-        // const auto values = xt::view(m_variables, xt::all(), source(e, filteredSupportGraph), target(e, filteredSupportGraph));
+        // const auto values = xt::view(m_variables, xt::all(), source(e, filteredSupportGraph),
+        //     target(e, filteredSupportGraph));
         // return xt::sum(vf(values))();
-        
+
         const auto A = m_variables.shape(0);
 
-        // it turns out that this manual summing is much faster than the outcommented "nicer" version above
+        // it turns out that this manual summing is much faster than the outcommented "nicer"
+        // version above
         double sum = 0.0;
         for (size_t a = 0; a < A; ++a)
-            sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph)).GetObjectiveValue(m_model);
+            sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph))
+                       .GetObjectiveValue(m_model);
         return sum;
     };
 
     const auto getReverseEdge = [&](const PiSigmaEdge& e)
     {
-        return edge(target(e, filteredSupportGraph), source(e, filteredSupportGraph), filteredSupportGraph).first;
+        return edge(
+                   target(e, filteredSupportGraph), source(e, filteredSupportGraph),
+                   filteredSupportGraph)
+            .first;
     };
 
-    const auto cutSize = boost::boykov_kolmogorov_max_flow(filteredSupportGraph,
-        boost::make_function_property_map<PiSigmaEdge>(getCapacity),
+    const auto cutSize = boost::boykov_kolmogorov_max_flow(
+        filteredSupportGraph, boost::make_function_property_map<PiSigmaEdge>(getCapacity),
         get(boost::edge_residual_capacity, filteredSupportGraph),
         boost::make_function_property_map<PiSigmaEdge>(getReverseEdge),
         get(boost::vertex_predecessor, filteredSupportGraph),
         get(boost::vertex_color, filteredSupportGraph),
         get(boost::vertex_distance, filteredSupportGraph),
-        get(boost::vertex_index, filteredSupportGraph),
-        s, t);
+        get(boost::vertex_index, filteredSupportGraph), s, t);
 
     if (cutSize >= 1.0 - 1.e-10)
         return { cutSize, {} };

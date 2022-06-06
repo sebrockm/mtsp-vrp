@@ -1,41 +1,51 @@
 #include "mtsp-vrp-c.h"
+
 #include <MtspModel.hpp>
 #include <TsplpExceptions.hpp>
+
+#include <xtensor/xadapt.hpp>
 
 #include <array>
 #include <chrono>
 #include <functional>
-#include <xtensor/xadapt.hpp>
 
-int solve_mtsp_vrp(size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions, const size_t* end_positions, const int* weights, int timeout_ms,
-    size_t numberOfThreads, double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets, int (*fractional_callback)(const double*))
+int solve_mtsp_vrp(
+    size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions,
+    const size_t* end_positions, const int* weights, int timeout_ms, size_t numberOfThreads,
+    double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets,
+    int (*fractional_callback)(const double*))
 {
     const auto startTime = std::chrono::steady_clock::now();
 
     if (numberOfAgents == 0 || numberOfNodes < 2 || numberOfAgents * 2 > numberOfNodes)
         return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_SIZE;
 
-    if (start_positions == nullptr || end_positions == nullptr || weights == nullptr ||
-        lowerBound == nullptr || upperBound == nullptr || paths == nullptr || pathOffsets == nullptr)
+    if (start_positions == nullptr || end_positions == nullptr || weights == nullptr
+        || lowerBound == nullptr || upperBound == nullptr || paths == nullptr
+        || pathOffsets == nullptr)
         return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_POINTER;
 
     const std::array positionsShape = { numberOfAgents };
-    const auto startPositions = xt::adapt(start_positions, numberOfAgents, xt::no_ownership{}, positionsShape);
-    const auto endPositions = xt::adapt(end_positions, numberOfAgents, xt::no_ownership{}, positionsShape);
+    const auto startPositions
+        = xt::adapt(start_positions, numberOfAgents, xt::no_ownership {}, positionsShape);
+    const auto endPositions
+        = xt::adapt(end_positions, numberOfAgents, xt::no_ownership {}, positionsShape);
 
     const std::array weightsShape = { numberOfNodes, numberOfNodes };
-    const auto weights_ = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership{}, weightsShape);
+    const auto weights_
+        = xt::adapt(weights, numberOfNodes * numberOfNodes, xt::no_ownership {}, weightsShape);
 
     try
     {
-        const auto timeout = std::chrono::milliseconds{ timeout_ms } -
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+        const auto timeout = std::chrono::milliseconds { timeout_ms }
+            - std::chrono::duration_cast<std::chrono::milliseconds>(
+                                 std::chrono::steady_clock::now() - startTime);
 
         tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
 
         const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback
             ? [=](const xt::xtensor<double, 3>& tensor) { fractional_callback(tensor.data()); }
-            : std::function<void(const xt::xtensor<double, 3>&)>{};
+            : std::function<void(const xt::xtensor<double, 3>&)> {};
         const auto result = model.BranchAndCutSolve(numberOfThreads, callback);
 
         *lowerBound = result.LowerBound;

@@ -1,12 +1,13 @@
 #include "DependencyHelpers.hpp"
+
 #include "MtspModel.hpp"
 #include "TsplpExceptions.hpp"
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("empty", "[CreateTransitiveDependencies]") 
+TEST_CASE("empty", "[CreateTransitiveDependencies]")
 {
-    const auto w = tsplp::CreateTransitiveDependencies({ });
+    const auto w = tsplp::CreateTransitiveDependencies({});
 
     REQUIRE(w.shape(0) == 0);
     REQUIRE(w.shape(1) == 0);
@@ -14,7 +15,7 @@ TEST_CASE("empty", "[CreateTransitiveDependencies]")
 
 TEST_CASE("single", "[CreateTransitiveDependencies]")
 {
-    const auto w = xt::xtensor<int, 2>{ {0,0},{-1,0} }; // 0->1
+    const auto w = xt::xtensor<int, 2> { { 0, 0 }, { -1, 0 } }; // 0->1
     const auto wt = tsplp::CreateTransitiveDependencies(w);
 
     REQUIRE(w == wt);

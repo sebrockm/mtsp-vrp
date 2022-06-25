@@ -4,12 +4,12 @@ file(GLOB tests *.cpp)
 
 add_executable(tsplp-test ${tests})
 
-target_link_libraries(tsplp-test PRIVATE tsplp CONAN_PKG::catch2)
+target_link_libraries(tsplp-test PRIVATE tsplp CONAN_PKG::catch2 CONAN_PKG::boost)
 
 target_precompile_headers(tsplp-test
 	PRIVATE
-		<catch2/catch.hpp>
-		<vector>
+	<catch2/catch.hpp>
+	<vector>
 )
 
 set_source_files_properties(catch-main.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)

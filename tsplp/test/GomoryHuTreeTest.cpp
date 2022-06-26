@@ -2,6 +2,82 @@
 
 #include <catch2/catch.hpp>
 
+TEST_CASE("K3", "[Gomory Hu Tree]")
+{
+    constexpr int N = 3;
+    UndirectedGraph graph(N);
+
+    add_edge(0, 1, 1, graph);
+    add_edge(0, 2, 2, graph);
+    add_edge(1, 2, 4, graph);
+
+    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+
+    REQUIRE(num_vertices(gomoryHuTree) == N);
+    REQUIRE(num_edges(gomoryHuTree) == N - 1);
+
+    // clang-format off
+    constexpr std::array<std::array<int, N>, N> expectedMinCuts {{
+        { 0, 3, 3 },
+        { 3, 0, 5 },
+        { 3, 5, 0 },
+    }};
+    // clang-format on
+
+    for (const auto u : boost::make_iterator_range(vertices(graph)))
+    {
+        for (const auto v : boost::make_iterator_range(vertices(graph)))
+        {
+            if (u == v)
+                continue;
+
+            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+
+            REQUIRE(minCutByTree == expectedMinCuts[u][v]);
+        }
+    }
+}
+
+TEST_CASE("K4", "[Gomory Hu Tree]")
+{
+    constexpr int N = 4;
+    UndirectedGraph graph(N);
+
+    add_edge(0, 1, 1, graph);
+    add_edge(0, 2, 2, graph);
+    add_edge(0, 3, 4, graph);
+    add_edge(1, 2, 4, graph);
+    add_edge(1, 3, 5, graph);
+    add_edge(2, 3, 2, graph);
+
+    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+
+    REQUIRE(num_vertices(gomoryHuTree) == N);
+    REQUIRE(num_edges(gomoryHuTree) == N - 1);
+
+    // clang-format off
+    constexpr std::array<std::array<int, N>, N> expectedMinCuts {{
+        { 0, 7, 7, 7 },
+        { 7, 0, 8,10 },
+        { 7, 8, 0, 8 },
+        { 7,10, 8, 0 },
+    }};
+    // clang-format on
+
+    for (const auto u : boost::make_iterator_range(vertices(graph)))
+    {
+        for (const auto v : boost::make_iterator_range(vertices(graph)))
+        {
+            if (u == v)
+                continue;
+
+            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+
+            REQUIRE(minCutByTree == expectedMinCuts[u][v]);
+        }
+    }
+}
+
 TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
 {
     constexpr int N = 6;

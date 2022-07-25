@@ -22,6 +22,7 @@ public:
     void SetLowerBound(double lowerBound, Model& model) const;
 
     double GetObjectiveValue(const Model& model) const;
+    double GetReducedCosts(const Model& model) const;
     size_t GetId() const;
 };
 

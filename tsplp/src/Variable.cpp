@@ -34,6 +34,11 @@ double tsplp::Variable::GetObjectiveValue(const Model& model) const
     return model.m_spSimplexModel->primalColumnSolution()[m_id];
 }
 
+double tsplp::Variable::GetReducedCosts(const Model& model) const
+{
+    return model.m_spSimplexModel->getReducedCost()[m_id];
+}
+
 size_t tsplp::Variable::GetId() const { return m_id; }
 
 bool tsplp::VariableLess::operator()(const Variable& lhs, const Variable& rhs) const

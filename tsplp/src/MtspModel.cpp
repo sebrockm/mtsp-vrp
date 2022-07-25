@@ -265,6 +265,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
+            // unfix variables from previous loop iteration to get a clean model
             UnfixVariables(fixedVariables0, model);
             UnfixVariables(fixedVariables1, model);
 
@@ -315,10 +316,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                     fractionalCallback(m_weightManager.TransformTensorBack(fractionalValues));
                 }
 
+                // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
                 {
                     remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                         m_endTime - std::chrono::steady_clock::now());
+
                     auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
                         fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
                         m_weightManager.EndPositions(), m_weightManager.Dependencies(),
@@ -363,7 +366,26 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 }
             }
 
-            // fix variables according to reduced costs (dj)
+            // fix variables according to reduced costs
+            for (auto v : model.GetVariables())
+            {
+                if (v.GetLowerBound(model) == 0.0 && v.GetUpperBound(model) == 1.0)
+                {
+                    if (v.GetObjectiveValue(model) < 1.e-10
+                        && currentLowerBound + v.GetReducedCosts(model)
+                            >= currentUpperBound + 1.e-10)
+                    {
+                        fixedVariables0.push_back(v);
+                    }
+                    else if (
+                        v.GetObjectiveValue(model) > 1 - 1.e-10
+                        && currentLowerBound - v.GetReducedCosts(model)
+                            >= currentUpperBound + 1.e-10)
+                    {
+                        fixedVariables1.push_back(v);
+                    }
+                }
+            }
 
             if (auto ucut = separator.Ucut(); ucut.has_value())
             {

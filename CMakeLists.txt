@@ -40,22 +40,24 @@ add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
-# workaround to get access of a boost/graph fix before it is release
+# workaround to get access to a boost/graph fix before it is release
 if(WIN32)
-    set(cmd cmd)
-    set(bootstrap_args /c bootstrap.bat)
+    execute_process(
+        COMMAND cmd /c bootstrap.bat && b2 headers
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/boost
+        ECHO_OUTPUT_VARIABLE
+        ECHO_ERROR_VARIABLE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
 else()
-    set(cmd sh)
-    set(bootstrap_args bootstrap.sh)
+    execute_process(
+        COMMAND ./bootstrap.sh && ./b2 headers
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/boost
+        ECHO_OUTPUT_VARIABLE
+        ECHO_ERROR_VARIABLE
+        COMMAND_ERROR_IS_FATAL ANY
+    )
 endif()
-execute_process(
-    COMMAND ${cmd} ${bootstrap_args}
-    COMMAND ${cmd} b2 headers
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/boost
-    ECHO_OUTPUT_VARIABLE
-    ECHO_ERROR_VARIABLE
-    COMMAND_ERROR_IS_FATAL ANY
-   )
 add_library(my-boost INTERFACE)
 target_include_directories(my-boost INTERFACE boost)
 

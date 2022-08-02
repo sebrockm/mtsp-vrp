@@ -52,13 +52,13 @@ if(WIN32)
     set(boost_dir ${CMAKE_SOURCE_DIR}/boost)
 else()
     execute_process(
-        COMMAND ./bootstrap.sh --prefix=${CMAKE_BINARY_DIR}/boost && ./b2 headers
+        COMMAND ./bootstrap.sh && ./b2 headers
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/boost
         ECHO_OUTPUT_VARIABLE
         ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
-    set(boost_dir ${CMAKE_BINARY_DIR}/boost/include)
+    set(boost_dir /usr/local/boost/include)
     execute_process(COMMAND ls ${boost_dir})
     execute_process(COMMAND ls ${boost_dir}/boost)
 endif()

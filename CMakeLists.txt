@@ -49,17 +49,19 @@ if(WIN32)
         ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
+    set(boost_dir ${CMAKE_SOURCE_DIR}/boost)
 else()
     execute_process(
-        COMMAND ./bootstrap.sh && ./b2 headers
+        COMMAND ./bootstrap.sh --prefix=${CMAKE_BINARY_DIR}/boost && ./b2 headers
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/boost
         ECHO_OUTPUT_VARIABLE
         ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
+    set(boost_dir ${CMAKE_BINARY_DIR}/boost/include)
 endif()
 add_library(my-boost INTERFACE)
-target_include_directories(my-boost INTERFACE boost)
+target_include_directories(my-boost INTERFACE ${boost_dir})
 
 add_subdirectory(mtsp-vrp-c)
 add_subdirectory(python)

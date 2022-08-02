@@ -245,8 +245,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
         return m_bestResult;
     }
 
-    auto callbackMutex
-        = fractionalCallback != nullptr ? std::make_optional<std::mutex>() : std::nullopt;
+    auto callbackMutex = [&]() -> std::optional<std::mutex>
+    {
+        if (fractionalCallback != nullptr)
+            return std::make_optional<std::mutex>();
+        return std::nullopt;
+    }();
 
     BranchAndCutQueue queue;
     ConstraintDeque constraints(threadCount);

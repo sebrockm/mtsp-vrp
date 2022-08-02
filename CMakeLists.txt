@@ -58,7 +58,7 @@ else()
         ECHO_ERROR_VARIABLE
         COMMAND_ERROR_IS_FATAL ANY
     )
-    set(boost_dir /usr/local/boost/include)
+    set(boost_dir /usr/local/include)
     execute_process(COMMAND ls ${boost_dir})
     execute_process(COMMAND ls ${boost_dir}/boost)
 endif()

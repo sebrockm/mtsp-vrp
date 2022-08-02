@@ -59,6 +59,8 @@ else()
         COMMAND_ERROR_IS_FATAL ANY
     )
     set(boost_dir ${CMAKE_BINARY_DIR}/boost/include)
+    execute_process(COMMAND ls ${boost_dir})
+    execute_process(COMMAND ls ${boost_dir}/boost)
 endif()
 add_library(my-boost INTERFACE)
 target_include_directories(my-boost INTERFACE ${boost_dir})

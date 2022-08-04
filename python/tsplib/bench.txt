@@ -1,148 +1,148 @@
-br17.10.sop     N=   18 A=1 mode=sum time= 60.026s result=      54 gap=  5.77%
-br17.12.sop     N=   18 A=1 mode=sum time= 60.023s result=      54 gap=  3.77%
-ESC07.sop       N=    9 A=1 mode=sum time=  0.078s result=    2124 gap=  0.00%
-ESC11.sop       N=   13 A=1 mode=sum time=  0.050s result=    2074 gap=  0.00%
-ESC12.sop       N=   14 A=1 mode=sum time=  0.081s result=    1674 gap=  0.00%
-ESC25.sop       N=   27 A=1 mode=sum time=  0.346s result=    1680 gap=  0.00%
-ESC47.sop       N=   49 A=1 mode=sum time=  2.952s result=    1287 gap=  0.00%
-ESC63.sop       N=   65 A=1 mode=sum time= 60.016s result=      85 gap= 56.36%
-ESC78.sop       N=   80 A=1 mode=sum time= 60.015s result=   21954 gap=134.56%
-ft53.1.sop      N=   54 A=1 mode=sum time= 60.028s result=   10337 gap= 41.40%
-ft53.2.sop      N=   54 A=1 mode=sum time= 60.016s result=   12287 gap= 63.45%
-ft53.3.sop      N=   54 A=1 mode=sum time= 60.106s result=   16413 gap= 78.08%
-ft53.4.sop      N=   54 A=1 mode=sum time= 60.016s result=   18878 gap= 45.69%
-ft70.1.sop      N=   71 A=1 mode=sum time= 60.066s result=   39312 gap=  0.01%
-ft70.2.sop      N=   71 A=1 mode=sum time= 60.024s result=   47823 gap= 20.94%
-ft70.3.sop      N=   71 A=1 mode=sum time= 60.093s result=   52647 gap= 28.56%
-ft70.4.sop      N=   71 A=1 mode=sum time= 60.008s result=   59199 gap= 32.42%
-kro124p.1.sop   N=  101 A=1 mode=sum time= 60.219s result=   62291 gap= 66.13%
-kro124p.2.sop   N=  101 A=1 mode=sum time= 60.099s result=   68732 gap= 80.61%
-kro124p.3.sop   N=  101 A=1 mode=sum time= 60.011s result=   79142 gap=104.58%
-kro124p.4.sop   N=  101 A=1 mode=sum time= 60.020s result=  108230 gap=142.97%
-p43.1.sop       N=   44 A=1 mode=sum time= 60.033s result=   28139 gap=  0.12%
-p43.2.sop       N=   44 A=1 mode=sum time= 60.061s result=   55534 gap= 96.94%
-p43.3.sop       N=   44 A=1 mode=sum time= 60.019s result=   82849 gap=192.20%
-p43.4.sop       N=   44 A=1 mode=sum time= 60.008s result=   83939 gap= 49.50%
-prob.100.sop    N=  100 A=1 mode=sum time= 60.103s result=    4919 gap=383.30%
-prob.42.sop     N=   42 A=1 mode=sum time= 60.033s result=     669 gap=181.51%
-rbg048a.sop     N=   50 A=1 mode=sum time= 60.054s result=     350 gap=  0.57%
-rbg050c.sop     N=   52 A=1 mode=sum time= 60.018s result=     533 gap= 15.09%
-rbg109a.sop     N=  111 A=1 mode=sum time= 60.014s result=    1337 gap= 40.25%
-rbg150a.sop     N=  152 A=1 mode=sum time= 60.030s result=    1974 gap= 19.99%
-rbg174a.sop     N=  176 A=1 mode=sum time= 60.072s result=    2203 gap= 15.27%
-rbg253a.sop     N=  255 A=1 mode=sum time= 60.248s result=    3254 gap=   inf%
-rbg323a.sop     N=  325 A=1 mode=sum time= 60.393s result=    3757 gap=   inf%
-rbg341a.sop     N=  343 A=1 mode=sum time= 61.601s result=    3548 gap=   inf%
-rbg358a.sop     N=  360 A=1 mode=sum time= 60.246s result=    3723 gap=   inf%
-rbg378a.sop     N=  380 A=1 mode=sum time= 60.234s result=    3920 gap=   inf%
-ry48p.1.sop     N=   49 A=1 mode=sum time= 60.100s result=   22493 gap= 48.99%
-ry48p.2.sop     N=   49 A=1 mode=sum time= 60.096s result=   26795 gap= 75.36%
-ry48p.3.sop     N=   49 A=1 mode=sum time= 60.052s result=   29591 gap= 72.10%
-ry48p.4.sop     N=   49 A=1 mode=sum time= 60.002s result=   40900 gap= 68.07%
-br17.atsp       N=   17 A=1 mode=sum time=  0.026s result=      39 gap=  0.00%
-ft53.atsp       N=   53 A=1 mode=sum time=  0.311s result=    6905 gap=  0.00%
-ft70.atsp       N=   70 A=1 mode=sum time=  0.342s result=   38673 gap=  0.00%
-ftv170.atsp     N=  171 A=1 mode=sum time= 60.291s result=    3239 gap= 18.30%
-ftv33.atsp      N=   34 A=1 mode=sum time=  0.074s result=    1286 gap=  0.00%
-ftv35.atsp      N=   36 A=1 mode=sum time=  0.120s result=    1473 gap=  0.00%
-ftv38.atsp      N=   39 A=1 mode=sum time=  0.159s result=    1530 gap=  0.00%
-ftv44.atsp      N=   45 A=1 mode=sum time=  0.213s result=    1613 gap=  0.00%
-ftv47.atsp      N=   48 A=1 mode=sum time=  0.412s result=    1776 gap=  0.00%
-ftv55.atsp      N=   56 A=1 mode=sum time=  0.375s result=    1608 gap=  0.00%
-ftv64.atsp      N=   65 A=1 mode=sum time=  0.774s result=    1839 gap=  0.00%
-ftv70.atsp      N=   71 A=1 mode=sum time=  1.006s result=    1950 gap=  0.00%
-kro124p.atsp    N=  100 A=1 mode=sum time=  2.110s result=   36230 gap=  0.00%
-p43.atsp        N=   43 A=1 mode=sum time= 60.022s result=    5621 gap=  0.14%
-rbg323.atsp     N=  323 A=1 mode=sum time= 53.759s result=    1326 gap=  0.00%
-rbg358.atsp     N=  358 A=1 mode=sum time= 60.018s result=    1373 gap= 18.06%
-rbg403.atsp     N=  403 A=1 mode=sum time= 60.023s result=    2572 gap=  4.34%
-rbg443.atsp     N=  443 A=1 mode=sum time= 60.026s result=    2828 gap=  3.97%
-ry48p.atsp      N=   48 A=1 mode=sum time=  0.484s result=   14422 gap=  0.00%
-a280.tsp        N=  280 A=1 mode=sum time= 60.044s result=    2992 gap= 17.29%
-ali535.tsp      N=  535 A=1 mode=sum time= 60.859s result=  229343 gap= 19.76%
-att48.tsp       N=   48 A=1 mode=sum time=  0.308s result=   10628 gap=  0.00%
-att532.tsp      N=  532 A=1 mode=sum time= 61.550s result=   31930 gap= 19.86%
-bayg29.tsp      N=   29 A=1 mode=sum time=  0.112s result=    1610 gap=  0.00%
-bays29.tsp      N=   29 A=1 mode=sum time=  0.067s result=    2020 gap=  0.00%
-berlin52.tsp    N=   52 A=1 mode=sum time=  0.110s result=    7542 gap=  0.00%
-bier127.tsp     N=  127 A=1 mode=sum time= 60.054s result=  123490 gap=  4.88%
-brazil58.tsp    N=   58 A=1 mode=sum time=  0.695s result=   25395 gap=  0.00%
+br17.10.sop     N=   18 A=1 mode=sum time= 60.020s result=      54 gap=  3.77%
+br17.12.sop     N=   18 A=1 mode=sum time= 60.011s result=      54 gap=  3.77%
+ESC07.sop       N=    9 A=1 mode=sum time=  0.039s result=    2124 gap=  0.00%
+ESC11.sop       N=   13 A=1 mode=sum time=  0.049s result=    2074 gap=  0.00%
+ESC12.sop       N=   14 A=1 mode=sum time=  0.092s result=    1674 gap=  0.00%
+ESC25.sop       N=   27 A=1 mode=sum time=  0.356s result=    1680 gap=  0.00%
+ESC47.sop       N=   49 A=1 mode=sum time=  2.924s result=    1287 gap=  0.00%
+ESC63.sop       N=   65 A=1 mode=sum time= 60.021s result=      85 gap= 56.36%
+ESC78.sop       N=   80 A=1 mode=sum time= 60.013s result=   21954 gap=134.56%
+ft53.1.sop      N=   54 A=1 mode=sum time= 60.031s result=   10337 gap= 41.04%
+ft53.2.sop      N=   54 A=1 mode=sum time= 60.023s result=   12287 gap= 63.25%
+ft53.3.sop      N=   54 A=1 mode=sum time= 60.019s result=   16413 gap= 77.79%
+ft53.4.sop      N=   54 A=1 mode=sum time= 60.034s result=   18878 gap= 44.91%
+ft70.1.sop      N=   71 A=1 mode=sum time= 60.044s result=   39312 gap=  0.02%
+ft70.2.sop      N=   71 A=1 mode=sum time= 60.065s result=   47823 gap= 20.95%
+ft70.3.sop      N=   71 A=1 mode=sum time= 60.049s result=   52647 gap= 28.69%
+ft70.4.sop      N=   71 A=1 mode=sum time= 60.020s result=   59199 gap= 32.42%
+kro124p.1.sop   N=  101 A=1 mode=sum time= 60.223s result=   62291 gap= 66.01%
+kro124p.2.sop   N=  101 A=1 mode=sum time= 60.024s result=   68732 gap= 80.57%
+kro124p.3.sop   N=  101 A=1 mode=sum time= 60.023s result=   79142 gap=104.12%
+kro124p.4.sop   N=  101 A=1 mode=sum time= 60.020s result=  108230 gap=142.18%
+p43.1.sop       N=   44 A=1 mode=sum time= 60.026s result=   28139 gap=  0.12%
+p43.2.sop       N=   44 A=1 mode=sum time= 60.047s result=   55534 gap= 96.93%
+p43.3.sop       N=   44 A=1 mode=sum time= 60.018s result=   82849 gap=192.20%
+p43.4.sop       N=   44 A=1 mode=sum time= 60.009s result=   83939 gap= 49.44%
+prob.100.sop    N=  100 A=1 mode=sum time= 60.045s result=    4919 gap=381.88%
+prob.42.sop     N=   42 A=1 mode=sum time= 60.024s result=     669 gap=180.33%
+rbg048a.sop     N=   50 A=1 mode=sum time= 60.119s result=     355 gap=  2.01%
+rbg050c.sop     N=   52 A=1 mode=sum time= 60.021s result=     533 gap= 15.09%
+rbg109a.sop     N=  111 A=1 mode=sum time= 60.014s result=    1337 gap= 39.81%
+rbg150a.sop     N=  152 A=1 mode=sum time= 60.013s result=    1974 gap= 19.91%
+rbg174a.sop     N=  176 A=1 mode=sum time= 60.034s result=    2203 gap= 15.27%
+rbg253a.sop     N=  255 A=1 mode=sum time= 60.171s result=    3254 gap=   inf%
+rbg323a.sop     N=  325 A=1 mode=sum time= 60.395s result=    3757 gap=   inf%
+rbg341a.sop     N=  343 A=1 mode=sum time= 60.444s result=    3548 gap=   inf%
+rbg358a.sop     N=  360 A=1 mode=sum time= 64.610s result=    3723 gap=   inf%
+rbg378a.sop     N=  380 A=1 mode=sum time= 60.233s result=    3920 gap=   inf%
+ry48p.1.sop     N=   49 A=1 mode=sum time= 60.066s result=   22493 gap= 48.79%
+ry48p.2.sop     N=   49 A=1 mode=sum time= 60.093s result=   26795 gap= 75.25%
+ry48p.3.sop     N=   49 A=1 mode=sum time= 60.072s result=   29591 gap= 71.76%
+ry48p.4.sop     N=   49 A=1 mode=sum time= 60.026s result=   40900 gap= 60.21%
+br17.atsp       N=   17 A=1 mode=sum time=  0.031s result=      39 gap=  0.00%
+ft53.atsp       N=   53 A=1 mode=sum time=  0.110s result=    6905 gap=  0.00%
+ft70.atsp       N=   70 A=1 mode=sum time=  0.267s result=   38673 gap=  0.00%
+ftv170.atsp     N=  171 A=1 mode=sum time= 60.305s result=    3273 gap= 19.32%
+ftv33.atsp      N=   34 A=1 mode=sum time=  0.079s result=    1286 gap=  0.00%
+ftv35.atsp      N=   36 A=1 mode=sum time=  0.141s result=    1473 gap=  0.00%
+ftv38.atsp      N=   39 A=1 mode=sum time=  0.126s result=    1530 gap=  0.00%
+ftv44.atsp      N=   45 A=1 mode=sum time=  0.219s result=    1613 gap=  0.00%
+ftv47.atsp      N=   48 A=1 mode=sum time=  0.361s result=    1776 gap=  0.00%
+ftv55.atsp      N=   56 A=1 mode=sum time=  0.369s result=    1608 gap=  0.00%
+ftv64.atsp      N=   65 A=1 mode=sum time=  0.565s result=    1839 gap=  0.00%
+ftv70.atsp      N=   71 A=1 mode=sum time=  0.833s result=    1950 gap=  0.00%
+kro124p.atsp    N=  100 A=1 mode=sum time=  1.038s result=   36230 gap=  0.00%
+p43.atsp        N=   43 A=1 mode=sum time= 60.047s result=    5621 gap=  0.14%
+rbg323.atsp     N=  323 A=1 mode=sum time= 49.748s result=    1326 gap=  0.00%
+rbg358.atsp     N=  358 A=1 mode=sum time= 62.791s result=    1370 gap= 17.80%
+rbg403.atsp     N=  403 A=1 mode=sum time= 60.014s result=    2572 gap=  4.34%
+rbg443.atsp     N=  443 A=1 mode=sum time= 60.028s result=    2828 gap=  3.97%
+ry48p.atsp      N=   48 A=1 mode=sum time=  0.361s result=   14422 gap=  0.00%
+a280.tsp        N=  280 A=1 mode=sum time= 60.727s result=    2894 gap= 12.61%
+ali535.tsp      N=  535 A=1 mode=sum time= 60.494s result=  229343 gap= 18.32%
+att48.tsp       N=   48 A=1 mode=sum time=  0.220s result=   10628 gap=  0.00%
+att532.tsp      N=  532 A=1 mode=sum time= 60.141s result=   31930 gap= 19.19%
+bayg29.tsp      N=   29 A=1 mode=sum time=  0.048s result=    1610 gap=  0.00%
+bays29.tsp      N=   29 A=1 mode=sum time=  0.047s result=    2020 gap=  0.00%
+berlin52.tsp    N=   52 A=1 mode=sum time=  0.063s result=    7542 gap=  0.00%
+bier127.tsp     N=  127 A=1 mode=sum time= 60.081s result=  123396 gap=  4.78%
+brazil58.tsp    N=   58 A=1 mode=sum time=  0.550s result=   25395 gap=  0.00%
 brd14051.tsp    N=14051 A=1 mode=sum time=-------s result=-------- gap=-------
-brg180.tsp      N=  180 A=1 mode=sum time= 60.427s result=    2740 gap= 40.51%
-burma14.tsp     N=   14 A=1 mode=sum time=  0.323s result=    3323 gap=  0.00%
-ch130.tsp       N=  130 A=1 mode=sum time= 60.035s result=    6320 gap=  3.69%
-ch150.tsp       N=  150 A=1 mode=sum time= 60.115s result=    7011 gap=  7.73%
+brg180.tsp      N=  180 A=1 mode=sum time= 60.106s result=    2790 gap= 43.08%
+burma14.tsp     N=   14 A=1 mode=sum time=  0.551s result=    3323 gap=  0.00%
+ch130.tsp       N=  130 A=1 mode=sum time= 60.112s result=    6360 gap=  4.35%
+ch150.tsp       N=  150 A=1 mode=sum time= 60.249s result=    7058 gap=  8.45%
 d1291.tsp       N= 1291 A=1 mode=sum time=-------s result=-------- gap=-------
 d15112.tsp      N=15112 A=1 mode=sum time=-------s result=-------- gap=-------
 d1655.tsp       N= 1655 A=1 mode=sum time=-------s result=-------- gap=-------
 d18512.tsp      N=18512 A=1 mode=sum time=-------s result=-------- gap=-------
-d198.tsp        N=  198 A=1 mode=sum time= 60.547s result=   16629 gap=  5.59%
+d198.tsp        N=  198 A=1 mode=sum time= 60.385s result=   17292 gap=  9.75%
 d2103.tsp       N= 2103 A=1 mode=sum time=-------s result=-------- gap=-------
-d493.tsp        N=  493 A=1 mode=sum time= 60.134s result=   41055 gap= 24.53%
-d657.tsp        N=  657 A=1 mode=sum time= 67.528s result=   56734 gap= 21.54%
-dantzig42.tsp   N=   42 A=1 mode=sum time=  0.157s result=     699 gap=  0.00%
-dsj1000.tsp     N= 1000 A=1 mode=sum time= 64.216s result=21021248 gap= 21.53%
-eil101.tsp      N=  101 A=1 mode=sum time=  2.081s result=     629 gap=  0.00%
-eil51.tsp       N=   51 A=1 mode=sum time=  0.654s result=     426 gap=  0.00%
-eil76.tsp       N=   76 A=1 mode=sum time=  0.543s result=     538 gap=  0.00%
+d493.tsp        N=  493 A=1 mode=sum time= 61.820s result=   41444 gap= 23.03%
+d657.tsp        N=  657 A=1 mode=sum time= 62.511s result=   56784 gap= 21.00%
+dantzig42.tsp   N=   42 A=1 mode=sum time=  0.126s result=     699 gap=  0.00%
+dsj1000.tsp     N= 1000 A=1 mode=sum time= 69.452s result=21021248 gap= 21.46%
+eil101.tsp      N=  101 A=1 mode=sum time=  1.714s result=     629 gap=  0.00%
+eil51.tsp       N=   51 A=1 mode=sum time=  0.455s result=     426 gap=  0.00%
+eil76.tsp       N=   76 A=1 mode=sum time=  0.408s result=     538 gap=  0.00%
 fl1400.tsp      N= 1400 A=1 mode=sum time=-------s result=-------- gap=-------
 fl1577.tsp      N= 1577 A=1 mode=sum time=-------s result=-------- gap=-------
 fl3795.tsp      N= 3795 A=1 mode=sum time=-------s result=-------- gap=-------
-fl417.tsp       N=  417 A=1 mode=sum time= 60.028s result=   12377 gap= 32.28%
+fl417.tsp       N=  417 A=1 mode=sum time= 60.040s result=   12409 gap= 11.61%
 fnl4461.tsp     N= 4461 A=1 mode=sum time=-------s result=-------- gap=-------
-fri26.tsp       N=   26 A=1 mode=sum time=  0.059s result=     937 gap=  0.00%
-gil262.tsp      N=  262 A=1 mode=sum time= 60.031s result=    2534 gap=  8.80%
-gr120.tsp       N=  120 A=1 mode=sum time= 60.025s result=    6942 gap=  0.03%
-gr137.tsp       N=  137 A=1 mode=sum time= 60.076s result=   69853 gap=  0.17%
-gr17.tsp        N=   17 A=1 mode=sum time=  0.080s result=    2085 gap=  0.00%
-gr202.tsp       N=  202 A=1 mode=sum time= 60.672s result=   43440 gap=  8.30%
-gr21.tsp        N=   21 A=1 mode=sum time=  0.011s result=    2707 gap=  0.00%
-gr229.tsp       N=  229 A=1 mode=sum time= 60.618s result=  143088 gap=  7.20%
-gr24.tsp        N=   24 A=1 mode=sum time=  0.039s result=    1272 gap=  0.00%
-gr431.tsp       N=  431 A=1 mode=sum time= 60.651s result=  208695 gap= 27.82%
-gr48.tsp        N=   48 A=1 mode=sum time=  3.152s result=    5046 gap=  0.00%
-gr666.tsp       N=  666 A=1 mode=sum time= 64.097s result=  344997 gap= 21.13%
-gr96.tsp        N=   96 A=1 mode=sum time= 25.779s result=   55209 gap=  0.00%
-hk48.tsp        N=   48 A=1 mode=sum time=  0.201s result=   11461 gap=  0.00%
-kroA100.tsp     N=  100 A=1 mode=sum time= 60.045s result=   21975 gap=  3.90%
-kroA150.tsp     N=  150 A=1 mode=sum time= 60.104s result=   28603 gap=  8.49%
-kroA200.tsp     N=  200 A=1 mode=sum time= 60.350s result=   32115 gap= 10.36%
-kroB100.tsp     N=  100 A=1 mode=sum time= 60.028s result=   22679 gap=  2.69%
-kroB150.tsp     N=  150 A=1 mode=sum time= 60.191s result=   27787 gap=  7.53%
-kroB200.tsp     N=  200 A=1 mode=sum time= 60.307s result=   31560 gap=  7.89%
-kroC100.tsp     N=  100 A=1 mode=sum time= 60.045s result=   21067 gap=  1.77%
-kroD100.tsp     N=  100 A=1 mode=sum time=  8.211s result=   21294 gap=  0.00%
-kroE100.tsp     N=  100 A=1 mode=sum time= 60.026s result=   22068 gap=  0.37%
-lin105.tsp      N=  105 A=1 mode=sum time=  2.065s result=   14379 gap=  0.00%
-lin318.tsp      N=  318 A=1 mode=sum time= 60.020s result=   45796 gap= 14.96%
-linhp318.tsp    N=  318 A=1 mode=sum time= 60.027s result=   46104 gap= 14.90%
+fri26.tsp       N=   26 A=1 mode=sum time=  0.032s result=     937 gap=  0.00%
+gil262.tsp      N=  262 A=1 mode=sum time= 60.773s result=    2536 gap=  7.59%
+gr120.tsp       N=  120 A=1 mode=sum time= 60.068s result=    6942 gap=  0.04%
+gr137.tsp       N=  137 A=1 mode=sum time= 60.072s result=   70935 gap=  1.75%
+gr17.tsp        N=   17 A=1 mode=sum time=  0.220s result=    2085 gap=  0.00%
+gr202.tsp       N=  202 A=1 mode=sum time= 60.436s result=   43337 gap=  8.00%
+gr21.tsp        N=   21 A=1 mode=sum time=  0.016s result=    2707 gap=  0.00%
+gr229.tsp       N=  229 A=1 mode=sum time= 60.670s result=  144368 gap=  8.11%
+gr24.tsp        N=   24 A=1 mode=sum time=  0.016s result=    1272 gap=  0.00%
+gr431.tsp       N=  431 A=1 mode=sum time= 60.429s result=  197870 gap= 17.10%
+gr48.tsp        N=   48 A=1 mode=sum time=  2.622s result=    5046 gap=  0.00%
+gr666.tsp       N=  666 A=1 mode=sum time= 61.520s result=  342941 gap= 20.23%
+gr96.tsp        N=   96 A=1 mode=sum time= 26.442s result=   55209 gap=  0.00%
+hk48.tsp        N=   48 A=1 mode=sum time=  0.141s result=   11461 gap=  0.00%
+kroA100.tsp     N=  100 A=1 mode=sum time= 60.019s result=   21975 gap=  3.81%
+kroA150.tsp     N=  150 A=1 mode=sum time= 60.061s result=   28717 gap=  8.87%
+kroA200.tsp     N=  200 A=1 mode=sum time= 60.355s result=   32530 gap= 11.73%
+kroB100.tsp     N=  100 A=1 mode=sum time= 60.038s result=   22679 gap=  2.69%
+kroB150.tsp     N=  150 A=1 mode=sum time= 60.205s result=   27751 gap=  7.35%
+kroB200.tsp     N=  200 A=1 mode=sum time= 60.263s result=   31560 gap=  7.83%
+kroC100.tsp     N=  100 A=1 mode=sum time= 60.030s result=   21115 gap=  1.96%
+kroD100.tsp     N=  100 A=1 mode=sum time=  5.341s result=   21294 gap=  0.00%
+kroE100.tsp     N=  100 A=1 mode=sum time= 60.008s result=   22625 gap=  2.85%
+lin105.tsp      N=  105 A=1 mode=sum time=  1.005s result=   14379 gap=  0.00%
+lin318.tsp      N=  318 A=1 mode=sum time= 60.731s result=   45737 gap=  9.12%
+linhp318.tsp    N=  318 A=1 mode=sum time= 61.392s result=   45689 gap=  9.03%
 nrw1379.tsp     N= 1379 A=1 mode=sum time=-------s result=-------- gap=-------
-p654.tsp        N=  654 A=1 mode=sum time= 63.174s result=   36268 gap= 27.01%
-pa561.tsp       N=  561 A=1 mode=sum time= 62.284s result=    3237 gap= 20.29%
+p654.tsp        N=  654 A=1 mode=sum time= 62.199s result=   36268 gap= 20.60%
+pa561.tsp       N=  561 A=1 mode=sum time= 61.547s result=    3273 gap= 20.15%
 pcb1173.tsp     N= 1173 A=1 mode=sum time=-------s result=-------- gap=-------
 pcb3038.tsp     N= 3038 A=1 mode=sum time=-------s result=-------- gap=-------
-pcb442.tsp      N=  442 A=1 mode=sum time= 60.038s result=   57668 gap= 15.10%
+pcb442.tsp      N=  442 A=1 mode=sum time= 60.266s result=   57743 gap= 14.34%
 pla33810.tsp    N=33810 A=1 mode=sum time=-------s result=-------- gap=-------
 pla7397.tsp     N= 7397 A=1 mode=sum time=-------s result=-------- gap=-------
 pla85900.tsp    N=85900 A=1 mode=sum time=-------s result=-------- gap=-------
 pr1002.tsp      N= 1002 A=1 mode=sum time=-------s result=-------- gap=-------
-pr107.tsp       N=  107 A=1 mode=sum time=  8.133s result=   44303 gap=  0.00%
-pr124.tsp       N=  124 A=1 mode=sum time= 60.024s result=   59030 gap=  0.12%
-pr136.tsp       N=  136 A=1 mode=sum time= 60.038s result=  105104 gap=  9.09%
-pr144.tsp       N=  144 A=1 mode=sum time= 41.059s result=   58537 gap=  0.00%
-pr152.tsp       N=  152 A=1 mode=sum time= 60.088s result=   75750 gap=  3.19%
-pr226.tsp       N=  226 A=1 mode=sum time= 60.570s result=   82042 gap=  2.22%
+pr107.tsp       N=  107 A=1 mode=sum time=  1.302s result=   44303 gap=  0.00%
+pr124.tsp       N=  124 A=1 mode=sum time= 60.023s result=   59030 gap=  0.08%
+pr136.tsp       N=  136 A=1 mode=sum time= 60.020s result=  103442 gap=  7.35%
+pr144.tsp       N=  144 A=1 mode=sum time= 23.123s result=   58537 gap=  0.00%
+pr152.tsp       N=  152 A=1 mode=sum time= 60.041s result=   75980 gap=  3.45%
+pr226.tsp       N=  226 A=1 mode=sum time= 60.315s result=   80373 gap=  0.06%
 pr2392.tsp      N= 2392 A=1 mode=sum time=-------s result=-------- gap=-------
-pr264.tsp       N=  264 A=1 mode=sum time= 60.453s result=   52403 gap=  6.76%
-pr299.tsp       N=  299 A=1 mode=sum time= 60.886s result=   56806 gap= 19.82%
-pr439.tsp       N=  439 A=1 mode=sum time= 60.475s result=  125852 gap= 33.02%
-pr76.tsp        N=   76 A=1 mode=sum time= 60.025s result=  108194 gap=  0.71%
-rat195.tsp      N=  195 A=1 mode=sum time= 60.524s result=    2625 gap= 13.59%
-rat575.tsp      N=  575 A=1 mode=sum time= 61.101s result=    7924 gap= 19.16%
-rat783.tsp      N=  783 A=1 mode=sum time= 60.059s result=   10530 gap= 22.83%
-rat99.tsp       N=   99 A=1 mode=sum time=  2.054s result=    1211 gap=  0.00%
-rd100.tsp       N=  100 A=1 mode=sum time=  1.874s result=    7910 gap=  0.00%
-rd400.tsp       N=  400 A=1 mode=sum time= 60.655s result=   16736 gap= 14.69%
+pr264.tsp       N=  264 A=1 mode=sum time= 60.423s result=   52385 gap=  6.64%
+pr299.tsp       N=  299 A=1 mode=sum time= 60.498s result=   56736 gap= 19.58%
+pr439.tsp       N=  439 A=1 mode=sum time= 60.232s result=  124236 gap= 17.34%
+pr76.tsp        N=   76 A=1 mode=sum time= 60.011s result=  108512 gap=  1.18%
+rat195.tsp      N=  195 A=1 mode=sum time= 60.249s result=    2647 gap= 14.49%
+rat575.tsp      N=  575 A=1 mode=sum time= 61.234s result=    7881 gap= 17.66%
+rat783.tsp      N=  783 A=1 mode=sum time= 61.353s result=   10498 gap= 22.14%
+rat99.tsp       N=   99 A=1 mode=sum time=  1.852s result=    1211 gap=  0.00%
+rd100.tsp       N=  100 A=1 mode=sum time=  1.114s result=    7910 gap=  0.00%
+rd400.tsp       N=  400 A=1 mode=sum time= 61.197s result=   16618 gap=  9.63%
 rl11849.tsp     N=11849 A=1 mode=sum time=-------s result=-------- gap=-------
 rl1304.tsp      N= 1304 A=1 mode=sum time=-------s result=-------- gap=-------
 rl1323.tsp      N= 1323 A=1 mode=sum time=-------s result=-------- gap=-------
@@ -150,22 +150,22 @@ rl1889.tsp      N= 1889 A=1 mode=sum time=-------s result=-------- gap=-------
 rl5915.tsp      N= 5915 A=1 mode=sum time=-------s result=-------- gap=-------
 rl5934.tsp      N= 5934 A=1 mode=sum time=-------s result=-------- gap=-------
 si1032.tsp      N= 1032 A=1 mode=sum time=-------s result=-------- gap=-------
-si175.tsp       N=  175 A=1 mode=sum time= 60.442s result=   21839 gap=  2.15%
-si535.tsp       N=  535 A=1 mode=sum time= 60.602s result=   49610 gap=  5.62%
-st70.tsp        N=   70 A=1 mode=sum time=  1.367s result=     675 gap=  0.00%
-swiss42.tsp     N=   42 A=1 mode=sum time=  0.167s result=    1273 gap=  0.00%
-ts225.tsp       N=  225 A=1 mode=sum time= 60.333s result=  140684 gap= 20.48%
-tsp225.tsp      N=  225 A=1 mode=sum time= 60.539s result=    4206 gap=  8.18%
+si175.tsp       N=  175 A=1 mode=sum time= 60.081s result=   21742 gap=  1.69%
+si535.tsp       N=  535 A=1 mode=sum time= 60.470s result=   49619 gap=  4.86%
+st70.tsp        N=   70 A=1 mode=sum time=  1.005s result=     675 gap=  0.00%
+swiss42.tsp     N=   42 A=1 mode=sum time=  0.079s result=    1273 gap=  0.00%
+ts225.tsp       N=  225 A=1 mode=sum time= 60.195s result=  143089 gap= 22.45%
+tsp225.tsp      N=  225 A=1 mode=sum time= 60.304s result=    4236 gap=  8.89%
 u1060.tsp       N= 1060 A=1 mode=sum time=-------s result=-------- gap=-------
 u1432.tsp       N= 1432 A=1 mode=sum time=-------s result=-------- gap=-------
-u159.tsp        N=  159 A=1 mode=sum time= 35.891s result=   42080 gap=  0.00%
+u159.tsp        N=  159 A=1 mode=sum time= 23.205s result=   42080 gap=  0.00%
 u1817.tsp       N= 1817 A=1 mode=sum time=-------s result=-------- gap=-------
 u2152.tsp       N= 2152 A=1 mode=sum time=-------s result=-------- gap=-------
 u2319.tsp       N= 2319 A=1 mode=sum time=-------s result=-------- gap=-------
-u574.tsp        N=  574 A=1 mode=sum time= 61.331s result=   43881 gap= 26.75%
-u724.tsp        N=  724 A=1 mode=sum time= 60.881s result=   47504 gap= 17.24%
-ulysses16.tsp   N=   16 A=1 mode=sum time=  0.022s result=    6859 gap=  0.00%
-ulysses22.tsp   N=   22 A=1 mode=sum time=  0.063s result=    7013 gap=  0.00%
+u574.tsp        N=  574 A=1 mode=sum time= 61.237s result=   43494 gap= 24.54%
+u724.tsp        N=  724 A=1 mode=sum time= 61.974s result=   47780 gap= 17.36%
+ulysses16.tsp   N=   16 A=1 mode=sum time=  0.016s result=    6859 gap=  0.00%
+ulysses22.tsp   N=   22 A=1 mode=sum time=  0.035s result=    7013 gap=  0.00%
 usa13509.tsp    N=13509 A=1 mode=sum time=-------s result=-------- gap=-------
 vm1084.tsp      N= 1084 A=1 mode=sum time=-------s result=-------- gap=-------
 vm1748.tsp      N= 1748 A=1 mode=sum time=-------s result=-------- gap=-------

@@ -69,8 +69,11 @@ else()
     )
 endif()
 
+find_package(Threads REQUIRED)
+
 add_library(my-boost INTERFACE)
 target_include_directories(my-boost INTERFACE ${CMAKE_SOURCE_DIR}/boost)
+target_link_libraries(my-boost INTERFACE Threads::Threads)
 
 add_subdirectory(mtsp-vrp-c)
 add_subdirectory(python)

@@ -56,8 +56,7 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
                 m_outgoing.push_back(v);
 
         const auto rangeEnd = ssize(m_outgoing);
-        m_node2outgoingSpanMap.emplace_back(
-            m_outgoing.data() + rangeBegin, m_outgoing.data() + rangeEnd);
+        m_node2outgoingSpanMap.emplace_back(rangeBegin, rangeEnd);
     }
 
     for (size_t u = 0; u < N; ++u)
@@ -74,8 +73,19 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
         }
 
         const auto rangeEnd = ssize(m_incoming);
-        m_node2incomingSpanMap.emplace_back(
-            m_incoming.data() + rangeBegin, m_incoming.data() + rangeEnd);
+        m_node2incomingSpanMap.emplace_back(rangeBegin, rangeEnd);
     }
+}
+
+std::span<const size_t> DependencyGraph::GetIncomingSpan(size_t n) const
+{
+    const auto [s, t] = m_node2incomingSpanMap[n];
+    return { m_incoming.data() + s, m_incoming.data() + t };
+}
+
+std::span<const size_t> DependencyGraph::GetOutgoingSpan(size_t n) const
+{
+    const auto [s, t] = m_node2outgoingSpanMap[n];
+    return { m_outgoing.data() + s, m_outgoing.data() + t };
 }
 }

@@ -41,6 +41,18 @@ double tsplp::Variable::GetReducedCosts(const Model& model) const
 
 size_t tsplp::Variable::GetId() const { return m_id; }
 
+void tsplp::Variable::Fix(double value, Model& model) const
+{
+    SetUpperBound(value, model);
+    SetLowerBound(value, model);
+}
+
+void tsplp::Variable::Unfix(Model& model) const
+{
+    SetUpperBound(1.0, model);
+    SetLowerBound(0.0, model);
+}
+
 bool tsplp::VariableLess::operator()(const Variable& lhs, const Variable& rhs) const
 {
     return lhs.GetId() < rhs.GetId();

@@ -17,22 +17,16 @@
 
 namespace
 {
-void FixVariables(std::span<tsplp::Variable> variables, double value, tsplp::Model& model)
+void FixVariables(std::span<const tsplp::Variable> variables, double value, tsplp::Model& model)
 {
-    for (auto v : variables)
-    {
-        v.SetLowerBound(value, model);
-        v.SetUpperBound(value, model);
-    }
+    for (const auto v : variables)
+        v.Fix(value, model);
 }
 
-void UnfixVariables(std::span<tsplp::Variable> variables, tsplp::Model& model)
+void UnfixVariables(std::span<const tsplp::Variable> variables, tsplp::Model& model)
 {
-    for (auto v : variables)
-    {
-        v.SetLowerBound(0.0, model);
-        v.SetUpperBound(1.0, model);
-    }
+    for (const auto v : variables)
+        v.Unfix(model);
 }
 
 std::optional<tsplp::Variable> FindFractionalVariable(
@@ -40,7 +34,7 @@ std::optional<tsplp::Variable> FindFractionalVariable(
 {
     std::optional<tsplp::Variable> closest = std::nullopt;
     double minAbs = 1.0;
-    for (auto v : model.GetVariables())
+    for (const auto v : model.GetVariables())
     {
         if (epsilon <= v.GetObjectiveValue(model) && v.GetObjectiveValue(model) <= 1.0 - epsilon)
         {
@@ -258,13 +252,14 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
     const auto threadLoop = [&](const size_t threadId)
     {
         auto model = m_model;
-        graph::Separator separator(X, m_weightManager, model);
+        const graph::Separator separator(X, m_weightManager, model);
 
         std::vector<Variable> fixedVariables0 {};
         std::vector<Variable> fixedVariables1 {};
 
         while (true)
         {
+            // unfix variables from previous loop iteration to get a clean model
             UnfixVariables(fixedVariables0, model);
             UnfixVariables(fixedVariables1, model);
 
@@ -315,10 +310,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                     fractionalCallback(m_weightManager.TransformTensorBack(fractionalValues));
                 }
 
+                // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
                 {
                     remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(
                         m_endTime - std::chrono::steady_clock::now());
+
                     auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
                         fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
                         m_weightManager.EndPositions(), m_weightManager.Dependencies(),
@@ -363,7 +360,31 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 }
             }
 
-            // fix variables according to reduced costs (dj)
+            // fix variables according to reduced costs
+            for (auto v : model.GetVariables())
+            {
+                if (v.GetLowerBound(model) == 0.0 && v.GetUpperBound(model) == 1.0)
+                {
+                    if (v.GetObjectiveValue(model) < 1.e-10
+                        && currentLowerBound + v.GetReducedCosts(model)
+                            >= currentUpperBound + 1.e-10)
+                    {
+                        fixedVariables0.push_back(v);
+                    }
+                    else if (
+                        v.GetObjectiveValue(model) > 1 - 1.e-10
+                        && currentLowerBound - v.GetReducedCosts(model)
+                            >= currentUpperBound + 1.e-10)
+                    {
+                        fixedVariables1.push_back(v);
+
+                        const auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(v);
+                        fixedVariables0.insert(
+                            fixedVariables0.end(), recursivelyFixed0.begin(),
+                            recursivelyFixed0.end());
+                    }
+                }
+            }
 
             if (auto ucut = separator.Ucut(); ucut.has_value())
             {
@@ -425,8 +446,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 }
             }
 
+            auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());
             queue.PushBranch(
-                currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value());
+                currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value(),
+                std::move(recursivelyFixed0));
             queue.NotifyNodeDone(threadId);
         }
     };
@@ -474,4 +497,105 @@ std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(
     }
 
     return m_weightManager.TransformPathsBack(std::move(paths));
+}
+
+std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariables(
+    Variable var) const
+{
+    // agent a uses edge (u, v)
+    const auto v = var.GetId() % N;
+    const auto u = (var.GetId() / N) % N;
+    const auto a = (var.GetId() / N / N);
+
+    const auto isUStart
+        = std::find(
+              m_weightManager.StartPositions().begin(), m_weightManager.StartPositions().end(), u)
+        != m_weightManager.StartPositions().end();
+    const auto isVEnd
+        = std::find(m_weightManager.EndPositions().begin(), m_weightManager.EndPositions().end(), v)
+        != m_weightManager.EndPositions().end();
+
+    std::vector<Variable> result;
+
+    for (size_t aa = 0; aa < A; ++aa)
+    {
+        // no other agent can use (u, v)
+        if (aa != a)
+            result.emplace_back(aa * N * N + u * N + v);
+
+        // all other edges leaving u, no matter which agent, cannot be used
+        for (size_t vv = 0; vv < N; ++vv)
+        {
+            if (vv != v)
+                result.emplace_back(aa * N * N + u * N + vv);
+        }
+
+        // all other edges entering v, no matte which agent, cannot be used
+        for (size_t uu = 0; uu < N; ++uu)
+        {
+            if (uu != u)
+                result.emplace_back(aa * N * N + uu * N + v);
+        }
+
+        // edged entering u with a different agent cannot be used
+        // if u is a start node, agents are fixed anyway
+        if (!isUStart && aa != a)
+        {
+            for (size_t w = 0; w < N; ++w)
+                result.emplace_back(aa * N * N + w * N + u);
+        }
+
+        // edged leaving v with a different agent cannot be used
+        // if v is an end node, agents are fixed anyway
+        if (!isVEnd && aa != a)
+        {
+            for (size_t w = 0; w < N; ++w)
+                result.emplace_back(aa * N * N + v * N + w);
+        }
+
+        if (aa != a)
+        {
+            // dependees of v cannot use another agent
+            const auto dependees = m_weightManager.Dependencies().GetOutgoingSpan(v);
+            for (const auto d : dependees)
+            {
+                if (std::find(
+                        m_weightManager.EndPositions().begin(),
+                        m_weightManager.EndPositions().end(), d)
+                    == m_weightManager.EndPositions().end())
+                {
+                    for (size_t w = 0; w < N; ++w)
+                    {
+                        // edges into d must use agent a
+                        result.emplace_back(aa * N * N + w * N + d);
+
+                        // edges out of d must use agent a
+                        result.emplace_back(aa * N * N + d * N + w);
+                    }
+                }
+            }
+
+            // dependers of u cannot use another agent
+            const auto dependers = m_weightManager.Dependencies().GetIncomingSpan(u);
+            for (const auto d : dependers)
+            {
+                if (std::find(
+                        m_weightManager.StartPositions().begin(),
+                        m_weightManager.StartPositions().end(), d)
+                    == m_weightManager.StartPositions().end())
+                {
+                    for (size_t w = 0; w < N; ++w)
+                    {
+                        // edges into d must use agent a
+                        result.emplace_back(aa * N * N + w * N + d);
+
+                        // edges out of d must use agent a
+                        result.emplace_back(aa * N * N + d * N + w);
+                    }
+                }
+            }
+        }
+    }
+
+    return result;
 }

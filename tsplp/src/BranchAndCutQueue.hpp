@@ -44,6 +44,7 @@ public:
         std::vector<Variable> fixedVariables1);
     void PushBranch(
         double lowerBound, std::vector<Variable> fixedVariables0,
-        std::vector<Variable> fixedVariables1, Variable branchingVariable);
+        std::vector<Variable> fixedVariables1, Variable branchingVariable,
+        std::vector<Variable> recursivelyFixed0);
 };
 }

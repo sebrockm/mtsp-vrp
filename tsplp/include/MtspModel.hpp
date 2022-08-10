@@ -54,5 +54,7 @@ public:
 
 private:
     std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
+
+    std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
 };
 }

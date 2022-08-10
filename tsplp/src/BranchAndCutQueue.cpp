@@ -120,7 +120,7 @@ void tsplp::BranchAndCutQueue::Push(
 
 void tsplp::BranchAndCutQueue::PushBranch(
     double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1,
-    Variable branchingVariable)
+    Variable branchingVariable, std::vector<Variable> recursivelyFixed0)
 {
     bool needsNotify = false;
 
@@ -137,6 +137,9 @@ void tsplp::BranchAndCutQueue::PushBranch(
 
         fixedVariables0.push_back(branchingVariable);
         copyFixedVariables1.push_back(branchingVariable);
+
+        copyFixedVariables0.insert(
+            copyFixedVariables0.end(), recursivelyFixed0.begin(), recursivelyFixed0.end());
 
         m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);

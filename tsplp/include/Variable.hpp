@@ -22,7 +22,11 @@ public:
     void SetLowerBound(double lowerBound, Model& model) const;
 
     double GetObjectiveValue(const Model& model) const;
+    double GetReducedCosts(const Model& model) const;
     size_t GetId() const;
+
+    void Fix(double value, Model& model) const;
+    void Unfix(Model& model) const;
 };
 
 struct VariableLess

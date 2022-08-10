@@ -448,7 +448,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());
             queue.PushBranch(
-                currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value(), std::move(recursivelyFixed0));
+                currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value(),
+                std::move(recursivelyFixed0));
             queue.NotifyNodeDone(threadId);
         }
     };
@@ -498,7 +499,8 @@ std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(
     return m_weightManager.TransformPathsBack(std::move(paths));
 }
 
-std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariables(Variable var) const
+std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariables(
+    Variable var) const
 {
     // agent a uses edge (u, v)
     const auto v = var.GetId() % N;

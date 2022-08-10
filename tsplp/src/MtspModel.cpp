@@ -597,6 +597,5 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
         }
     }
 
-    const auto m = std::max_element(result.begin(), result.end(), VariableLess {})->GetId();
     return result;
 }

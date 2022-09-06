@@ -297,3 +297,25 @@ TEST_CASE("Two connected components Graph", "[Gomory Hu Tree]")
         }
     }
 }
+
+TEST_CASE("Stoer-Wagner Regression Test", "[Gomory Hu Tree]")
+{
+    // Making sure we don't suffer from a bug in stoer_wagner_min_cut that existed for a long time.
+    // Using the same sample graph here that was used as a regression test for the fix:
+    // https://github.com/boostorg/graph/issues/286
+
+    constexpr int N = 8;
+    const std::pair<int, int> edges[]
+        = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 2 }, { 1, 3 }, { 2, 3 }, { 4, 5 },
+            { 4, 6 }, { 4, 7 }, { 5, 6 }, { 5, 7 }, { 6, 7 }, { 0, 4 } };
+    const int ws[] = { 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 6 };
+    UndirectedGraph graph(edges, edges + 13, ws, N, 13);
+
+    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    REQUIRE(num_vertices(gomoryHuTree) == N);
+    REQUIRE(num_edges(gomoryHuTree) == N - 1);
+
+    const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, 0, 4);
+
+    REQUIRE(minCutByTree == 6); // the bug caused this to be 7
+}

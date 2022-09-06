@@ -44,7 +44,7 @@ using PartiallyContractedGraph = boost::adjacency_list<
 UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 {
     const auto N = num_vertices(inputGraph);
-    if (N <= 2)
+    if (N <= 1)
         return inputGraph;
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);

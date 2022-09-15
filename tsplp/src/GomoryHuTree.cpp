@@ -8,6 +8,9 @@
 
 #include <vector>
 
+namespace tsplp::graph
+{
+
 struct TreeVertexProperty
 {
     std::vector<VertexType> ContractedVertices;
@@ -278,4 +281,6 @@ double GetMinCutFromGomoryHuTree(
     } while (sink != source);
 
     return minWeight;
+}
+
 }

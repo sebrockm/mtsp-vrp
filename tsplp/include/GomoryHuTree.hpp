@@ -2,6 +2,9 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
+namespace tsplp::graph
+{
+
 using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
 using UndirectedGraph = boost::adjacency_list<
     boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
@@ -12,3 +15,5 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph);
 
 double GetMinCutFromGomoryHuTree(
     const UndirectedGraph& gomoryHuTree, VertexType source, VertexType sink);
+
+}

@@ -2,11 +2,13 @@
 
 #include <catch2/catch.hpp>
 
+namespace g = tsplp::graph;
+
 TEST_CASE("Empty Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 0;
-    UndirectedGraph graph(N);
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    g::UndirectedGraph graph(N);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == 0);
@@ -15,8 +17,8 @@ TEST_CASE("Empty Graph", "[Gomory Hu Tree]")
 TEST_CASE("Single Node Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 1;
-    UndirectedGraph graph(N);
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    g::UndirectedGraph graph(N);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -25,11 +27,11 @@ TEST_CASE("Single Node Graph", "[Gomory Hu Tree]")
 TEST_CASE("Two Nodes Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 2;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 17, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -44,9 +46,9 @@ TEST_CASE("Two Nodes Graph", "[Gomory Hu Tree]")
 TEST_CASE("Two Nodes Disjoint Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 2;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -61,9 +63,9 @@ TEST_CASE("Two Nodes Disjoint Graph", "[Gomory Hu Tree]")
 TEST_CASE("Four Nodes Disjoint Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -78,13 +80,13 @@ TEST_CASE("Four Nodes Disjoint Graph", "[Gomory Hu Tree]")
 TEST_CASE("K3", "[Gomory Hu Tree]")
 {
     constexpr int N = 3;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 2, graph);
     add_edge(1, 2, 4, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -104,7 +106,7 @@ TEST_CASE("K3", "[Gomory Hu Tree]")
             if (u == v)
                 continue;
 
-            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+            const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
 
             REQUIRE(minCutByTree == expectedMinCuts[u][v]);
         }
@@ -114,7 +116,7 @@ TEST_CASE("K3", "[Gomory Hu Tree]")
 TEST_CASE("K4", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 2, graph);
@@ -123,7 +125,7 @@ TEST_CASE("K4", "[Gomory Hu Tree]")
     add_edge(1, 3, 5, graph);
     add_edge(2, 3, 2, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -144,7 +146,7 @@ TEST_CASE("K4", "[Gomory Hu Tree]")
             if (u == v)
                 continue;
 
-            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+            const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
 
             REQUIRE(minCutByTree == expectedMinCuts[u][v]);
         }
@@ -157,7 +159,7 @@ TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
     // https://en.wikipedia.org/w/index.php?title=Gomory%E2%80%93Hu_tree&oldid=1097322015
 
     constexpr int N = 6;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 7, graph);
@@ -169,7 +171,7 @@ TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
     add_edge(3, 5, 6, graph);
     add_edge(4, 5, 2, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -192,7 +194,7 @@ TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
             if (u == v)
                 continue;
 
-            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+            const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
 
             REQUIRE(minCutByTree == expectedMinCuts[u][v]);
         }
@@ -204,7 +206,7 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
     // graph taken from http://www14.in.tum.de/lehre/2016WS/ea/split/sec-Gomory-Hu-Trees.pdf
 
     constexpr int N = 9;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 2, graph);
     add_edge(0, 2, 4, graph);
@@ -229,7 +231,7 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
 
     add_edge(7, 8, 3, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -255,7 +257,7 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
             if (u == v)
                 continue;
 
-            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+            const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
 
             REQUIRE(minCutByTree == expectedMinCuts[u][v]);
         }
@@ -265,12 +267,12 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
 TEST_CASE("Two connected components Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    UndirectedGraph graph(N);
+    g::UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(2, 3, 1, graph);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
 
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
@@ -291,7 +293,7 @@ TEST_CASE("Two connected components Graph", "[Gomory Hu Tree]")
             if (u == v)
                 continue;
 
-            const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
+            const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, u, v);
 
             REQUIRE(minCutByTree == expectedMinCuts[u][v]);
         }
@@ -309,13 +311,13 @@ TEST_CASE("Stoer-Wagner Regression Test", "[Gomory Hu Tree]")
         = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 2 }, { 1, 3 }, { 2, 3 }, { 4, 5 },
             { 4, 6 }, { 4, 7 }, { 5, 6 }, { 5, 7 }, { 6, 7 }, { 0, 4 } };
     const int ws[] = { 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 6 };
-    UndirectedGraph graph(edges, edges + 13, ws, N, 13);
+    g::UndirectedGraph graph(edges, edges + 13, ws, N, 13);
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = g::CreateGomoryHuTree(graph);
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
 
-    const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, 0, 4);
+    const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, 0, 4);
 
     REQUIRE(minCutByTree == 6); // the bug caused this to be 7
 }

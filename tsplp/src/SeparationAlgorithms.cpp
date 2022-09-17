@@ -1,5 +1,6 @@
 #include "SeparationAlgorithms.hpp"
 
+#include "GomoryHuTree.hpp"
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 #include "Model.hpp"
@@ -7,6 +8,7 @@
 #include "Variable.hpp"
 #include "WeightManager.hpp"
 
+#include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
 #include <boost/graph/stoer_wagner_min_cut.hpp>
@@ -17,17 +19,13 @@
 
 namespace tsplp::graph
 {
-using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
-using UndirectedGraph = boost::adjacency_list<
-    boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
-
 Separator::Separator(
     const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager,
     const Model& model)
     : m_variables(variables)
     , m_weightManager(weightManager)
     , m_model(model)
-    , m_spSupportGraph(
+    , m_spSupportGraph( // TODO: create only on demand
           std::make_unique<PiSigmaSupportGraph>(variables, weightManager.Dependencies(), model))
 {
 }
@@ -173,5 +171,165 @@ std::optional<LinearConstraint> Separator::PiSigma() const
     }
 
     return std::nullopt;
+}
+
+std::optional<LinearConstraint> Separator::TwoMatching() const
+{
+    const auto N = m_weightManager.N();
+    const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
+    const auto values = vf(m_variables);
+
+    UndirectedGraph graph(N);
+    struct hash
+    {
+        size_t operator()(const EdgeType& e) const { return std::bit_cast<size_t>(e.m_eproperty); }
+    };
+    std::unordered_map<EdgeType, double, hash> edge2WeightMap;
+    for (size_t u = 0; u < N; ++u)
+    {
+        for (size_t v = u + 1; v < N; ++v)
+        {
+            const auto weight = std::max(
+                0.0,
+                std::min(
+                    1.0,
+                    xt::sum(xt::view(values, xt::all(), u, v))()
+                        + xt::sum(xt::view(values, xt::all(), v, u))()));
+            const auto capacity = std::min(weight, 1 - weight);
+            const auto [edge, inserted] = boost::add_edge(u, v, capacity, graph);
+            assert(inserted);
+            edge2WeightMap.emplace(edge, weight);
+        }
+    }
+
+    std::vector<bool> odd(N);
+    for (const auto v : boost::make_iterator_range(vertices(graph)))
+    {
+        const auto [eBegin, eEnd] = out_edges(v, graph);
+        odd[v] = std::count_if(
+                     eBegin, eEnd, [&](const EdgeType& e) { return edge2WeightMap.at(e) > 0.5; })
+                % 2
+            == 1;
+    }
+
+    const auto IsOdd = [&](const std::vector<size_t>& componentIds)
+    {
+        bool isOdd = false;
+        for (size_t v = 0; v < N; ++v)
+            isOdd ^= componentIds[v] == 0 && odd[v];
+        return isOdd;
+    };
+
+    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    for (const auto& e : boost::make_iterator_range(edges(gomoryHuTree)))
+    {
+        const auto cutSize = get(boost::edge_weight, gomoryHuTree, e);
+        assert(cutSize >= 0);
+
+        struct Filter
+        {
+            EdgeType edge;
+            bool operator()(const EdgeType& e) const { return edge != e; }
+        };
+
+        std::vector<size_t> componentIds(N);
+        const auto numberOfComponents = boost::connected_components(
+            make_filtered_graph(gomoryHuTree, Filter { e }, boost::keep_all {}),
+            componentIds.data());
+
+        assert(numberOfComponents == 2);
+
+        const auto ForAllCutEdges = [&](auto f)
+        {
+            for (size_t u = 0; u < N; ++u)
+            {
+                if (componentIds[u] != 0)
+                    continue;
+
+                for (size_t v = 0; v < N; ++v)
+                {
+                    if (componentIds[v] != 1)
+                        continue;
+
+                    f(u, v);
+                }
+            }
+        };
+
+        if (cutSize < 1 - 1e-10 && IsOdd(componentIds))
+        {
+            LinearVariableComposition lhs = 0;
+            LinearVariableComposition rhs = 1;
+
+            ForAllCutEdges(
+                [&](size_t u, size_t v)
+                {
+                    if (const auto [edge, exists] = boost::edge(u, v, graph);
+                        exists && edge2WeightMap.at(edge) > 0.5)
+                    {
+                        rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
+                    }
+                    else
+                    {
+                        lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                    }
+                });
+
+            return lhs >= rhs;
+        }
+        else
+        {
+            double w1 = 1;
+            double w2 = 0;
+            EdgeType e1 {};
+            EdgeType e2 {};
+            ForAllCutEdges(
+                [&](size_t u, size_t v)
+                {
+                    if (const auto [edge, exists] = boost::edge(u, v, graph);
+                        exists && edge2WeightMap.at(edge) > 0.5)
+                    {
+                        w1 = std::min(w1, edge2WeightMap.at(edge));
+                        e1 = edge;
+                    }
+                    else
+                    {
+                        w2 = std::max(w2, edge2WeightMap.at(edge));
+                        e2 = edge;
+                    }
+                });
+
+            if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
+            {
+                LinearVariableComposition lhs = 0;
+                LinearVariableComposition rhs = 1;
+
+                ForAllCutEdges(
+                    [&](size_t u, size_t v)
+                    {
+                        if (const auto [edge, exists] = boost::edge(u, v, graph); exists
+                            && ((edge2WeightMap.at(edge) > 0.5
+                                 || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
+                                || edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
+                                    && edge != e1))
+                        {
+                            rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
+                        }
+                        else
+                        {
+                            lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                        }
+                    });
+
+                return lhs >= rhs;
+            }
+        }
+    }
+
+    return {};
 }
 }

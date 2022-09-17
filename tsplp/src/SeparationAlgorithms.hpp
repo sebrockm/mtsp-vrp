@@ -35,5 +35,7 @@ public:
     std::optional<LinearConstraint> Pi() const;
     std::optional<LinearConstraint> Sigma() const;
     std::optional<LinearConstraint> PiSigma() const;
+
+    std::optional<LinearConstraint> TwoMatching() const;
 };
 }

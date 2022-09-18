@@ -51,6 +51,8 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         return inputGraph;
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
+    std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
+    std::vector<PartiallyContractedGraphVertexType> contractedNodes(N);
 
     IntermediateTree gomoryHuTree;
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
@@ -73,13 +75,8 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         };
         const auto gomoryHuForest
             = make_filtered_graph(gomoryHuTree, boost::keep_all {}, Filter { splitNode });
-
-        using ForestVertexType =
-            typename boost::graph_traits<decltype(gomoryHuForest)>::vertex_descriptor;
-
-        std::unordered_map<ForestVertexType, size_t> gomoryHuForestVertex2ComponentIdMap;
         const auto numberOfComponents = boost::connected_components(
-            gomoryHuForest, boost::make_assoc_property_map(gomoryHuForestVertex2ComponentIdMap));
+            gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
         PartiallyContractedGraph partiallyContractedGraph;
 
@@ -93,17 +90,16 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         }
 
         // Add each connected component as a contracted node
-        std::vector<PartiallyContractedGraphVertexType> contractedNodes;
-        contractedNodes.reserve(numberOfComponents);
         for (size_t i = 0; i < numberOfComponents; ++i)
         {
             const auto contractedNode = add_vertex(partiallyContractedGraph);
-            contractedNodes.push_back(contractedNode);
+            contractedNodes[i] = contractedNode;
         }
 
         // Fill in the subnodes into each contracted node
-        for (const auto [forestVertex, componentId] : gomoryHuForestVertex2ComponentIdMap)
+        for (const auto forestVertex : boost::make_iterator_range(vertices(gomoryHuForest)))
         {
+            const auto componentId = gomoryHuForestVertex2ComponentIdMap[forestVertex];
             const auto contractedNode = contractedNodes[componentId];
             const auto& contractedComponentNodes = gomoryHuForest[forestVertex].ContractedVertices;
 

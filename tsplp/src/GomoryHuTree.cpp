@@ -43,6 +43,14 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
     std::vector<double> partiallyContractedGraphResidualCapacity(N * N);
     std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphReverseEdge(N * N);
 
+    const auto ClearPartiallyContractedGraph = [&]()
+    {
+        for (auto& v : partiallyContractedGraphContractedVertices)
+            v.clear();
+        for (auto& c : partiallyContractedGraphCapacity)
+            c = 0;
+    };
+
     const auto GetEdgePropertyFunctionMap = [N](auto& matrix, auto& graph)
     {
         return boost::make_function_property_map<PartiallyContractedGraphEdgeType>(
@@ -54,13 +62,17 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
             });
     };
 
-    std::vector<std::vector<VertexType>> gomoryHuTreeContractedVertices(N);
+    std::vector<std::span<VertexType>> gomoryHuTreeContractedVertices(N);
 
     IntermediateTree gomoryHuTree;
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
 
     const auto [graphVerticesBegin, graphVerticesEnd] = vertices(inputGraph);
-    gomoryHuTreeContractedVertices[firstTreeVertex].assign(graphVerticesBegin, graphVerticesEnd);
+    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage(
+        graphVerticesBegin, graphVerticesEnd);
+    gomoryHuTreeContractedVertices[firstTreeVertex]
+        = { gomoryHuTreeContractedVerticesStorage.begin(),
+            gomoryHuTreeContractedVerticesStorage.end() };
 
     std::vector<TreeVertexType> treeNodesToBeSplit;
     treeNodesToBeSplit.push_back(firstTreeVertex);
@@ -81,8 +93,7 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
             gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
         PartiallyContractedGraph partiallyContractedGraph;
-        for (auto& vertices : partiallyContractedGraphContractedVertices)
-            vertices.clear();
+        ClearPartiallyContractedGraph();
 
         // Copy internal nodes of split node into partially contracted graph.
         // These are the non contracted nodes.
@@ -173,30 +184,30 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         const auto newGomoryHuVertex = add_vertex(gomoryHuTree);
 
         // have the black nodes first
-        //const auto middle = std::partition(
-        //    gomoryHuTreeContractedVertices[splitNode].begin(),
-        //    gomoryHuTreeContractedVertices[splitNode].end(),
-        //    [&](VertexType v)
-        //    {
-        //        const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
-        //        return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
-        //    });
-        //const auto splitOffset = middle - gomoryHuTreeContractedVertices[splitNode].begin();
-        //const auto blackNodes = gomoryHuTreeContractedVertices[splitNode].subspan(0, splitOffset);
-        //const auto whiteNodes = gomoryHuTreeContractedVertices[splitNode].subspan(splitOffset);
+        const auto middle = std::partition(
+            gomoryHuTreeContractedVertices[splitNode].begin(),
+            gomoryHuTreeContractedVertices[splitNode].end(),
+            [&](VertexType v)
+            {
+                const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
+                return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
+            });
+        const auto splitOffset = middle - gomoryHuTreeContractedVertices[splitNode].begin();
+        const auto blackNodes = gomoryHuTreeContractedVertices[splitNode].subspan(0, splitOffset);
+        const auto whiteNodes = gomoryHuTreeContractedVertices[splitNode].subspan(splitOffset);
 
         // Split the split node: Assign all black subnodes to the new node
-        //gomoryHuTreeContractedVertices[newGomoryHuVertex] = blackNodes;
+        gomoryHuTreeContractedVertices[newGomoryHuVertex] = blackNodes;
 
         // Split the split node: Copy all black subnodes to the new node
-        for (const auto nodeInSplitNode : gomoryHuTreeContractedVertices[splitNode])
-        {
-            const auto nonContractedNode = inputVertex2partiallyContractedMap.at(nodeInSplitNode);
+        // for (const auto nodeInSplitNode : gomoryHuTreeContractedVertices[splitNode])
+        //{
+        //    const auto nonContractedNode = inputVertex2partiallyContractedMap.at(nodeInSplitNode);
 
-            // copy black nodes over to the new gomory hu vertex
-            if (partiallyContractedGraphColor[nonContractedNode] == boost::black_color)
-                gomoryHuTreeContractedVertices[newGomoryHuVertex].push_back(nodeInSplitNode);
-        }
+        //    // copy black nodes over to the new gomory hu vertex
+        //    if (partiallyContractedGraphColor[nonContractedNode] == boost::black_color)
+        //        gomoryHuTreeContractedVertices[newGomoryHuVertex].push_back(nodeInSplitNode);
+        //}
 
         // Distribute the edges of the split node: Copy all edges adjacent to a black node to the
         // new node
@@ -222,15 +233,15 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
             remove_edge(e, gomoryHuTree);
 
         // Remove the black nodes from the split node that were just copied over to the new node
-        //gomoryHuTreeContractedVertices[splitNode] = whiteNodes;
-        std::erase_if(
-            gomoryHuTreeContractedVertices[splitNode],
-            [&](const auto nodeInSplitNode)
-            {
-                const auto nonContractedNode
-                    = inputVertex2partiallyContractedMap.at(nodeInSplitNode);
-                return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
-            });
+        gomoryHuTreeContractedVertices[splitNode] = whiteNodes;
+        // std::erase_if(
+        //    gomoryHuTreeContractedVertices[splitNode],
+        //    [&](const auto nodeInSplitNode)
+        //    {
+        //        const auto nonContractedNode
+        //            = inputVertex2partiallyContractedMap.at(nodeInSplitNode);
+        //        return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
+        //    });
 
         // most important step: connect the now fully split nodes with the cut size
         add_edge(newGomoryHuVertex, splitNode, cutSize, gomoryHuTree);

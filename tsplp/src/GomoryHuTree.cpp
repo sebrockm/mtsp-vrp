@@ -43,14 +43,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
     std::vector<double> partiallyContractedGraphResidualCapacity(N * N);
     std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphReverseEdge(N * N);
 
-    const auto ClearPartiallyContractedGraph = [&]()
-    {
-        for (auto& v : partiallyContractedGraphContractedVertices)
-            v.clear();
-        for (auto& c : partiallyContractedGraphCapacity)
-            c = 0;
-    };
-
     const auto GetEdgePropertyFunctionMap = [N](auto& matrix, auto& graph)
     {
         return boost::make_function_property_map<PartiallyContractedGraphEdgeType>(
@@ -74,6 +66,19 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         = { gomoryHuTreeContractedVerticesStorage.begin(),
             gomoryHuTreeContractedVerticesStorage.end() };
 
+    PartiallyContractedGraph partiallyContractedGraph;
+
+    const auto ClearPartiallyContractedGraph = [&]()
+    {
+        partiallyContractedGraph.clear();
+
+        for (auto& v : partiallyContractedGraphContractedVertices)
+            v.clear();
+
+        for (auto& c : partiallyContractedGraphCapacity)
+            c = 0;
+    };
+
     std::vector<TreeVertexType> treeNodesToBeSplit;
     treeNodesToBeSplit.push_back(firstTreeVertex);
 
@@ -92,7 +97,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         const auto numberOfComponents = boost::connected_components(
             gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
-        PartiallyContractedGraph partiallyContractedGraph;
         ClearPartiallyContractedGraph();
 
         // Copy internal nodes of split node into partially contracted graph.

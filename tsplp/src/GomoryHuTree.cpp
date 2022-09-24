@@ -1,5 +1,6 @@
 #include "GomoryHuTree.hpp"
 
+#include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/depth_first_search.hpp>
@@ -17,12 +18,12 @@ using IntermediateTree = boost::adjacency_list<
 using TreeVertexType = typename boost::graph_traits<IntermediateTree>::vertex_descriptor;
 using TreeEdgeType = typename boost::graph_traits<IntermediateTree>::edge_descriptor;
 
-using PartiallyContractedGraphEdgeType = typename boost::adjacency_list_traits<
-    boost::vecS, boost::vecS, boost::directedS>::edge_descriptor;
-using PartiallyContractedGraphVertexType = typename boost::adjacency_list_traits<
-    boost::vecS, boost::vecS, boost::directedS>::vertex_descriptor;
+using PartiallyContractedGraphEdgeType =
+    typename boost::adjacency_matrix_traits<boost::directedS>::edge_descriptor;
+using PartiallyContractedGraphVertexType =
+    typename boost::adjacency_matrix_traits<boost::directedS>::vertex_descriptor;
 
-using PartiallyContractedGraph = boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS>;
+using PartiallyContractedGraph = boost::adjacency_matrix<boost::directedS>;
 
 UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 {
@@ -66,12 +67,10 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         = { gomoryHuTreeContractedVerticesStorage.begin(),
             gomoryHuTreeContractedVerticesStorage.end() };
 
-    PartiallyContractedGraph partiallyContractedGraph;
+    PartiallyContractedGraph partiallyContractedGraph(N);
 
     const auto ClearPartiallyContractedGraph = [&]()
     {
-        partiallyContractedGraph.clear();
-
         for (auto& v : partiallyContractedGraphContractedVertices)
             v.clear();
 
@@ -101,9 +100,10 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
         // Copy internal nodes of split node into partially contracted graph.
         // These are the non contracted nodes.
+        PartiallyContractedGraphVertexType currentV {};
         for (const auto v : gomoryHuTreeContractedVertices[splitNode])
         {
-            const auto nonContractedNode = add_vertex(partiallyContractedGraph);
+            const auto nonContractedNode = currentV++;;
             partiallyContractedGraphContractedVertices[nonContractedNode].push_back(v);
             inputVertex2partiallyContractedMap[v] = nonContractedNode;
         }
@@ -111,7 +111,7 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         // Add each connected component as a contracted node
         for (size_t i = 0; i < numberOfComponents; ++i)
         {
-            const auto contractedNode = add_vertex(partiallyContractedGraph);
+            const auto contractedNode = currentV++;
             contractedNodes[i] = contractedNode;
         }
 

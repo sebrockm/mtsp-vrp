@@ -42,14 +42,15 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
     std::vector<double> partiallyContractedGraphResidualCapacity(N * N);
     std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphReverseEdge(N * N);
 
-    const auto GetEdgePropertyFunctionMap = [N](auto& matrix, auto& graph)
+    const auto GetEdgePropertyFunctionMap = [](auto& matrix, auto& graph)
     {
         return boost::make_function_property_map<PartiallyContractedGraphEdgeType>(
             [&](const PartiallyContractedGraphEdgeType& e) -> auto&
             {
+                const auto n = num_vertices(graph);
                 const auto s = source(e, graph);
                 const auto t = target(e, graph);
-                return matrix[N * s + t];
+                return matrix[n * s + t];
             });
     };
 
@@ -64,12 +65,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
     gomoryHuTreeContractedVertices[firstTreeVertex]
         = { gomoryHuTreeContractedVerticesStorage.begin(),
             gomoryHuTreeContractedVerticesStorage.end() };
-
-    const auto ClearPartiallyContractedGraph = [&]()
-    {
-        for (auto& c : partiallyContractedGraphCapacity)
-            c = 0;
-    };
 
     std::vector<TreeVertexType> treeNodesToBeSplit;
     treeNodesToBeSplit.push_back(firstTreeVertex);
@@ -89,9 +84,10 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         const auto numberOfComponents = boost::connected_components(
             gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
-        ClearPartiallyContractedGraph();
-        PartiallyContractedGraph partiallyContractedGraph(
-            numberOfComponents + gomoryHuTreeContractedVertices[splitNode].size());
+        const auto n = numberOfComponents + gomoryHuTreeContractedVertices[splitNode].size();
+        PartiallyContractedGraph partiallyContractedGraph(n);
+        for (size_t i = 0; i < n * n; ++i)
+            partiallyContractedGraphCapacity[i] = 0;
 
         // The nodes [0, numberOfComponents[ are the contracted nodes
         // Fill in the subnodes into each contracted node
@@ -106,12 +102,11 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         }
 
         // Copy internal nodes of split node into partially contracted graph.
-        // These are the non contracted nodes in the ranbe [numberOfComponents, ...[.
+        // These are the non contracted nodes in the range [numberOfComponents, ...[.
         PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
         for (const auto v : gomoryHuTreeContractedVertices[splitNode])
         {
-            inputVertex2partiallyContractedMap[v] = nonContractedNode;
-            ++nonContractedNode;
+            inputVertex2partiallyContractedMap[v] = nonContractedNode++;
         }
 
         // Fill in edges between contracted nodes by summing up original edges. We need forward and
@@ -126,12 +121,14 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
             const auto [forwardEdge, forwardInserted] = add_edge(u, v, partiallyContractedGraph);
             const auto [backwardEdge, backwardInserted] = add_edge(v, u, partiallyContractedGraph);
+            assert(forwardInserted);
+            assert(backwardInserted);
 
             const auto weight = get(boost::edge_weight, inputGraph, inputEdge);
-            partiallyContractedGraphCapacity[u * N + v] += weight;
-            partiallyContractedGraphCapacity[v * N + u] += weight;
-            partiallyContractedGraphReverseEdge[u * N + v] = backwardEdge;
-            partiallyContractedGraphReverseEdge[v * N + u] = forwardEdge;
+            partiallyContractedGraphCapacity[u * n + v] += weight;
+            partiallyContractedGraphCapacity[v * n + u] += weight;
+            partiallyContractedGraphReverseEdge[u * n + v] = backwardEdge;
+            partiallyContractedGraphReverseEdge[v * n + u] = forwardEdge;
         }
 
         // finally, calculate the cut between some arbitrary non contracted nodes
@@ -194,7 +191,7 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
             }
         }
 
-        // Remove those edges that were just copied over to the new node
+        // Remove those edges that were previously copied over to the new node
         // It's not safe to remove them in the previous loop (while iterating them)
         for (const auto e : edgesToRemove)
             remove_edge(e, gomoryHuTree);

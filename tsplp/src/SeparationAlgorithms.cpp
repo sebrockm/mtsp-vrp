@@ -8,7 +8,6 @@
 #include "Variable.hpp"
 #include "WeightManager.hpp"
 
-#include <boost/functional/hash.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
 #include <boost/graph/stoer_wagner_min_cut.hpp>

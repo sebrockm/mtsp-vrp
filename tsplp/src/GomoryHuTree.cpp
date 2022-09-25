@@ -34,7 +34,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
 
-    std::vector<std::vector<VertexType>> partiallyContractedGraphContractedVertices(N);
     std::vector<boost::default_color_type> partiallyContractedGraphColor(N);
     std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphPredecessorEdge(N);
     std::vector<double> partiallyContractedGraphDistance(N);
@@ -68,9 +67,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
     const auto ClearPartiallyContractedGraph = [&]()
     {
-        for (auto& v : partiallyContractedGraphContractedVertices)
-            v.clear();
-
         for (auto& c : partiallyContractedGraphCapacity)
             c = 0;
     };
@@ -105,7 +101,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
             for (const auto v : gomoryHuTreeContractedVertices[forestVertex])
             {
-                partiallyContractedGraphContractedVertices[componentId].push_back(v);
                 inputVertex2partiallyContractedMap[v] = componentId;
             }
         }
@@ -115,7 +110,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
         for (const auto v : gomoryHuTreeContractedVertices[splitNode])
         {
-            partiallyContractedGraphContractedVertices[nonContractedNode].push_back(v);
             inputVertex2partiallyContractedMap[v] = nonContractedNode;
             ++nonContractedNode;
         }

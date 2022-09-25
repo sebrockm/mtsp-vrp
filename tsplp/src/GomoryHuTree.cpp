@@ -33,7 +33,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
-    std::vector<PartiallyContractedGraphVertexType> contractedNodes(N);
 
     std::vector<std::vector<VertexType>> partiallyContractedGraphContractedVertices(N);
     std::vector<boost::default_color_type> partiallyContractedGraphColor(N);
@@ -96,36 +95,29 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
         ClearPartiallyContractedGraph();
         PartiallyContractedGraph partiallyContractedGraph(
-            gomoryHuTreeContractedVertices[splitNode].size() + numberOfComponents);
+            numberOfComponents + gomoryHuTreeContractedVertices[splitNode].size());
 
-        // Copy internal nodes of split node into partially contracted graph.
-        // These are the non contracted nodes.
-        PartiallyContractedGraphVertexType currentV {};
-        for (const auto v : gomoryHuTreeContractedVertices[splitNode])
-        {
-            const auto nonContractedNode = currentV++;;
-            partiallyContractedGraphContractedVertices[nonContractedNode].push_back(v);
-            inputVertex2partiallyContractedMap[v] = nonContractedNode;
-        }
-
-        // Add each connected component as a contracted node
-        for (size_t i = 0; i < numberOfComponents; ++i)
-        {
-            const auto contractedNode = currentV++;
-            contractedNodes[i] = contractedNode;
-        }
-
+        // The nodes [0, numberOfComponents[ are the contracted nodes
         // Fill in the subnodes into each contracted node
         for (const auto forestVertex : boost::make_iterator_range(vertices(gomoryHuForest)))
         {
             const auto componentId = gomoryHuForestVertex2ComponentIdMap[forestVertex];
-            const auto contractedNode = contractedNodes[componentId];
 
             for (const auto v : gomoryHuTreeContractedVertices[forestVertex])
             {
-                partiallyContractedGraphContractedVertices[contractedNode].push_back(v);
-                inputVertex2partiallyContractedMap[v] = contractedNode;
+                partiallyContractedGraphContractedVertices[componentId].push_back(v);
+                inputVertex2partiallyContractedMap[v] = componentId;
             }
+        }
+
+        // Copy internal nodes of split node into partially contracted graph.
+        // These are the non contracted nodes in the ranbe [numberOfComponents, ...[.
+        PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
+        for (const auto v : gomoryHuTreeContractedVertices[splitNode])
+        {
+            partiallyContractedGraphContractedVertices[nonContractedNode].push_back(v);
+            inputVertex2partiallyContractedMap[v] = nonContractedNode;
+            ++nonContractedNode;
         }
 
         // Fill in edges between contracted nodes by summing up original edges. We need forward and

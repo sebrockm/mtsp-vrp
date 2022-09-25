@@ -67,8 +67,6 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         = { gomoryHuTreeContractedVerticesStorage.begin(),
             gomoryHuTreeContractedVerticesStorage.end() };
 
-    PartiallyContractedGraph partiallyContractedGraph(N);
-
     const auto ClearPartiallyContractedGraph = [&]()
     {
         for (auto& v : partiallyContractedGraphContractedVertices)
@@ -97,6 +95,8 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
             gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
         ClearPartiallyContractedGraph();
+        PartiallyContractedGraph partiallyContractedGraph(
+            gomoryHuTreeContractedVertices[splitNode].size() + numberOfComponents);
 
         // Copy internal nodes of split node into partially contracted graph.
         // These are the non contracted nodes.

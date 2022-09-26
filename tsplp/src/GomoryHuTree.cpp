@@ -25,11 +25,15 @@ using PartiallyContractedGraphVertexType =
 
 using PartiallyContractedGraph = boost::adjacency_matrix<boost::directedS>;
 
-UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
+void CreateGomoryHuTree(
+    const UndirectedGraph& inputGraph,
+    std::function<
+        bool(double cutSize, std::vector<VertexType> comp1, std::vector<VertexType> comp2)>
+        newEdgeCallback)
 {
     const auto N = num_vertices(inputGraph);
     if (N <= 1)
-        return inputGraph;
+        return;
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
@@ -202,28 +206,24 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
         // most important step: connect the now fully split nodes with the cut size
         add_edge(newGomoryHuVertex, splitNode, cutSize, gomoryHuTree);
 
+        std::vector<VertexType> comp1, comp2;
+        for (const auto v : boost::make_iterator_range(vertices(inputGraph)))
+        {
+            const auto pv = inputVertex2partiallyContractedMap.at(v);
+            if (partiallyContractedGraphColor[pv] == boost::black_color)
+                comp1.push_back(v);
+            else
+                comp2.push_back(v);
+        }
+        const auto isStopRequested = newEdgeCallback(cutSize, std::move(comp1), std::move(comp2));
+        if (isStopRequested)
+            return;
+
         if (gomoryHuTreeContractedVertices[splitNode].size() > 1)
             treeNodesToBeSplit.push_back(splitNode);
         if (gomoryHuTreeContractedVertices[newGomoryHuVertex].size() > 1)
             treeNodesToBeSplit.push_back(newGomoryHuVertex);
     }
-
-    UndirectedGraph resultGraph(N);
-    for (const auto treeEdge : boost::make_iterator_range(edges(gomoryHuTree)))
-    {
-        const auto s = source(treeEdge, gomoryHuTree);
-        const auto t = target(treeEdge, gomoryHuTree);
-        const auto weight = get(boost::edge_weight, gomoryHuTree, treeEdge);
-
-        assert(gomoryHuTreeContractedVertices[s].size() == 1);
-        assert(gomoryHuTreeContractedVertices[t].size() == 1);
-
-        add_edge(
-            gomoryHuTreeContractedVertices[s].front(), gomoryHuTreeContractedVertices[t].front(),
-            weight, resultGraph);
-    }
-
-    return resultGraph;
 }
 
 double GetMinCutFromGomoryHuTree(

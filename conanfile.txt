@@ -1,8 +1,9 @@
 [requires]
-# boost/1.81.0 # boost/1.53.0 introduces a bug in stoer_wagner_min_cut, fix is in dev branch, will hopefully be merged in 1.81
+boost/1.80.0
 catch2/2.13.7
 coin-clp/1.17.6
 xtensor/0.23.10
+zlib/1.2.12 # boost required 1.2.12 while coin-clp requires 1.2.11, so it needs to be put here explicitly
 
 [generators]
 cmake

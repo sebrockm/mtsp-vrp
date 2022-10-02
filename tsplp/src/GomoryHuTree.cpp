@@ -67,8 +67,8 @@ void CreateGomoryHuTree(
     std::vector<VertexType> gomoryHuTreeContractedVerticesStorage(
         graphVerticesBegin, graphVerticesEnd);
     gomoryHuTreeContractedVertices[firstTreeVertex]
-        = { gomoryHuTreeContractedVerticesStorage.begin(),
-            gomoryHuTreeContractedVerticesStorage.end() };
+        = { gomoryHuTreeContractedVerticesStorage.data(),
+            gomoryHuTreeContractedVerticesStorage.size() };
 
     std::vector<TreeVertexType> treeNodesToBeSplit;
     treeNodesToBeSplit.push_back(firstTreeVertex);
@@ -170,7 +170,7 @@ void CreateGomoryHuTree(
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
                 return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
             });
-        const auto splitOffset = middle - gomoryHuTreeContractedVertices[splitNode].begin();
+        const auto splitOffset = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());
         const auto blackNodes = gomoryHuTreeContractedVertices[splitNode].subspan(0, splitOffset);
         const auto whiteNodes = gomoryHuTreeContractedVertices[splitNode].subspan(splitOffset);
 

@@ -8,6 +8,7 @@
 #include "Variable.hpp"
 #include "WeightManager.hpp"
 
+#include <boost/core/bit.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
 #include <boost/graph/stoer_wagner_min_cut.hpp>
@@ -181,7 +182,7 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
     UndirectedGraph graph(N);
     struct hash
     {
-        size_t operator()(const EdgeType& e) const { return std::bit_cast<size_t>(e.m_eproperty); }
+        size_t operator()(const EdgeType& e) const { return boost::core::bit_cast<size_t>(e.m_eproperty); }
     };
     std::unordered_map<EdgeType, double, hash> edge2WeightMap;
     for (size_t u = 0; u < N; ++u)
@@ -294,8 +295,8 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
                             if (const auto [edge, exists] = boost::edge(u, v, graph); exists
                                 && ((edge2WeightMap.at(edge) > 0.5
                                      || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
-                                    || edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
-                                        && edge != e1))
+                                    || (edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
+                                        && edge != e1)))
                             {
                                 rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
                                     + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;

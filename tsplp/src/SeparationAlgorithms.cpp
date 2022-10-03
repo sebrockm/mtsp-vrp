@@ -218,7 +218,7 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
 
     CreateGomoryHuTree(
         graph,
-        [&](const double cutSize, std::vector<size_t> comp1, std::vector<size_t> comp2)
+        [&](const double cutSize, std::span<const size_t> comp1, std::span<const size_t> comp2)
         {
             ++counter;
             assert(cutSize >= 0);

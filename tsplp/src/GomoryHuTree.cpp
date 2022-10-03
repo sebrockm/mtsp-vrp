@@ -7,7 +7,6 @@
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/range/iterator_range.hpp>
 
-#include <span>
 #include <vector>
 
 namespace tsplp::graph
@@ -28,7 +27,7 @@ using PartiallyContractedGraph = boost::adjacency_matrix<boost::directedS>;
 void CreateGomoryHuTree(
     const UndirectedGraph& inputGraph,
     std::function<
-        bool(double cutSize, std::vector<VertexType> comp1, std::vector<VertexType> comp2)>
+        bool(double cutSize, std::span<const VertexType> comp1, std::span<const VertexType> comp2)>
         newEdgeCallback)
 {
     const auto N = num_vertices(inputGraph);
@@ -64,8 +63,9 @@ void CreateGomoryHuTree(
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
 
     const auto [graphVerticesBegin, graphVerticesEnd] = vertices(inputGraph);
-    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage(
-        graphVerticesBegin, graphVerticesEnd);
+    std::vector<VertexType> inputGraphVertexStorage(graphVerticesBegin, graphVerticesEnd);
+    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage = inputGraphVertexStorage;
+
     gomoryHuTreeContractedVertices[firstTreeVertex]
         = { gomoryHuTreeContractedVerticesStorage.data(),
             gomoryHuTreeContractedVerticesStorage.size() };
@@ -206,16 +206,19 @@ void CreateGomoryHuTree(
         // most important step: connect the now fully split nodes with the cut size
         add_edge(newGomoryHuVertex, splitNode, cutSize, gomoryHuTree);
 
-        std::vector<VertexType> comp1, comp2;
-        for (const auto v : boost::make_iterator_range(vertices(inputGraph)))
-        {
-            const auto pv = inputVertex2partiallyContractedMap.at(v);
-            if (partiallyContractedGraphColor[pv] == boost::black_color)
-                comp1.push_back(v);
-            else
-                comp2.push_back(v);
-        }
-        const auto isStopRequested = newEdgeCallback(cutSize, std::move(comp1), std::move(comp2));
+        const auto endBlack = std::partition(
+            begin(inputGraphVertexStorage), end(inputGraphVertexStorage),
+            [&](VertexType v)
+            {
+                const auto pv = inputVertex2partiallyContractedMap.at(v);
+                return partiallyContractedGraphColor[pv] == boost::black_color;
+            });
+        const auto blackLength = static_cast<size_t>(endBlack - begin(inputGraphVertexStorage));
+
+        const auto isStopRequested = newEdgeCallback(
+            cutSize, std::span { inputGraphVertexStorage.data(), blackLength },
+            std::span { inputGraphVertexStorage.data() + blackLength,
+                        inputGraphVertexStorage.size() - blackLength });
         if (isStopRequested)
             return;
 

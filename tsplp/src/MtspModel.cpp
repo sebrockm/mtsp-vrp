@@ -418,9 +418,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 continue;
             }
 
-            if (auto comb = separator.TwoMatching(); comb.has_value())
+            if (auto combs = separator.TwoMatching(); !combs.empty())
             {
-                constraints.Push(std::move(*comb));
+                constraints.Push(combs.begin(), combs.end());
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone(threadId);
                 continue;

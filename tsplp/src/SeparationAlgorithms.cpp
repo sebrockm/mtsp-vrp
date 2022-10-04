@@ -173,7 +173,7 @@ std::optional<LinearConstraint> Separator::PiSigma() const
     return std::nullopt;
 }
 
-std::optional<LinearConstraint> Separator::TwoMatching() const
+std::vector<LinearConstraint> Separator::TwoMatching() const
 {
     const auto N = m_weightManager.N();
     const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
@@ -212,7 +212,7 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
             == 1;
     }
 
-    std::optional<LinearConstraint> result {};
+    std::vector<LinearConstraint> results {};
 
     size_t counter = 0;
 
@@ -259,8 +259,8 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
                         }
                     });
 
-                result = lhs >= rhs;
-                return true;
+                results.push_back(std::move(lhs) >= std::move(rhs));
+                return false;
             }
             else
             {
@@ -308,8 +308,8 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
                             }
                         });
 
-                    result = lhs >= rhs;
-                    return true;
+                    results.push_back(std::move(lhs) >= std::move(rhs));
+                    return false;
                 }
             }
 
@@ -319,6 +319,6 @@ std::optional<LinearConstraint> Separator::TwoMatching() const
     //std::cout << "comb " << (result ? "" : "not") << " found after " << counter << " of " << N - 1
     //          << "gomory hu tree edges were found" << std::endl;
 
-    return result;
+    return results;
 }
 }

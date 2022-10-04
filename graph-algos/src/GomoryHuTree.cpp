@@ -103,11 +103,14 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 
         // Copy internal nodes of split node into partially contracted graph.
         // These are the non contracted nodes in the range [numberOfComponents, ...[.
-        PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
-        for (const auto v : gomoryHuTreeContractedVertices[splitNode])
+        [&]
         {
-            inputVertex2partiallyContractedMap[v] = nonContractedNode++;
-        }
+            PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
+            for (const auto v : gomoryHuTreeContractedVertices[splitNode])
+            {
+                inputVertex2partiallyContractedMap[v] = nonContractedNode++;
+            }
+        }();
 
         // Fill in edges between contracted nodes by summing up original edges. We need forward and
         // backward edges because boost::boykov_kolmogorov_max_flow needs a directed input graph.

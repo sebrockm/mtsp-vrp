@@ -7,6 +7,7 @@
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include <span>
 #include <vector>
 
 namespace tsplp::graph
@@ -24,15 +25,11 @@ using PartiallyContractedGraphVertexType =
 
 using PartiallyContractedGraph = boost::adjacency_matrix<boost::directedS>;
 
-void CreateGomoryHuTree(
-    const UndirectedGraph& inputGraph,
-    std::function<
-        bool(double cutSize, std::span<const VertexType> comp1, std::span<const VertexType> comp2)>
-        newEdgeCallback)
+UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
 {
     const auto N = num_vertices(inputGraph);
     if (N <= 1)
-        return;
+        return inputGraph;
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
@@ -63,9 +60,8 @@ void CreateGomoryHuTree(
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
 
     const auto [graphVerticesBegin, graphVerticesEnd] = vertices(inputGraph);
-    std::vector<VertexType> inputGraphVertexStorage(graphVerticesBegin, graphVerticesEnd);
-    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage = inputGraphVertexStorage;
-
+    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage(
+        graphVerticesBegin, graphVerticesEnd);
     gomoryHuTreeContractedVertices[firstTreeVertex]
         = { gomoryHuTreeContractedVerticesStorage.data(),
             gomoryHuTreeContractedVerticesStorage.size() };
@@ -206,27 +202,28 @@ void CreateGomoryHuTree(
         // most important step: connect the now fully split nodes with the cut size
         add_edge(newGomoryHuVertex, splitNode, cutSize, gomoryHuTree);
 
-        const auto endBlack = std::partition(
-            begin(inputGraphVertexStorage), end(inputGraphVertexStorage),
-            [&](VertexType v)
-            {
-                const auto pv = inputVertex2partiallyContractedMap.at(v);
-                return partiallyContractedGraphColor[pv] == boost::black_color;
-            });
-        const auto blackLength = static_cast<size_t>(endBlack - begin(inputGraphVertexStorage));
-
-        const auto isStopRequested = newEdgeCallback(
-            cutSize, std::span { inputGraphVertexStorage.data(), blackLength },
-            std::span { inputGraphVertexStorage.data() + blackLength,
-                        inputGraphVertexStorage.size() - blackLength });
-        if (isStopRequested)
-            return;
-
         if (gomoryHuTreeContractedVertices[splitNode].size() > 1)
             treeNodesToBeSplit.push_back(splitNode);
         if (gomoryHuTreeContractedVertices[newGomoryHuVertex].size() > 1)
             treeNodesToBeSplit.push_back(newGomoryHuVertex);
     }
+
+    UndirectedGraph resultGraph(N);
+    for (const auto treeEdge : boost::make_iterator_range(edges(gomoryHuTree)))
+    {
+        const auto s = source(treeEdge, gomoryHuTree);
+        const auto t = target(treeEdge, gomoryHuTree);
+        const auto weight = get(boost::edge_weight, gomoryHuTree, treeEdge);
+
+        assert(gomoryHuTreeContractedVertices[s].size() == 1);
+        assert(gomoryHuTreeContractedVertices[t].size() == 1);
+
+        add_edge(
+            gomoryHuTreeContractedVertices[s].front(), gomoryHuTreeContractedVertices[t].front(),
+            weight, resultGraph);
+    }
+
+    return resultGraph;
 }
 
 double GetMinCutFromGomoryHuTree(

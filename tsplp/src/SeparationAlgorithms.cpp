@@ -212,33 +212,98 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             == 1;
     }
 
+    const auto IsOdd = [&](const std::vector<size_t>& componentIds)
+    {
+        bool isOdd = false;
+        for (size_t v = 0; v < N; ++v)
+            isOdd ^= componentIds[v] == 0 && odd[v];
+        return isOdd;
+    };
+
     std::vector<LinearConstraint> results {};
 
-    size_t counter = 0;
+    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    for (const auto& e : boost::make_iterator_range(edges(gomoryHuTree)))
+    {
+        const auto cutSize = get(boost::edge_weight, gomoryHuTree, e);
+        assert(cutSize >= 0);
 
-    CreateGomoryHuTree(
-        graph,
-        [&](const double cutSize, std::span<const size_t> comp1, std::span<const size_t> comp2)
+        struct Filter
         {
-            ++counter;
-            assert(cutSize >= 0);
+            EdgeType edge;
+            bool operator()(const EdgeType& e) const { return edge != e; }
+        };
 
-            const auto ForAllCutEdges = [&](auto f)
+        std::vector<size_t> componentIds(N);
+        const auto numberOfComponents = boost::connected_components(
+            make_filtered_graph(gomoryHuTree, Filter { e }, boost::keep_all {}),
+            componentIds.data());
+
+        assert(numberOfComponents == 2);
+
+        const auto ForAllCutEdges = [&](auto f)
+        {
+            for (size_t u = 0; u < N; ++u)
             {
-                for (const auto u : comp1)
+                if (componentIds[u] != 0)
+                    continue;
+
+                for (size_t v = 0; v < N; ++v)
                 {
-                    for (const auto v : comp2)
-                    {
-                        f(u, v);
-                    }
+                    if (componentIds[v] != 1)
+                        continue;
+
+                    f(u, v);
                 }
-            };
+            }
+        };
 
-            bool isOdd = false;
-            for (const auto v : comp1)
-                isOdd ^= odd[v];
+        if (cutSize < 1 - 1e-10 && IsOdd(componentIds))
+        {
+            LinearVariableComposition lhs = 0;
+            LinearVariableComposition rhs = 1;
 
-            if (cutSize < 1 - 1e-10 && isOdd)
+            ForAllCutEdges(
+                [&](size_t u, size_t v)
+                {
+                    if (const auto [edge, exists] = boost::edge(u, v, graph);
+                        exists && edge2WeightMap.at(edge) > 0.5)
+                    {
+                        rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
+                    }
+                    else
+                    {
+                        lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                    }
+                });
+
+            results.push_back(std::move(lhs) >= std::move(rhs));
+        }
+        else
+        {
+            double w1 = 1;
+            double w2 = 0;
+            EdgeType e1 {};
+            EdgeType e2 {};
+            ForAllCutEdges(
+                [&](size_t u, size_t v)
+                {
+                    if (const auto [edge, exists] = boost::edge(u, v, graph);
+                        exists && edge2WeightMap.at(edge) > 0.5)
+                    {
+                        w1 = std::min(w1, edge2WeightMap.at(edge));
+                        e1 = edge;
+                    }
+                    else
+                    {
+                        w2 = std::max(w2, edge2WeightMap.at(edge));
+                        e2 = edge;
+                    }
+                });
+
+            if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
             {
                 LinearVariableComposition lhs = 0;
                 LinearVariableComposition rhs = 1;
@@ -246,8 +311,11 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                 ForAllCutEdges(
                     [&](size_t u, size_t v)
                     {
-                        if (const auto [edge, exists] = boost::edge(u, v, graph);
-                            exists && edge2WeightMap.at(edge) > 0.5)
+                        if (const auto [edge, exists] = boost::edge(u, v, graph); exists
+                            && ((edge2WeightMap.at(edge) > 0.5
+                                 || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
+                                || (edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
+                                    && edge != e1)))
                         {
                             rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
                                 + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
@@ -260,64 +328,9 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                     });
 
                 results.push_back(std::move(lhs) >= std::move(rhs));
-                return false;
             }
-            else
-            {
-                double w1 = 1;
-                double w2 = 0;
-                EdgeType e1 {};
-                EdgeType e2 {};
-                ForAllCutEdges(
-                    [&](size_t u, size_t v)
-                    {
-                        if (const auto [edge, exists] = boost::edge(u, v, graph);
-                            exists && edge2WeightMap.at(edge) > 0.5)
-                        {
-                            w1 = std::min(w1, edge2WeightMap.at(edge));
-                            e1 = edge;
-                        }
-                        else
-                        {
-                            w2 = std::max(w2, edge2WeightMap.at(edge));
-                            e2 = edge;
-                        }
-                    });
-
-                if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
-                {
-                    LinearVariableComposition lhs = 0;
-                    LinearVariableComposition rhs = 1;
-
-                    ForAllCutEdges(
-                        [&](size_t u, size_t v)
-                        {
-                            if (const auto [edge, exists] = boost::edge(u, v, graph); exists
-                                && ((edge2WeightMap.at(edge) > 0.5
-                                     || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
-                                    || (edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
-                                        && edge != e1)))
-                            {
-                                rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                                    + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
-                            }
-                            else
-                            {
-                                lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                                    + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
-                            }
-                        });
-
-                    results.push_back(std::move(lhs) >= std::move(rhs));
-                    return false;
-                }
-            }
-
-            return false;
-        });
-
-    //std::cout << "comb " << (result ? "" : "not") << " found after " << counter << " of " << N - 1
-    //          << "gomory hu tree edges were found" << std::endl;
+        }
+    }
 
     return results;
 }

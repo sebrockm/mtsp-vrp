@@ -26,8 +26,7 @@ public:
     {
         std::unique_lock lock { m_mutex };
 
-        m_deque.insert(
-            m_deque.end(), std::make_move_iterator(first), std::make_move_iterator(last));
+        m_deque.insert(m_deque.end(), first, last);
     }
 
     void Push(LinearConstraint constraint);

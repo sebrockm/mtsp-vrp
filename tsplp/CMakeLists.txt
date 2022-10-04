@@ -28,6 +28,7 @@ target_precompile_headers(tsplp
 		<ClpSimplex.hpp>
 		<CoinFinite.hpp>
 
+		<boost/core/bit.hpp>
 		<boost/graph/adjacency_list.hpp>
 		<boost/graph/adjacency_matrix.hpp>
 		<boost/graph/boykov_kolmogorov_max_flow.hpp>

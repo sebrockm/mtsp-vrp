@@ -2,7 +2,6 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
-
 namespace graph_algos
 {
 

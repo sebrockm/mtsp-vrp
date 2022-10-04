@@ -166,7 +166,8 @@ UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph)
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
                 return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
             });
-        const auto splitOffset = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());
+        const auto splitOffset
+            = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());
         const auto blackNodes = gomoryHuTreeContractedVertices[splitNode].subspan(0, splitOffset);
         const auto whiteNodes = gomoryHuTreeContractedVertices[splitNode].subspan(splitOffset);
 

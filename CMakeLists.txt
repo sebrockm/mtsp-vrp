@@ -40,6 +40,7 @@ add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
+add_subdirectory(graph-algos)
 add_subdirectory(mtsp-vrp-c)
 add_subdirectory(python)
 add_subdirectory(tsplp)

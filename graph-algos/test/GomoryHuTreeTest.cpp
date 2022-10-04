@@ -2,7 +2,7 @@
 
 #include <catch2/catch.hpp>
 
-namespace g = tsplp::graph;
+namespace g = graph_algos;
 
 TEST_CASE("Empty Graph", "[Gomory Hu Tree]")
 {

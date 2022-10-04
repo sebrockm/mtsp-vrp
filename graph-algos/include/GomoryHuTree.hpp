@@ -3,7 +3,7 @@
 #include <boost/graph/adjacency_list.hpp>
 
 
-namespace tsplp::graph
+namespace graph_algos
 {
 
 using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;

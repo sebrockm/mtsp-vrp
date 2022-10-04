@@ -10,7 +10,7 @@
 #include <span>
 #include <vector>
 
-namespace tsplp::graph
+namespace graph_algos
 {
 
 using IntermediateTree = boost::adjacency_list<

@@ -1,12 +1,13 @@
 #include "SeparationAlgorithms.hpp"
 
-#include "GomoryHuTree.hpp"
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 #include "Model.hpp"
 #include "SupportGraphs.hpp"
 #include "Variable.hpp"
 #include "WeightManager.hpp"
+
+#include <GomoryHuTree.hpp>
 
 #include <boost/core/bit.hpp>
 #include <boost/graph/adjacency_list.hpp>
@@ -19,6 +20,10 @@
 
 namespace tsplp::graph
 {
+using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
+using UndirectedGraph = boost::adjacency_list<
+    boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
+
 Separator::Separator(
     const xt::xtensor<Variable, 3>& variables, const WeightManager& weightManager,
     const Model& model)
@@ -179,12 +184,15 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
     const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
     const auto values = vf(m_variables);
 
-    UndirectedGraph graph(N);
+    graph_algos::UndirectedGraph graph(N);
     struct hash
     {
-        size_t operator()(const EdgeType& e) const { return boost::core::bit_cast<size_t>(e.m_eproperty); }
+        size_t operator()(const graph_algos::EdgeType& e) const
+        {
+            return boost::core::bit_cast<size_t>(e.m_eproperty);
+        }
     };
-    std::unordered_map<EdgeType, double, hash> edge2WeightMap;
+    std::unordered_map<graph_algos::EdgeType, double, hash> edge2WeightMap;
     for (size_t u = 0; u < N; ++u)
     {
         for (size_t v = u + 1; v < N; ++v)
@@ -207,7 +215,8 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
     {
         const auto [eBegin, eEnd] = out_edges(v, graph);
         odd[v] = std::count_if(
-                     eBegin, eEnd, [&](const EdgeType& e) { return edge2WeightMap.at(e) > 0.5; })
+                     eBegin, eEnd,
+                     [&](const graph_algos::EdgeType& e) { return edge2WeightMap.at(e) > 0.5; })
                 % 2
             == 1;
     }
@@ -222,7 +231,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
     std::vector<LinearConstraint> results {};
 
-    const auto gomoryHuTree = CreateGomoryHuTree(graph);
+    const auto gomoryHuTree = graph_algos::CreateGomoryHuTree(graph);
     for (const auto& e : boost::make_iterator_range(edges(gomoryHuTree)))
     {
         const auto cutSize = get(boost::edge_weight, gomoryHuTree, e);
@@ -230,8 +239,8 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
         struct Filter
         {
-            EdgeType edge;
-            bool operator()(const EdgeType& e) const { return edge != e; }
+            graph_algos::EdgeType edge;
+            bool operator()(const graph_algos::EdgeType& e) const { return edge != e; }
         };
 
         std::vector<size_t> componentIds(N);
@@ -285,8 +294,8 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
         {
             double w1 = 1;
             double w2 = 0;
-            EdgeType e1 {};
-            EdgeType e2 {};
+            graph_algos::EdgeType e1 {};
+            graph_algos::EdgeType e2 {};
             ForAllCutEdges(
                 [&](size_t u, size_t v)
                 {

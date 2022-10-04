@@ -185,17 +185,10 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
     const auto values = vf(m_variables);
 
     graph_algos::UndirectedGraph graph(N);
-    struct hash
-    {
-        size_t operator()(const graph_algos::EdgeType& e) const
-        {
-            return boost::core::bit_cast<size_t>(e.m_eproperty);
-        }
-    };
-    std::unordered_map<graph_algos::EdgeType, double, hash> edge2WeightMap;
+    std::vector<double> edge2WeightMap(N * (N - 1) / 2);
     for (size_t u = 0; u < N; ++u)
     {
-        for (size_t v = u + 1; v < N; ++v)
+        for (size_t v = 0; v < u; ++v)
         {
             const auto weight = std::max(
                 0.0,
@@ -206,9 +199,17 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             const auto capacity = std::min(weight, 1 - weight);
             const auto [edge, inserted] = boost::add_edge(u, v, capacity, graph);
             assert(inserted);
-            edge2WeightMap.emplace(edge, weight);
+            edge2WeightMap[u * (u - 1) / 2 + v] = weight;
         }
     }
+    const auto edge2WeightFunction = [&](const graph_algos::EdgeType& e)
+    {
+        const auto s = source(e, graph);
+        const auto t = target(e, graph);
+        const auto u = std::max(s, t);
+        const auto v = std::min(s, t);
+        return edge2WeightMap[u * (u - 1) / 2 + v];
+    };
 
     std::vector<bool> odd(N);
     for (const auto v : boost::make_iterator_range(vertices(graph)))
@@ -216,7 +217,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
         const auto [eBegin, eEnd] = out_edges(v, graph);
         odd[v] = std::count_if(
                      eBegin, eEnd,
-                     [&](const graph_algos::EdgeType& e) { return edge2WeightMap.at(e) > 0.5; })
+                     [&](const graph_algos::EdgeType& e) { return edge2WeightFunction(e) > 0.5; })
                 % 2
             == 1;
     }
@@ -276,7 +277,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                 [&](size_t u, size_t v)
                 {
                     if (const auto [edge, exists] = boost::edge(u, v, graph);
-                        exists && edge2WeightMap.at(edge) > 0.5)
+                        exists && edge2WeightFunction(edge) > 0.5)
                     {
                         rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
                             + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
@@ -300,14 +301,14 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                 [&](size_t u, size_t v)
                 {
                     if (const auto [edge, exists] = boost::edge(u, v, graph);
-                        exists && edge2WeightMap.at(edge) > 0.5)
+                        exists && edge2WeightFunction(edge) > 0.5)
                     {
-                        w1 = std::min(w1, edge2WeightMap.at(edge));
+                        w1 = std::min(w1, edge2WeightFunction(edge));
                         e1 = edge;
                     }
                     else
                     {
-                        w2 = std::max(w2, edge2WeightMap.at(edge));
+                        w2 = std::max(w2, edge2WeightFunction(edge));
                         e2 = edge;
                     }
                 });
@@ -321,9 +322,9 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                     [&](size_t u, size_t v)
                     {
                         if (const auto [edge, exists] = boost::edge(u, v, graph); exists
-                            && ((edge2WeightMap.at(edge) > 0.5
+                            && ((edge2WeightFunction(edge) > 0.5
                                  || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
-                                || (edge2WeightMap.at(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
+                                || (edge2WeightFunction(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
                                     && edge != e1)))
                         {
                             rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()

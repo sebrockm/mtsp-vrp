@@ -2,6 +2,9 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
+#include <functional>
+#include <span>
+
 namespace graph_algos
 {
 
@@ -11,7 +14,11 @@ using UndirectedGraph = boost::adjacency_list<
 using VertexType = typename boost::graph_traits<UndirectedGraph>::vertex_descriptor;
 using EdgeType = typename boost::graph_traits<UndirectedGraph>::edge_descriptor;
 
-UndirectedGraph CreateGomoryHuTree(const UndirectedGraph& inputGraph);
+void CreateGomoryHuTree(
+    const UndirectedGraph& inputGraph,
+    std::function<
+        bool(double cutSize, std::span<const VertexType> comp1, std::span<const VertexType> comp2)>
+        newEdgeCallback);
 
 double GetMinCutFromGomoryHuTree(
     const UndirectedGraph& gomoryHuTree, VertexType source, VertexType sink);

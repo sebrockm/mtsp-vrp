@@ -221,99 +221,33 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             == 1;
     }
 
-    const auto IsOdd = [&](const std::vector<size_t>& componentIds)
-    {
-        bool isOdd = false;
-        for (size_t v = 0; v < N; ++v)
-            isOdd ^= componentIds[v] == 0 && odd[v];
-        return isOdd;
-    };
-
     std::vector<LinearConstraint> results {};
 
-    const auto gomoryHuTree = graph_algos::CreateGomoryHuTree(graph);
-    for (const auto& e : boost::make_iterator_range(edges(gomoryHuTree)))
-    {
-        const auto cutSize = get(boost::edge_weight, gomoryHuTree, e);
-        assert(cutSize >= 0);
-
-        if (cutSize >= 1 - 1e-10)
-            continue;
-
-        struct Filter
+    graph_algos::CreateGomoryHuTree(
+        graph,
+        [&](const double cutSize, std::span<const size_t> comp1, std::span<const size_t> comp2)
         {
-            graph_algos::EdgeType edge;
-            bool operator()(const graph_algos::EdgeType& e) const { return edge != e; }
-        };
+            assert(cutSize >= 0);
 
-        std::vector<size_t> componentIds(N);
-        [[maybe_unused]] const auto numberOfComponents = boost::connected_components(
-            make_filtered_graph(gomoryHuTree, Filter { e }, boost::keep_all {}),
-            componentIds.data());
+            if (cutSize >= 1 - 1e-10)
+                return false;
 
-        assert(numberOfComponents == 2);
-
-        const auto ForAllCutEdges = [&](auto f)
-        {
-            for (size_t u = 0; u < N; ++u)
+            const auto ForAllCutEdges = [&](auto f)
             {
-                if (componentIds[u] != 0)
-                    continue;
-
-                for (size_t v = 0; v < u; ++v)
+                for (const auto u : comp1)
                 {
-                    if (componentIds[v] != 1)
-                        continue;
-
-                    f(u, v);
+                    for (const auto v : comp2)
+                    {
+                        f(std::max(u, v), std::min(u, v));
+                    }
                 }
-            }
-        };
+            };
 
-        if (cutSize < 1 - 1e-10 && IsOdd(componentIds))
-        {
-            LinearVariableComposition lhs = 0;
-            LinearVariableComposition rhs = 1;
+            bool isOdd = false;
+            for (const auto v : comp1)
+                isOdd ^= odd[v];
 
-            ForAllCutEdges(
-                [&](size_t u, size_t v)
-                {
-                    auto constraintPart = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                        + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
-                    if (edge2WeightMap[u * (u - 1) / 2 + v] > 0.5)
-                    {
-                        rhs += std::move(constraintPart) - 1;
-                    }
-                    else
-                    {
-                        lhs += std::move(constraintPart);
-                    }
-                });
-
-            results.push_back(std::move(lhs) >= std::move(rhs));
-        }
-        else
-        {
-            double w1 = 1;
-            double w2 = 0;
-            std::pair<size_t, size_t> e1 {};
-            std::pair<size_t, size_t> e2 {};
-            ForAllCutEdges(
-                [&](size_t u, size_t v)
-                {
-                    if (const auto weight = edge2WeightMap[u * (u - 1) / 2 + v]; weight > 0.5)
-                    {
-                        w1 = std::min(w1, weight);
-                        e1 = { u, v };
-                    }
-                    else
-                    {
-                        w2 = std::max(w2, weight);
-                        e2 = { u, v };
-                    }
-                });
-
-            if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
+            if (cutSize < 1 - 1e-10 && isOdd)
             {
                 LinearVariableComposition lhs = 0;
                 LinearVariableComposition rhs = 1;
@@ -323,12 +257,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                     {
                         auto constraintPart = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
                             + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
-
-                        const auto weight = edge2WeightMap[u * (u - 1) / 2 + v];
-                        const auto edge = std::make_pair(u, v);
-
-                        if ((2 * w1 - 1 < 1 - 2 * w2 && weight > 0.5 && edge != e1)
-                            || (2 * w1 - 1 >= 1 - 2 * w2 && (weight > 0.5 || edge == e2)))
+                        if (edge2WeightMap[u * (u - 1) / 2 + v] > 0.5)
                         {
                             rhs += std::move(constraintPart) - 1;
                         }
@@ -340,8 +269,59 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
                 results.push_back(std::move(lhs) >= std::move(rhs));
             }
-        }
-    }
+            else
+            {
+                double w1 = 1;
+                double w2 = 0;
+                std::pair<size_t, size_t> e1 {};
+                std::pair<size_t, size_t> e2 {};
+                ForAllCutEdges(
+                    [&](size_t u, size_t v)
+                    {
+                        if (const auto weight = edge2WeightMap[u * (u - 1) / 2 + v]; weight > 0.5)
+                        {
+                            w1 = std::min(w1, weight);
+                            e1 = { u, v };
+                        }
+                        else
+                        {
+                            w2 = std::max(w2, weight);
+                            e2 = { u, v };
+                        }
+                    });
+
+                if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
+                {
+                    LinearVariableComposition lhs = 0;
+                    LinearVariableComposition rhs = 1;
+
+                    ForAllCutEdges(
+                        [&](size_t u, size_t v)
+                        {
+                            auto constraintPart
+                                = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+
+                            const auto weight = edge2WeightMap[u * (u - 1) / 2 + v];
+                            const auto edge = std::make_pair(u, v);
+
+                            if ((2 * w1 - 1 < 1 - 2 * w2 && weight > 0.5 && edge != e1)
+                                || (2 * w1 - 1 >= 1 - 2 * w2 && (weight > 0.5 || edge == e2)))
+                            {
+                                rhs += std::move(constraintPart) - 1;
+                            }
+                            else
+                            {
+                                lhs += std::move(constraintPart);
+                            }
+                        });
+
+                    results.push_back(std::move(lhs) >= std::move(rhs));
+                }
+            }
+
+            return false;
+        });
 
     return results;
 }

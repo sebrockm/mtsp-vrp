@@ -11,17 +11,19 @@ target_link_libraries(graph-algos PUBLIC CONAN_PKG::boost)
 
 target_precompile_headers(graph-algos
 	PUBLIC
-		<boost/graph/adjacency_list.hpp>
-	PRIVATE
-		<boost/graph/adjacency_matrix.hpp>
-		<boost/graph/boykov_kolmogorov_max_flow.hpp>
-		<boost/graph/connected_components.hpp>
-		<boost/graph/depth_first_search.hpp>
-		<boost/graph/filtered_graph.hpp>
-		<boost/range/iterator_range.hpp>
+	<boost/graph/adjacency_list.hpp>
 
-		<span>
-		<vector>
+	<functional>
+	<span>
+
+	PRIVATE
+	<boost/graph/adjacency_matrix.hpp>
+	<boost/graph/boykov_kolmogorov_max_flow.hpp>
+	<boost/graph/connected_components.hpp>
+	<boost/graph/depth_first_search.hpp>
+	<boost/graph/filtered_graph.hpp>
+	<boost/range/iterator_range.hpp>
+	<vector>
 )
 
 add_subdirectory(test)

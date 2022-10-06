@@ -197,8 +197,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                     xt::sum(xt::view(values, xt::all(), u, v))()
                         + xt::sum(xt::view(values, xt::all(), v, u))()));
             const auto capacity = std::min(weight, 1 - weight);
-            const auto [edge, inserted] = boost::add_edge(u, v, capacity, graph);
-            assert(inserted);
+            boost::add_edge(u, v, capacity, graph);
             edge2WeightMap[u * (u - 1) / 2 + v] = weight;
         }
     }
@@ -238,6 +237,9 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
         const auto cutSize = get(boost::edge_weight, gomoryHuTree, e);
         assert(cutSize >= 0);
 
+        if (cutSize >= 1 - 1e-10)
+            continue;
+
         struct Filter
         {
             graph_algos::EdgeType edge;
@@ -245,7 +247,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
         };
 
         std::vector<size_t> componentIds(N);
-        const auto numberOfComponents = boost::connected_components(
+        [[maybe_unused]] const auto numberOfComponents = boost::connected_components(
             make_filtered_graph(gomoryHuTree, Filter { e }, boost::keep_all {}),
             componentIds.data());
 
@@ -258,7 +260,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                 if (componentIds[u] != 0)
                     continue;
 
-                for (size_t v = 0; v < N; ++v)
+                for (size_t v = 0; v < u; ++v)
                 {
                     if (componentIds[v] != 1)
                         continue;
@@ -276,16 +278,15 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             ForAllCutEdges(
                 [&](size_t u, size_t v)
                 {
-                    if (const auto [edge, exists] = boost::edge(u, v, graph);
-                        exists && edge2WeightFunction(edge) > 0.5)
+                    auto constraintPart = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                        + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                    if (edge2WeightMap[u * (u - 1) / 2 + v] > 0.5)
                     {
-                        rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
+                        rhs += std::move(constraintPart) - 1;
                     }
                     else
                     {
-                        lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                        lhs += std::move(constraintPart);
                     }
                 });
 
@@ -295,21 +296,20 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
         {
             double w1 = 1;
             double w2 = 0;
-            graph_algos::EdgeType e1 {};
-            graph_algos::EdgeType e2 {};
+            std::pair<size_t, size_t> e1 {};
+            std::pair<size_t, size_t> e2 {};
             ForAllCutEdges(
                 [&](size_t u, size_t v)
                 {
-                    if (const auto [edge, exists] = boost::edge(u, v, graph);
-                        exists && edge2WeightFunction(edge) > 0.5)
+                    if (const auto weight = edge2WeightMap[u * (u - 1) / 2 + v]; weight > 0.5)
                     {
-                        w1 = std::min(w1, edge2WeightFunction(edge));
-                        e1 = edge;
+                        w1 = std::min(w1, weight);
+                        e1 = { u, v };
                     }
                     else
                     {
-                        w2 = std::max(w2, edge2WeightFunction(edge));
-                        e2 = edge;
+                        w2 = std::max(w2, weight);
+                        e2 = { u, v };
                     }
                 });
 
@@ -321,19 +321,20 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                 ForAllCutEdges(
                     [&](size_t u, size_t v)
                     {
-                        if (const auto [edge, exists] = boost::edge(u, v, graph); exists
-                            && ((edge2WeightFunction(edge) > 0.5
-                                 || (2 * w1 - 1 >= 1 - 2 * w2 && edge == e2))
-                                || (edge2WeightFunction(edge) > 0.5 && 2 * w1 - 1 < 1 - 2 * w2
-                                    && edge != e1)))
+                        auto constraintPart = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+
+                        const auto weight = edge2WeightMap[u * (u - 1) / 2 + v];
+                        const auto edge = std::make_pair(u, v);
+
+                        if ((2 * w1 - 1 < 1 - 2 * w2 && weight > 0.5 && edge != e1)
+                            || (2 * w1 - 1 >= 1 - 2 * w2 && (weight > 0.5 || edge == e2)))
                         {
-                            rhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)() - 1;
+                            rhs += std::move(constraintPart) - 1;
                         }
                         else
                         {
-                            lhs += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
-                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                            lhs += std::move(constraintPart);
                         }
                     });
 

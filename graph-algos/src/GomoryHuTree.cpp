@@ -45,11 +45,10 @@ void CreateGomoryHuTree(
     std::vector<double> partiallyContractedGraphResidualCapacity(N * N);
     std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphReverseEdge(N * N);
 
-    const auto GetEdgePropertyFunctionMap = [](auto& matrix, auto& graph)
+    const auto GetEdgePropertyFunctionMap = [](auto& matrix, const auto& graph)
     {
         return boost::make_function_property_map<PartiallyContractedGraphEdgeType>(
-            [&](const PartiallyContractedGraphEdgeType& e) -> auto&
-            {
+            [&](const PartiallyContractedGraphEdgeType& e) -> auto& {
                 const auto n = num_vertices(graph);
                 const auto s = source(e, graph);
                 const auto t = target(e, graph);

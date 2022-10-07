@@ -128,8 +128,6 @@ void CreateGomoryHuTree(
 
             const auto [forwardEdge, forwardInserted] = add_edge(u, v, partiallyContractedGraph);
             const auto [backwardEdge, backwardInserted] = add_edge(v, u, partiallyContractedGraph);
-            assert(forwardInserted);
-            assert(backwardInserted);
 
             const auto weight = get(boost::edge_weight, inputGraph, inputEdge);
             partiallyContractedGraphCapacity[u * n + v] += weight;

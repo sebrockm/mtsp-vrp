@@ -5,7 +5,7 @@ set(bench_script "${CMAKE_CURRENT_BINARY_DIR}/bench_script.sh")
 file(GENERATE
 	OUTPUT "${bench_script}"
 	CONTENT "\
-\"${Python3_EXECUTABLE}\" -m venv \"${testenv}\"\n\
+\"${Python3_EXECUTABLE}\" -m venv --system-site-packages \"${testenv}\"\n\
 ${activate_command}\n\
 pip install -r \"${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\"\n\
 python \"${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py\" 60000\n\

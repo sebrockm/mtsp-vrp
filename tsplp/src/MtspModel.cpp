@@ -455,8 +455,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
     };
 
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < threadCount; ++i)
+    for (size_t i = 1; i < threadCount; ++i)
         threads.emplace_back(threadLoop, i);
+
+    threadLoop(0);
 
     for (auto& thread : threads)
         thread.join();

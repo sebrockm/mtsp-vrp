@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
 def main(timeout_ms):
     base = os.path.dirname(os.path.abspath(__file__))
-    files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in os.listdir(os.path.join(base, kind))]
+    files = [os.path.join(base, kind, f) for kind in ['sop', 'atsp', 'tsp'] for f in sorted(os.listdir(os.path.join(base, kind)), key=str.casefold)]
 
     with open(os.path.join(base, 'best-known-solutions.json')) as f:
         solutions = json.load(f)

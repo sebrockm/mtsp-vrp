@@ -1,5 +1,7 @@
 #include "GomoryHuTree.hpp"
 
+#include "PartiallyContractedGraph.hpp"
+
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
@@ -17,12 +19,8 @@ using IntermediateTree = boost::adjacency_list<
 using TreeVertexType = typename boost::graph_traits<IntermediateTree>::vertex_descriptor;
 using TreeEdgeType = typename boost::graph_traits<IntermediateTree>::edge_descriptor;
 
-using PartiallyContractedGraphEdgeType =
-    typename boost::adjacency_matrix_traits<boost::directedS>::edge_descriptor;
-using PartiallyContractedGraphVertexType =
-    typename boost::adjacency_matrix_traits<boost::directedS>::vertex_descriptor;
-
-using PartiallyContractedGraph = boost::adjacency_matrix<boost::directedS>;
+using PartiallyContractedGraphEdgeType = PartiallyContractedGraph::edge_descriptor;
+using PartiallyContractedGraphVertexType = PartiallyContractedGraph::vertex_descriptor;
 
 void CreateGomoryHuTree(
     const UndirectedGraph& inputGraph,
@@ -37,27 +35,9 @@ void CreateGomoryHuTree(
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
 
-    std::vector<boost::default_color_type> partiallyContractedGraphColor(N);
-    std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphPredecessorEdge(N);
-    std::vector<double> partiallyContractedGraphDistance(N);
-
-    std::vector<double> partiallyContractedGraphCapacity(N * N);
-    std::vector<double> partiallyContractedGraphResidualCapacity(N * N);
-    std::vector<PartiallyContractedGraphEdgeType> partiallyContractedGraphReverseEdge(N * N);
-
-    const auto GetEdgePropertyFunctionMap = [](auto& matrix, const auto& graph)
-    {
-        return boost::make_function_property_map<PartiallyContractedGraphEdgeType>(
-            [&](const PartiallyContractedGraphEdgeType& e) -> auto& {
-                const auto n = num_vertices(graph);
-                const auto s = source(e, graph);
-                const auto t = target(e, graph);
-                return matrix[n * s + t];
-            });
-    };
-
     std::vector<std::span<VertexType>> gomoryHuTreeContractedVertices(N);
 
+    PartiallyContractedGraph partiallyContractedGraph(N);
     IntermediateTree gomoryHuTree;
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
 
@@ -88,9 +68,7 @@ void CreateGomoryHuTree(
             gomoryHuForest, gomoryHuForestVertex2ComponentIdMap.data());
 
         const auto n = numberOfComponents + gomoryHuTreeContractedVertices[splitNode].size();
-        PartiallyContractedGraph partiallyContractedGraph(n);
-        for (size_t i = 0; i < n * n; ++i)
-            partiallyContractedGraphCapacity[i] = 0;
+        partiallyContractedGraph.Reset(n);
 
         // The nodes [0, numberOfComponents[ are the contracted nodes
         // Fill in the subnodes into each contracted node
@@ -108,7 +86,7 @@ void CreateGomoryHuTree(
         // These are the non contracted nodes in the range [numberOfComponents, ...[.
         [&]
         {
-            PartiallyContractedGraphVertexType nonContractedNode = numberOfComponents;
+            PartiallyContractedGraph::vertex_descriptor nonContractedNode = numberOfComponents;
             for (const auto v : gomoryHuTreeContractedVertices[splitNode])
             {
                 inputVertex2partiallyContractedMap[v] = nonContractedNode++;
@@ -125,14 +103,9 @@ void CreateGomoryHuTree(
             const auto u = inputVertex2partiallyContractedMap[inputU];
             const auto v = inputVertex2partiallyContractedMap[inputV];
 
-            const auto [forwardEdge, forwardInserted] = add_edge(u, v, partiallyContractedGraph);
-            const auto [backwardEdge, backwardInserted] = add_edge(v, u, partiallyContractedGraph);
-
             const auto weight = get(boost::edge_weight, inputGraph, inputEdge);
-            partiallyContractedGraphCapacity[u * n + v] += weight;
-            partiallyContractedGraphCapacity[v * n + u] += weight;
-            partiallyContractedGraphReverseEdge[u * n + v] = backwardEdge;
-            partiallyContractedGraphReverseEdge[v * n + u] = forwardEdge;
+            partiallyContractedGraph.EdgeCapacities[u * n + v] += weight;
+            partiallyContractedGraph.EdgeCapacities[v * n + u] += weight;
         }
 
         // finally, calculate the cut between some arbitrary non contracted nodes
@@ -142,21 +115,14 @@ void CreateGomoryHuTree(
         const auto source = inputVertex2partiallyContractedMap.at(inputSource);
         const auto sink = inputVertex2partiallyContractedMap.at(inputSink);
 
-        const auto vertexIndexMap = get(boost::vertex_index, partiallyContractedGraph);
-
         const auto cutSize = boost::boykov_kolmogorov_max_flow(
-            partiallyContractedGraph,
-            GetEdgePropertyFunctionMap(partiallyContractedGraphCapacity, partiallyContractedGraph),
-            GetEdgePropertyFunctionMap(
-                partiallyContractedGraphResidualCapacity, partiallyContractedGraph),
-            GetEdgePropertyFunctionMap(
-                partiallyContractedGraphReverseEdge, partiallyContractedGraph),
-            boost::make_iterator_property_map(
-                partiallyContractedGraphPredecessorEdge.data(), vertexIndexMap),
-            boost::make_iterator_property_map(partiallyContractedGraphColor.data(), vertexIndexMap),
-            boost::make_iterator_property_map(
-                partiallyContractedGraphDistance.data(), vertexIndexMap),
-            vertexIndexMap, source, sink);
+            partiallyContractedGraph, get(boost::edge_capacity, partiallyContractedGraph),
+            get(boost::edge_residual_capacity, partiallyContractedGraph),
+            get(boost::edge_reverse, partiallyContractedGraph),
+            get(boost::vertex_predecessor, partiallyContractedGraph),
+            get(boost::vertex_color, partiallyContractedGraph),
+            get(boost::vertex_distance, partiallyContractedGraph),
+            get(boost::vertex_index, partiallyContractedGraph), source, sink);
 
         // add new vertex; splitNode will be split by moving ~ half of its nodes and edges here
         const auto newGomoryHuVertex = add_vertex(gomoryHuTree);
@@ -168,7 +134,7 @@ void CreateGomoryHuTree(
             [&](VertexType v)
             {
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
-                return partiallyContractedGraphColor[nonContractedNode] == boost::black_color;
+                return partiallyContractedGraph.VertexColors[nonContractedNode] == boost::black_color;
             });
         const auto splitOffset
             = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());
@@ -187,7 +153,7 @@ void CreateGomoryHuTree(
             const auto sampleInputVertex = gomoryHuTreeContractedVertices[targetNode].front();
             const auto sampleVertex = inputVertex2partiallyContractedMap.at(sampleInputVertex);
 
-            if (partiallyContractedGraphColor[sampleVertex] == boost::black_color)
+            if (partiallyContractedGraph.VertexColors[sampleVertex] == boost::black_color)
             {
                 const auto weight = get(boost::edge_weight, gomoryHuTree, e);
                 const auto [copiedEdge, _] = add_edge(newGomoryHuVertex, targetNode, gomoryHuTree);
@@ -212,7 +178,7 @@ void CreateGomoryHuTree(
             [&](VertexType v)
             {
                 const auto pv = inputVertex2partiallyContractedMap.at(v);
-                return partiallyContractedGraphColor[pv] == boost::black_color;
+                return partiallyContractedGraph.VertexColors[pv] == boost::black_color;
             });
         const auto blackLength = static_cast<size_t>(endBlack - begin(inputGraphVertexStorage));
 

@@ -17,12 +17,21 @@ target_precompile_headers(graph-algos
 	<span>
 
 	PRIVATE
-	<boost/graph/adjacency_matrix.hpp>
 	<boost/graph/boykov_kolmogorov_max_flow.hpp>
 	<boost/graph/connected_components.hpp>
 	<boost/graph/depth_first_search.hpp>
 	<boost/graph/filtered_graph.hpp>
+	<boost/graph/graph_traits.hpp>
+	<boost/graph/properties.hpp>
+	<boost/iterator/counting_iterator.hpp>
+	<boost/iterator/filter_iterator.hpp>
+	<boost/iterator/transform_iterator.hpp>
+	<boost/property_map/function_property_map.hpp>
+	<boost/property_map/property_map.hpp>
 	<boost/range/iterator_range.hpp>
+
+	<limits>
+	<utility>
 	<vector>
 )
 

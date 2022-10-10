@@ -103,9 +103,14 @@ void CreateGomoryHuTree(
             const auto u = inputVertex2partiallyContractedMap[inputU];
             const auto v = inputVertex2partiallyContractedMap[inputV];
 
+            if (u == v)
+                continue;
+
             const auto weight = get(boost::edge_weight, inputGraph, inputEdge);
-            partiallyContractedGraph.EdgeCapacities[u * n + v] += weight;
-            partiallyContractedGraph.EdgeCapacities[v * n + u] += weight;
+            partiallyContractedGraph.EdgeCapacities[u * (n - 1) + v - static_cast<size_t>(v > u)]
+                += weight;
+            partiallyContractedGraph.EdgeCapacities[v * (n - 1) + u - static_cast<size_t>(u > v)]
+                += weight;
         }
 
         // finally, calculate the cut between some arbitrary non contracted nodes
@@ -134,7 +139,8 @@ void CreateGomoryHuTree(
             [&](VertexType v)
             {
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
-                return partiallyContractedGraph.VertexColors[nonContractedNode] == boost::black_color;
+                return partiallyContractedGraph.VertexColors[nonContractedNode]
+                    == boost::black_color;
             });
         const auto splitOffset
             = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());

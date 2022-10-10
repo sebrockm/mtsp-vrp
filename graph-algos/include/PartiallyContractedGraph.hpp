@@ -8,6 +8,7 @@
 #include <boost/property_map/function_property_map.hpp>
 #include <boost/property_map/property_map.hpp>
 
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -39,10 +40,14 @@ struct PartiallyContractedGraph
     struct ToOutEdge
     {
         vertex_descriptor u;
-        edge_descriptor operator()(vertex_descriptor v) const { return { u, v }; }
+        edge_descriptor operator()(vertex_descriptor v) const
+        {
+            assert(u != v);
+            return { u, v };
+        }
     };
     using out_edge_iterator = boost::transform_iterator<
-        ToOutEdge, boost::filter_iterator<FilterSame, boost::counting_iterator<vertex_descriptor>>,
+        ToOutEdge, boost::filter_iterator<FilterSame, boost::counting_iterator<size_t>>,
         edge_descriptor, edge_descriptor>;
     using degree_size_type = size_t;
 
@@ -105,11 +110,15 @@ auto target(const PartiallyContractedGraph::edge_descriptor& e, const PartiallyC
 
 auto out_edges(PartiallyContractedGraph::vertex_descriptor u, const PartiallyContractedGraph& g)
 {
-    PartiallyContractedGraph::FilterSame filter { u };
-    PartiallyContractedGraph::ToOutEdge toOutEdge { u };
+    const PartiallyContractedGraph::FilterSame filter { u };
+    const PartiallyContractedGraph::ToOutEdge toOutEdge { u };
+    const boost::counting_iterator<size_t> first { 0 };
+    const boost::counting_iterator<size_t> last { g.N };
     return std::make_pair(
-        PartiallyContractedGraph::out_edge_iterator({ filter, { 0 } }, toOutEdge),
-        PartiallyContractedGraph::out_edge_iterator({ filter, { g.N } }, toOutEdge));
+        PartiallyContractedGraph::out_edge_iterator(
+            boost::make_filter_iterator(filter, first, last), toOutEdge),
+        PartiallyContractedGraph::out_edge_iterator(
+            boost::make_filter_iterator(filter, last, last), toOutEdge));
 }
 
 auto out_degree(PartiallyContractedGraph::vertex_descriptor, const PartiallyContractedGraph& g)
@@ -153,10 +162,10 @@ auto edge(
 auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
 {
     return boost::make_function_property_map<PartiallyContractedGraph::edge_descriptor>(
-        [N = g.N](PartiallyContractedGraph::edge_descriptor e)
+        [&](PartiallyContractedGraph::edge_descriptor e)
         {
             const auto [u, v] = e;
-            return (N - 1) * u + v - static_cast<size_t>(v >= u);
+            return (g.N - 1) * u + v - static_cast<size_t>(v >= u);
         });
 }
 

@@ -71,8 +71,8 @@ struct PartiallyContractedGraph
     using edges_size_type = size_t;
 
     PartiallyContractedGraph(size_t maxN)
-        : EdgeCapacities(maxN * (maxN - 1))
-        , EdgeResidualCapacities(maxN * (maxN - 1))
+        : EdgeCapacities(maxN * maxN)
+        , EdgeResidualCapacities(maxN * maxN)
         , VertexPredecessors(maxN)
         , VertexColors(maxN)
         , VertexDistances(maxN)
@@ -82,7 +82,7 @@ struct PartiallyContractedGraph
     void Reset(size_t n)
     {
         N = n;
-        for (size_t i = 0; i < n * (n - 1); ++i)
+        for (size_t i = 0; i < n * n; ++i)
             EdgeCapacities[i] = 0;
     }
 
@@ -165,7 +165,8 @@ auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
         [&](PartiallyContractedGraph::edge_descriptor e)
         {
             const auto [u, v] = e;
-            return (g.N - 1) * u + v - static_cast<size_t>(v >= u);
+            assert(u != v);
+            return g.N * u + v;
         });
 }
 

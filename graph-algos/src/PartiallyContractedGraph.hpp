@@ -170,7 +170,7 @@ auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
         });
 }
 
-auto get(boost::edge_capacity_t, PartiallyContractedGraph& g)
+auto get(boost::edge_capacity_t, const PartiallyContractedGraph& g)
 {
     return boost::make_iterator_property_map(g.EdgeCapacities.begin(), get(boost::edge_index, g));
 }
@@ -209,4 +209,15 @@ auto get(boost::vertex_distance_t, PartiallyContractedGraph& g)
     return boost::make_container_vertex_map(g.VertexDistances);
 }
 
+}
+
+// specializations needed for property graph concept
+namespace boost
+{
+template <typename Property>
+struct property_map<graph_algos::PartiallyContractedGraph, Property>
+{
+    using type = decltype(get(Property {}, std::declval<graph_algos::PartiallyContractedGraph&>()));
+    using const_type = type;
+};
 }

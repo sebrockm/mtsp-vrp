@@ -118,14 +118,8 @@ void CreateGomoryHuTree(
         const auto source = inputVertex2partiallyContractedMap.at(inputSource);
         const auto sink = inputVertex2partiallyContractedMap.at(inputSink);
 
-        const auto cutSize = boost::boykov_kolmogorov_max_flow(
-            partiallyContractedGraph, get(boost::edge_capacity, partiallyContractedGraph),
-            get(boost::edge_residual_capacity, partiallyContractedGraph),
-            get(boost::edge_reverse, partiallyContractedGraph),
-            get(boost::vertex_predecessor, partiallyContractedGraph),
-            get(boost::vertex_color, partiallyContractedGraph),
-            get(boost::vertex_distance, partiallyContractedGraph),
-            get(boost::vertex_index, partiallyContractedGraph), source, sink);
+        const auto cutSize
+            = boost::boykov_kolmogorov_max_flow(partiallyContractedGraph, source, sink);
 
         // add new vertex; splitNode will be split by moving ~ half of its nodes and edges here
         const auto newGomoryHuVertex = add_vertex(gomoryHuTree);

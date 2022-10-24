@@ -24,8 +24,9 @@ using PartiallyContractedGraphVertexType = PartiallyContractedGraph::vertex_desc
 
 void CreateGomoryHuTree(
     const UndirectedGraph& inputGraph,
-    std::function<
-        bool(double cutSize, std::span<const VertexType> comp1, std::span<const VertexType> comp2)>
+    std::function<bool(
+        VertexType u, VertexType v, double cutSize, std::span<const VertexType> compU,
+        std::span<const VertexType> compV)>
         newEdgeCallback)
 {
     const auto N = num_vertices(inputGraph);
@@ -132,7 +133,7 @@ void CreateGomoryHuTree(
             {
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
                 return partiallyContractedGraph.VertexColors[nonContractedNode]
-                    == boost::black_color;
+                    != boost::white_color;
             });
         const auto splitOffset
             = static_cast<size_t>(middle - gomoryHuTreeContractedVertices[splitNode].begin());
@@ -176,12 +177,13 @@ void CreateGomoryHuTree(
             [&](VertexType v)
             {
                 const auto pv = inputVertex2partiallyContractedMap.at(v);
-                return partiallyContractedGraph.VertexColors[pv] == boost::black_color;
+                return partiallyContractedGraph.VertexColors[pv] != boost::white_color;
             });
         const auto blackLength = static_cast<size_t>(endBlack - begin(inputGraphVertexStorage));
 
         const auto isStopRequested = newEdgeCallback(
-            cutSize, std::span { inputGraphVertexStorage.data(), blackLength },
+            inputSource, inputSink, cutSize,
+            std::span { inputGraphVertexStorage.data(), blackLength },
             std::span { inputGraphVertexStorage.data() + blackLength,
                         inputGraphVertexStorage.size() - blackLength });
         if (isStopRequested)

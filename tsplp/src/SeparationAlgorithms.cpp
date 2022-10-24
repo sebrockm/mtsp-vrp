@@ -225,18 +225,19 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
     graph_algos::CreateGomoryHuTree(
         graph,
-        [&](const double cutSize, std::span<const size_t> comp1, std::span<const size_t> comp2)
+        [&](graph_algos::VertexType, graph_algos::VertexType, const double cutSize,
+            std::span<const size_t> compU, std::span<const size_t> compV)
         {
             assert(cutSize >= 0);
 
-            if (cutSize >= 1 - 1e-10)
+            if (cutSize >= 1 - 1e-10) // TODO: don't have to partition compU and compV in this case
                 return false;
 
             const auto ForAllCutEdges = [&](auto f)
             {
-                for (const auto u : comp1)
+                for (const auto u : compU)
                 {
-                    for (const auto v : comp2)
+                    for (const auto v : compV)
                     {
                         f(std::max(u, v), std::min(u, v));
                     }
@@ -244,7 +245,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             };
 
             bool isOdd = false;
-            for (const auto v : comp1)
+            for (const auto v : compU)
                 isOdd ^= odd[v];
 
             if (cutSize < 1 - 1e-10 && isOdd)

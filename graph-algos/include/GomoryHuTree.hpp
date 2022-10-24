@@ -16,8 +16,9 @@ using EdgeType = typename boost::graph_traits<UndirectedGraph>::edge_descriptor;
 
 void CreateGomoryHuTree(
     const UndirectedGraph& inputGraph,
-    std::function<
-        bool(double cutSize, std::span<const VertexType> comp1, std::span<const VertexType> comp2)>
+    std::function<bool(
+        VertexType u, VertexType v, double cutSize, std::span<const VertexType> compU,
+        std::span<const VertexType> compV)>
         newEdgeCallback);
 
 double GetMinCutFromGomoryHuTree(

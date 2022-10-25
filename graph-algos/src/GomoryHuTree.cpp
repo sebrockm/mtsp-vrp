@@ -234,7 +234,8 @@ double GetMinCutFromGomoryHuTree(
     double minWeight = std::numeric_limits<double>::max();
     do
     {
-        const auto [e, _] = edge(predecessorMap[sink], sink, gomoryHuTree);
+        const auto [e, exists] = edge(predecessorMap[sink], sink, gomoryHuTree);
+        assert(exists);
         const auto weight = get(boost::edge_weight, gomoryHuTree, e);
         minWeight = std::min(minWeight, weight);
         sink = predecessorMap[sink];

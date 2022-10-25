@@ -5,10 +5,11 @@
 #include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
-#include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/filtered_graph.hpp>
+#include <boost/graph/undirected_dfs.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include <unordered_map>
 #include <vector>
 
 namespace graph_algos
@@ -224,8 +225,15 @@ double GetMinCutFromGomoryHuTree(
     std::vector<VertexType> predecessorMap(num_vertices(gomoryHuTree));
     try
     {
-        boost::depth_first_search(
-            gomoryHuTree, boost::root_vertex(source).visitor(Visitor { predecessorMap, sink }));
+        static_assert(std::is_same_v<
+                      typename boost::graph_traits<UndirectedGraph>::directed_category,
+                      boost::undirected_tag>);
+        std::unordered_map<EdgeType, boost::default_color_type, boost::hash<EdgeType>> colorMap;
+        boost::undirected_dfs(
+            gomoryHuTree,
+            boost::root_vertex(source)
+                .visitor(Visitor { predecessorMap, sink })
+                .edge_color_map(boost::make_assoc_property_map(colorMap)));
     }
     catch (int)
     {

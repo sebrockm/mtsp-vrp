@@ -152,7 +152,7 @@ void CreateGomoryHuTree(
             const auto sampleInputVertex = gomoryHuTreeContractedVertices[targetNode].front();
             const auto sampleVertex = inputVertex2partiallyContractedMap.at(sampleInputVertex);
 
-            if (partiallyContractedGraph.VertexColors[sampleVertex] == boost::black_color)
+            if (partiallyContractedGraph.VertexColors[sampleVertex] != boost::white_color)
             {
                 const auto weight = get(boost::edge_weight, gomoryHuTree, e);
                 const auto [copiedEdge, _] = add_edge(newGomoryHuVertex, targetNode, gomoryHuTree);

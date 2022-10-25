@@ -52,7 +52,7 @@ private:
         REQUIRE(num_edges(m_tree) == (N == 0 ? 0 : N - 1));
 
         std::array<size_t, N> componentIds;
-        REQUIRE(boost::connected_components(m_tree, componentIds.data()) == 1);
+        REQUIRE(boost::connected_components(m_tree, componentIds.data()) == (N == 0 ? 0 : 1));
 
         const auto hasCircle = [&]
         {
@@ -122,8 +122,8 @@ TEST_CASE("Two Nodes Graph", "[Gomory Hu Tree]")
 
     // clang-format off
     constexpr std::array<std::array<int, N>, N> expectedMinCuts {{
-        { 0, 17 },
-        { 17, 0 },
+        {  0, 17 },
+        { 17,  0 },
     }};
     // clang-format on
 

@@ -2,7 +2,6 @@
 
 #include "PartiallyContractedGraph.hpp"
 
-#include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/filtered_graph.hpp>

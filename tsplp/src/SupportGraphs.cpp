@@ -1,6 +1,5 @@
 #include "SupportGraphs.hpp"
 
-#include <boost/graph/adjacency_matrix.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/property_map/function_property_map.hpp>

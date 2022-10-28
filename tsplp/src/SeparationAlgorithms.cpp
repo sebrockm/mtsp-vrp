@@ -248,7 +248,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             for (const auto v : compU)
                 isOdd ^= odd[v];
 
-            if (cutSize < 1 - 1e-10 && isOdd)
+            if (isOdd)
             {
                 LinearVariableComposition lhs = 0;
                 LinearVariableComposition rhs = 1;
@@ -306,8 +306,8 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                             const auto weight = edge2WeightMap[u * (u - 1) / 2 + v];
                             const auto edge = std::make_pair(u, v);
 
-                            if ((2 * w1 - 1 < 1 - 2 * w2 && weight > 0.5 && edge != e1)
-                                || (2 * w1 - 1 >= 1 - 2 * w2 && (weight > 0.5 || edge == e2)))
+                            if ((w1 < 1 - w2 && weight > 0.5 && edge != e1)
+                                || (w1 >= 1 - w2 && (weight > 0.5 || edge == e2)))
                             {
                                 rhs += std::move(constraintPart) - 1;
                             }

@@ -3,12 +3,12 @@ cmake_minimum_required(VERSION 3.21)
 file(GLOB headers include/*.hpp)
 file(GLOB sources src/*.cpp src/*.hpp)
 
-add_library(tsplp OBJECT ${headers} ${sources})
+add_library(tsplp STATIC ${headers} ${sources})
 
 target_include_directories(tsplp PUBLIC include)
 
 target_link_libraries(tsplp
-	PRIVATE CONAN_PKG::coin-clp CONAN_PKG::boost
+	PRIVATE graph-algos CONAN_PKG::coin-clp CONAN_PKG::boost
 	PUBLIC CONAN_PKG::xtensor)
 
 target_precompile_headers(tsplp
@@ -28,6 +28,7 @@ target_precompile_headers(tsplp
 		<ClpSimplex.hpp>
 		<CoinFinite.hpp>
 
+		<boost/core/bit.hpp>
 		<boost/graph/adjacency_list.hpp>
 		<boost/graph/adjacency_matrix.hpp>
 		<boost/graph/boykov_kolmogorov_max_flow.hpp>

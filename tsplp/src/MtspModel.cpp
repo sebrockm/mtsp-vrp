@@ -418,6 +418,15 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 continue;
             }
 
+            if (auto combs = separator.TwoMatching(); !combs.empty())
+            {
+                constraints.Push(
+                    std::make_move_iterator(combs.begin()), std::make_move_iterator(combs.end()));
+                queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
+
             const auto fractionalVar = FindFractionalVariable(model);
 
             if (!fractionalVar.has_value())

@@ -7,6 +7,9 @@
 #include "Variable.hpp"
 #include "WeightManager.hpp"
 
+#include <GomoryHuTree.hpp>
+
+#include <boost/core/bit.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/one_bit_color_map.hpp>
 #include <boost/graph/stoer_wagner_min_cut.hpp>
@@ -27,7 +30,7 @@ Separator::Separator(
     : m_variables(variables)
     , m_weightManager(weightManager)
     , m_model(model)
-    , m_spSupportGraph(
+    , m_spSupportGraph( // TODO: create only on demand
           std::make_unique<PiSigmaSupportGraph>(variables, weightManager.Dependencies(), model))
 {
 }
@@ -173,5 +176,154 @@ std::optional<LinearConstraint> Separator::PiSigma() const
     }
 
     return std::nullopt;
+}
+
+std::vector<LinearConstraint> Separator::TwoMatching() const
+{
+    const auto N = m_weightManager.N();
+    const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
+    const auto values = vf(m_variables);
+
+    graph_algos::UndirectedGraph graph(N);
+    std::vector<double> edge2WeightMap(N * (N - 1) / 2);
+    for (size_t u = 0; u < N; ++u)
+    {
+        for (size_t v = 0; v < u; ++v)
+        {
+            const auto weight = std::max(
+                0.0,
+                std::min(
+                    1.0,
+                    xt::sum(xt::view(values, xt::all(), u, v))()
+                        + xt::sum(xt::view(values, xt::all(), v, u))()));
+            const auto capacity = std::min(weight, 1 - weight);
+            boost::add_edge(u, v, capacity, graph);
+            edge2WeightMap[u * (u - 1) / 2 + v] = weight;
+        }
+    }
+    const auto edge2WeightFunction = [&](const graph_algos::EdgeType& e)
+    {
+        const auto s = source(e, graph);
+        const auto t = target(e, graph);
+        const auto u = std::max(s, t);
+        const auto v = std::min(s, t);
+        return edge2WeightMap[u * (u - 1) / 2 + v];
+    };
+
+    std::vector<bool> odd(N);
+    for (const auto v : boost::make_iterator_range(vertices(graph)))
+    {
+        const auto [eBegin, eEnd] = out_edges(v, graph);
+        odd[v] = std::count_if(
+                     eBegin, eEnd,
+                     [&](const graph_algos::EdgeType& e) { return edge2WeightFunction(e) > 0.5; })
+                % 2
+            == 1;
+    }
+
+    std::vector<LinearConstraint> results {};
+
+    graph_algos::CreateGomoryHuTree(
+        graph,
+        [&](graph_algos::VertexType, graph_algos::VertexType, const double cutSize,
+            std::span<const size_t> compU, std::span<const size_t> compV)
+        {
+            assert(cutSize >= 0);
+
+            if (cutSize >= 1 - 1e-10) // TODO: don't have to partition compU and compV in this case
+                return false;
+
+            const auto ForAllCutEdges = [&](auto f)
+            {
+                for (const auto u : compU)
+                {
+                    for (const auto v : compV)
+                    {
+                        f(std::max(u, v), std::min(u, v));
+                    }
+                }
+            };
+
+            bool isOdd = false;
+            for (const auto v : compU)
+                isOdd ^= odd[v];
+
+            if (isOdd)
+            {
+                LinearVariableComposition lhs = 0;
+                LinearVariableComposition rhs = 1;
+
+                ForAllCutEdges(
+                    [&](size_t u, size_t v)
+                    {
+                        auto constraintPart = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                            + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+                        if (edge2WeightMap[u * (u - 1) / 2 + v] > 0.5)
+                        {
+                            rhs += std::move(constraintPart) - 1;
+                        }
+                        else
+                        {
+                            lhs += std::move(constraintPart);
+                        }
+                    });
+
+                results.push_back(std::move(lhs) >= std::move(rhs));
+            }
+            else
+            {
+                double w1 = 1;
+                double w2 = 0;
+                std::pair<size_t, size_t> e1 {};
+                std::pair<size_t, size_t> e2 {};
+                ForAllCutEdges(
+                    [&](size_t u, size_t v)
+                    {
+                        if (const auto weight = edge2WeightMap[u * (u - 1) / 2 + v]; weight > 0.5)
+                        {
+                            w1 = std::min(w1, weight);
+                            e1 = { u, v };
+                        }
+                        else
+                        {
+                            w2 = std::max(w2, weight);
+                            e2 = { u, v };
+                        }
+                    });
+
+                if (cutSize + std::min(2 * w1 - 1, 1 - 2 * w2) < 1 - 1e-10)
+                {
+                    LinearVariableComposition lhs = 0;
+                    LinearVariableComposition rhs = 1;
+
+                    ForAllCutEdges(
+                        [&](size_t u, size_t v)
+                        {
+                            auto constraintPart
+                                = xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)()
+                                + xt::sum(xt::view(m_variables, xt::all(), v, u) + 0)();
+
+                            const auto weight = edge2WeightMap[u * (u - 1) / 2 + v];
+                            const auto edge = std::make_pair(u, v);
+
+                            if ((w1 < 1 - w2 && weight > 0.5 && edge != e1)
+                                || (w1 >= 1 - w2 && (weight > 0.5 || edge == e2)))
+                            {
+                                rhs += std::move(constraintPart) - 1;
+                            }
+                            else
+                            {
+                                lhs += std::move(constraintPart);
+                            }
+                        });
+
+                    results.push_back(std::move(lhs) >= std::move(rhs));
+                }
+            }
+
+            return false;
+        });
+
+    return results;
 }
 }

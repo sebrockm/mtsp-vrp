@@ -21,6 +21,14 @@ public:
     ConstraintDeque(size_t numberOfThreads);
 
 public:
+    template <typename LinearConstraintIterator>
+    void Push(LinearConstraintIterator first, LinearConstraintIterator last)
+    {
+        std::unique_lock lock { m_mutex };
+
+        m_deque.insert(m_deque.end(), first, last);
+    }
+
     void Push(LinearConstraint constraint);
     void PopToModel(size_t threadId, Model& model);
 };

@@ -6,12 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
 
     steps:
     - uses: actions/checkout@v2
@@ -39,18 +39,18 @@ jobs:
       run: conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies
-      run: conan install . -if ${{github.workspace}}/build -s build_type=${{env.BUILD_TYPE}}
+      run: conan install . -if ${{github.workspace}}/build -s build_type=${{matrix.build-type}}
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build-type}}
       env:
         CC:   gcc-10
         CXX:  g++-10
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j 3
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build-type}} -j 3
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      run: ctest -C ${{matrix.build-type}} --output-on-failure
       

@@ -19,7 +19,9 @@ jobs:
         submodules: 'recursive'
     
     - name: Get GCC-10
-      run: sudo apt install g++-10
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: 10
     
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.0

@@ -48,7 +48,7 @@ jobs:
         CXX:  g++-10
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j 3
 
     - name: Test
       working-directory: ${{github.workspace}}/build

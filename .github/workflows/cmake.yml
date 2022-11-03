@@ -24,14 +24,14 @@ jobs:
       with:
         submodules: 'recursive'
     
-    - if: matrix.compiler.c == 'gcc':
-      name: Get GCC
+    - name: Get GCC
+      if: ${{ matrix.compiler.c == 'gcc' }}
       uses: egor-tensin/setup-gcc@v1
       with:
         version: ${{matrix.compiler.version}}
     
-    - if: matrix.compiler.c == 'clang':
-      name: Get Clang
+    - name: Get Clang
+      if: ${{ matrix.compiler.c == 'clang' }}
       uses: egor-tensin/setup-clang@v1
       with:
         version: ${{matrix.compiler.version}}

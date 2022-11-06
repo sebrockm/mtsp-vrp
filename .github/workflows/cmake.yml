@@ -30,8 +30,8 @@ jobs:
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt update
         sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
-        export CXX="/usr/local/bin/g++-${{ env.GCC_VERSION }}"
-        export CC="/usr/local/bin/gcc-${{ env.GCC_VERSION }}"
+        export CXX="/usr/bin/g++-${{ env.GCC_VERSION }}"
+        export CC="/usr/bin/gcc-${{ env.GCC_VERSION }}"
     
     - name: Update Clang
       if: ${{ matrix.os == 'macos-latest' }}

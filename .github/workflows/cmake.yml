@@ -20,11 +20,11 @@ jobs:
       with:
         submodules: 'recursive'
     
-    - name: Get GCC
+    - name: Update GCC
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
-        apt update
-        apt upgrade gcc
+        sudo apt update
+        sudo apt upgrade gcc g++
         export CXX="/usr/local/bin/g++"
         export CC="/usr/local/bin/gcc"
     
@@ -37,7 +37,7 @@ jobs:
         export CC="/usr/local/opt/llvm/bin/clang"
     
     - name: Get Conan
-      uses: turtlebrowser/get-conan@v1.0
+      uses: turtlebrowser/get-conan@v1.1
     
     - name: Create default profile
       run: conan profile new default --detect

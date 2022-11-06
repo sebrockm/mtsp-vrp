@@ -22,12 +22,7 @@ jobs:
     
     - name: Update GCC
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt update
-        sudo apt install gcc g++
-        export CXX="/usr/local/bin/g++"
-        export CC="/usr/local/bin/gcc"
+      uses: egor-tensin/setup-gcc@v1
     
     - name: Update Clang
       if: ${{ matrix.os == 'macos-latest' }}

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  GCC_VERSION: 12
+  CLANG_VERSION: 13
+
 jobs:
   build:
     strategy:
@@ -24,32 +28,36 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt update
-        sudo apt install gcc-12 g++-12
-        export CXX="/usr/local/bin/g++-12"
-        export CC="/usr/local/bin/gcc-12"
+        sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
+        export CXX=g++-${{ env.GCC_VERSION }}
+        export CC=gcc-${{ env.GCC_VERSION }}
     
     - name: Update Clang
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         brew update
-        brew install llvm
-        export CXX="/usr/local/opt/llvm/bin/clang++"
-        export CC="/usr/local/opt/llvm/bin/clang"
+        brew install llvm-${{ env.CLANG_VERSION }}
+        export CXX="/usr/local/opt/llvm/bin/clang++-${{ env.CLANG_VERSION }}"
+        export CC="/usr/local/opt/llvm/bin/clang-${{ env.CLANG_VERSION }}"
     
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.1
     
-    - name: Create default profile
-      run: conan profile new default --detect
-      
-    #- name: Update profile compiler
-    #  run: conan profile update settings.compiler=${{matrix.compiler.c}} default
-      
-    #- name: Update profile compiler version
-    #  run: conan profile update settings.compiler.version=${{matrix.compiler.version}} default
-
-    - name: Update profile libstd
-      run: conan profile update settings.compiler.libcxx=libstdc++11 default
+    - name: Create default profile linux
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: | 
+        conan profile new default --detect
+        conan profile update settings.compiler=gcc default
+        conan profile update settings.compiler.version=${{ env.GCC_VERSION }} default
+        conan profile update settings.compiler.libcxx=libstdc++11 default
+        
+    - name: Create default profile max
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: | 
+        conan profile new default --detect
+        conan profile update settings.compiler=clang default
+        conan profile update settings.compiler.version=${{ env.CLANG_VERSION }} default
+        conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies
       run: conan install . -if ${{github.workspace}}/build -s build_type=${{matrix.build-type}}

@@ -27,6 +27,7 @@ jobs:
     - name: Update GCC
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
         sudo apt update
         sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
         export CXX=g++-${{ env.GCC_VERSION }}

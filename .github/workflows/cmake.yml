@@ -48,8 +48,8 @@ jobs:
     #- name: Update profile compiler version
     #  run: conan profile update settings.compiler.version=${{matrix.compiler.version}} default
 
-    #- name: Update profile libstd
-    #  run: conan profile update settings.compiler.libcxx=libstdc++11 default
+    - name: Update profile libstd
+      run: conan profile update settings.compiler.libcxx=libstdc++11 default
     
     #- name: Install Dependencies
     #  run: conan install . -if ${{github.workspace}}/build -s build_type=${{matrix.build-type}}

@@ -24,7 +24,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt update
-        sudo apt upgrade gcc g++
+        sudo apt install gcc g++
         export CXX="/usr/local/bin/g++"
         export CC="/usr/local/bin/gcc"
     
@@ -32,7 +32,7 @@ jobs:
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         brew update
-        brew upgrade llvm
+        brew install llvm
         export CXX="/usr/local/opt/llvm/bin/clang++"
         export CC="/usr/local/opt/llvm/bin/clang"
     

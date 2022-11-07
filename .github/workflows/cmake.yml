@@ -17,7 +17,7 @@ jobs:
         build-type: [Debug, Release]
         os: [macos-latest, ubuntu-latest, windows-latest]
           
-    runs-on: ${{matrix.os}}
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -25,10 +25,15 @@ jobs:
         submodules: 'recursive'
     
     - name: Update GCC
-      if: ${{ matrix.os == 'ubuntu-latest' }}
+      if: ${{ matrix.os != 'ubuntu-latest' }}
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: ${{ env.GCC_VERSION }}
+        version: latest
+      run: |
+        export CXX=c++
+        export CC=cc
+        $CXX --version
+        $CC --version
       #run: |
       #  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       #  sudo apt update
@@ -46,7 +51,8 @@ jobs:
         export CC="/usr/local/opt/llvm/bin/clang-${{ env.CLANG_VERSION }}"
     
     - name: Get Conan
-      uses: turtlebrowser/get-conan@v1
+      id: get-conan
+      uses: turtlebrowser/get-conan@v1.0
     
     - name: Create default profile linux
       if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -69,9 +75,9 @@ jobs:
 
     - name: Configure CMake
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build-type}}
-      #env:
-      #  CC:   $CC
-      #  CXX:  $CXX
+      env:
+        CC:   $CC
+        CXX:  $CXX
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{matrix.build-type}} -j 3

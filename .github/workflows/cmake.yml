@@ -25,10 +25,10 @@ jobs:
         submodules: 'recursive'
     
     - name: Update GCC
-      if: ${{ matrix.os != 'ubuntu-latest' }}
+      if: ${{ matrix.os != 'macos-latest' }}
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: 11
+        version: latest
     
     - name: check gcc
       run: |

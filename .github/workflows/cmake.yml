@@ -12,12 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-11, ubuntu-latest, windows-latest]
         compiler: [{cc: gcc, cxx: g++, version: 10}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
         exclude:
-          - os: macos-latest
+          - os: macos-11
             compiler: {cc: gcc}
-          - os: macos-latest
+          - os: macos-11
             compiler: {cc: msvc}
           - os: ubuntu-latest
             compiler: {cc: clang}

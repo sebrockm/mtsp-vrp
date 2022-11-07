@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  GCC_VERSION: 10
+  GCC_VERSION: 11
   CLANG_VERSION: 13
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       if: ${{ matrix.os != 'macos-latest' }}
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: latest
+        version: ${{ env.GCC_VERSION }}
     
     - name: check gcc
       run: |

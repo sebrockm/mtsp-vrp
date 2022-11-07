@@ -26,13 +26,16 @@ jobs:
     
     - name: Update GCC
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt update
-        sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ env.GCC_VERSION }} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ env.GCC_VERSION }}
-        export CXX="/usr/local/bin/g++-${{ env.GCC_VERSION }}"
-        export CC="/usr/local/bin/gcc-${{ env.GCC_VERSION }}"
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: ${{ env.GCC_VERSION }}
+      #run: |
+      #  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+      #  sudo apt update
+      #  sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
+      #  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ env.GCC_VERSION }} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ env.GCC_VERSION }}
+      #  export CXX="/usr/local/bin/g++-${{ env.GCC_VERSION }}"
+      #  export CC="/usr/local/bin/gcc-${{ env.GCC_VERSION }}"
     
     - name: Update Clang
       if: ${{ matrix.os == 'macos-latest' }}
@@ -43,7 +46,7 @@ jobs:
         export CC="/usr/local/opt/llvm/bin/clang-${{ env.CLANG_VERSION }}"
     
     - name: Get Conan
-      uses: turtlebrowser/get-conan@v1.1
+      uses: turtlebrowser/get-conan@v1
     
     - name: Create default profile linux
       if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -53,7 +56,7 @@ jobs:
         conan profile update settings.compiler.version=${{ env.GCC_VERSION }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
         
-    - name: Create default profile max
+    - name: Create default profile mac
       if: ${{ matrix.os == 'macos-latest' }}
       run: | 
         conan profile new default --detect

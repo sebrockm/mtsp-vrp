@@ -13,7 +13,7 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         os: [macos-latest, ubuntu-latest, windows-latest]
-        compiler: [{cc: gcc, cxx: g++, version: 11}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
+        compiler: [{cc: gcc, cxx: g++, version: 10}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
         exclude:
           - os: macos-latest
             compiler: {cc: gcc}
@@ -58,13 +58,17 @@ jobs:
         export CC="/usr/local/opt/llvm/bin/clang-${{ matrix.compiler.version }}"
     
     - name: Get Conan
-      uses: turtlebrowser/get-conan@v1.0
+      uses: turtlebrowser/get-conan@v1.1
     
     - name: Create default profile
       run: | 
         conan profile new default --detect
         conan profile update settings.compiler=${{ matrix.compiler.cc }} default
         conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
+        
+    - name: Set libstd
+      if: ${{ matrix.compiler.cc != 'msvc' }}
+      run: |
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies

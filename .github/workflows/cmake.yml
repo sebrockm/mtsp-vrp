@@ -6,17 +6,27 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  GCC_VERSION: 11
-  CLANG_VERSION: 13
-
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         build-type: [Debug, Release]
         os: [macos-latest, ubuntu-latest, windows-latest]
-        #compiler: [gcc, clang, msvc]
+        compiler: [{cc: gcc, cxx: g++, version: 11}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
+        exclude:
+          - os: macos-latest
+            compiler: {cc: gcc}
+          - os: macos-latest
+            compiler: {cc: msvc}
+          - os: ubuntu-latest
+            compiler: {cc: clang}
+          - os: ubuntu-latest
+            compiler: {cc: msvc}
+          - os: windows-latest
+            compiler: {cc: gcc}
+          - os: windows-latest
+            compiler: {cc: clang}
           
     runs-on: ${{ matrix.os }}
 
@@ -26,14 +36,11 @@ jobs:
         submodules: 'recursive'
     
     - name: Update GCC
-      if: ${{ matrix.os == 'linux-latest' }}
+      id: update-gcc
+      if: ${{ matrix.compiler.cc == 'gcc' }}
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: ${{ env.GCC_VERSION }}
-      env:
-        cc: gcc
-        cxx: g++
-        cversion: ${{ env.GCC_VERSION }}
+        version: ${{ matrix.compiler.version }}
       #run: |
       #  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       #  sudo apt update
@@ -43,27 +50,21 @@ jobs:
       #  export CC="/usr/local/bin/gcc-${{ env.GCC_VERSION }}"
     
     - name: Update Clang
-      if: ${{ matrix.os == 'macos-latest' }}
+      if: ${{ matrix.compiler.cc == 'clang' }}
       run: |
         brew update
-        brew install llvm@${{ env.CLANG_VERSION }}
-        export CXX="/usr/local/opt/llvm/bin/clang++-${{ env.CLANG_VERSION }}"
-        export CC="/usr/local/opt/llvm/bin/clang-${{ env.CLANG_VERSION }}"
-      env:
-        cc: clang
-        cxx: clang++
-        cversion: ${{ env.GCC_VERSION }}
+        brew install llvm@${{ matrix.compiler.version }}
+        export CXX="/usr/local/opt/llvm/bin/clang++-${{ matrix.compiler.version }}"
+        export CC="/usr/local/opt/llvm/bin/clang-${{ matrix.compiler.version }}"
     
     - name: Get Conan
-      id: get-conan
       uses: turtlebrowser/get-conan@v1.0
     
     - name: Create default profile
-      #if: ${{ matrix.os != 'macos-latest' }}
       run: | 
         conan profile new default --detect
-        conan profile update settings.compiler=${{ env.cc }} default
-        conan profile update settings.compiler.version=${{ env.cversion }} default
+        conan profile update settings.compiler=${{ matrix.compiler.cc }} default
+        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies
@@ -72,8 +73,8 @@ jobs:
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
       env:
-        CC:   ${{ env.cc }}-${{ env.cversion }}
-        CXX:  ${{ env.cxx }}-${{ env.cversion }}
+        CC:   ${{ matrix.compiler.cc }}-${{ matrix.compiler.version }}
+        CXX:  ${{ matrix.compiler.cxx }}-${{ matrix.compiler.version }}
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

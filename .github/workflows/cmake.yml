@@ -29,6 +29,8 @@ jobs:
       uses: egor-tensin/setup-gcc@v1
       with:
         version: latest
+    
+    - name: check gcc
       run: |
         export CXX=c++
         export CC=cc

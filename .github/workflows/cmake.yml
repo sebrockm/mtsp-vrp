@@ -16,6 +16,7 @@ jobs:
       matrix:
         build-type: [Debug, Release]
         os: [macos-latest, ubuntu-latest, windows-latest]
+        #compiler: [gcc, clang, msvc]
           
     runs-on: ${{ matrix.os }}
 
@@ -25,7 +26,7 @@ jobs:
         submodules: 'recursive'
     
     - name: Update GCC
-      if: ${{ matrix.os != 'macos-latest' }}
+      if: ${{ matrix.os == 'linux-latest' }}
       uses: egor-tensin/setup-gcc@v1
       with:
         version: ${{ env.GCC_VERSION }}

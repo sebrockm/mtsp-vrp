@@ -29,13 +29,10 @@ jobs:
       uses: egor-tensin/setup-gcc@v1
       with:
         version: ${{ env.GCC_VERSION }}
-    
-    - name: check gcc
-      run: |
-        export CXX=c++
-        export CC=cc
-        $CXX --version
-        $CC --version
+      env:
+        cc: gcc
+        cxx: g++
+        cversion: ${{ env.GCC_VERSION }}
       #run: |
       #  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
       #  sudo apt update
@@ -51,40 +48,36 @@ jobs:
         brew install llvm@${{ env.CLANG_VERSION }}
         export CXX="/usr/local/opt/llvm/bin/clang++-${{ env.CLANG_VERSION }}"
         export CC="/usr/local/opt/llvm/bin/clang-${{ env.CLANG_VERSION }}"
+      env:
+        cc: clang
+        cxx: clang++
+        cversion: ${{ env.GCC_VERSION }}
     
     - name: Get Conan
       id: get-conan
       uses: turtlebrowser/get-conan@v1.0
     
-    - name: Create default profile linux
-      if: ${{ matrix.os == 'ubuntu-latest' }}
+    - name: Create default profile
+      #if: ${{ matrix.os != 'macos-latest' }}
       run: | 
         conan profile new default --detect
-        conan profile update settings.compiler=gcc default
-        conan profile update settings.compiler.version=${{ env.GCC_VERSION }} default
-        conan profile update settings.compiler.libcxx=libstdc++11 default
-        
-    - name: Create default profile mac
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: | 
-        conan profile new default --detect
-        conan profile update settings.compiler=clang default
-        conan profile update settings.compiler.version=${{ env.CLANG_VERSION }} default
+        conan profile update settings.compiler=${{ env.cc }} default
+        conan profile update settings.compiler.version=${{ env.cversion }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies
-      run: conan install . -if ${{github.workspace}}/build -s build_type=${{matrix.build-type}}
+      run: conan install . -if ${{ github.workspace }}/build -s build_type=${{ matrix.build-type }}
 
     - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build-type}}
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
       env:
-        CC:   $CC
-        CXX:  $CXX
+        CC:   ${{ env.cc }}-${{ env.cversion }}
+        CXX:  ${{ env.cxx }}-${{ env.cversion }}
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build-type}} -j 3
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{matrix.build-type}} --output-on-failure
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C ${{ matrix.build-type }} --output-on-failure
       

@@ -71,8 +71,14 @@ jobs:
         conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
+    - name: Set x86_64 on mac
+      if: ${{ matrix.os == 'macos-latest' }}
+      # M1 is not supported
+      run: |
+        conan profile update settings.arch=x86_64 default
+    
     - name: Install Dependencies
-      run: conan install . -if ${{ github.workspace }}/build --build=missing --options boost:header_only=True
+      run: conan install . -if ${{ github.workspace }}/build
 
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}

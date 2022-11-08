@@ -56,7 +56,6 @@ jobs:
     - name: Create default profile
       run: | 
         conan profile new default --detect
-        conan profile update settings.compiler=${{ matrix.compiler.cc }} default
         #conan profile update settings.compiler.version=193 default
         #conan profile update settings.compiler.cppstd=20 default
         conan profile update settings.build_type=${{ matrix.build-type }} default
@@ -64,6 +63,7 @@ jobs:
     - name: Extend default profile
       if: ${{ matrix.compiler.cc != 'msvc' }}
       run: |
+        conan profile update settings.compiler=${{ matrix.compiler.cc }} default
         conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     

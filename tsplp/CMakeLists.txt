@@ -7,9 +7,12 @@ add_library(tsplp STATIC ${headers} ${sources})
 
 target_include_directories(tsplp PUBLIC include)
 
+find_package(Threads REQUIRED)
+
 target_link_libraries(tsplp
 	PRIVATE graph-algos CONAN_PKG::coin-clp CONAN_PKG::boost
-	PUBLIC CONAN_PKG::xtensor)
+	PUBLIC CONAN_PKG::xtensor
+	PUBLIC Threads::Threads)
 
 target_precompile_headers(tsplp
 	PUBLIC

@@ -57,7 +57,8 @@ jobs:
       run: | 
         conan profile new default --detect
         conan profile update settings.compiler=${{ matrix.compiler.cc }} default
-        
+        conan profile update settings.compiler.version=193 default
+
     - name: Extend default profile
       if: ${{ matrix.compiler.cc != 'msvc' }}
       run: |

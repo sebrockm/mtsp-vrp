@@ -12,12 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        os: [macos-11, ubuntu-latest, windows-latest]
-        compiler: [{cc: gcc, cxx: g++, version: 10}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        compiler: [{cc: gcc, cxx: g++, version: 10}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc}]
         exclude:
-          - os: macos-11
+          - os: macos-latest
             compiler: {cc: gcc}
-          - os: macos-11
+          - os: macos-latest
             compiler: {cc: msvc}
           - os: ubuntu-latest
             compiler: {cc: clang}
@@ -41,13 +41,6 @@ jobs:
       uses: egor-tensin/setup-gcc@v1
       with:
         version: ${{ matrix.compiler.version }}
-      #run: |
-      #  sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-      #  sudo apt update
-      #  sudo apt install gcc-${{ env.GCC_VERSION }} g++-${{ env.GCC_VERSION }}
-      #  sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ env.GCC_VERSION }} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${{ env.GCC_VERSION }}
-      #  export CXX="/usr/local/bin/g++-${{ env.GCC_VERSION }}"
-      #  export CC="/usr/local/bin/gcc-${{ env.GCC_VERSION }}"
     
     - name: Update Clang
       if: ${{ matrix.compiler.cc == 'clang' }}
@@ -64,11 +57,11 @@ jobs:
       run: | 
         conan profile new default --detect
         conan profile update settings.compiler=${{ matrix.compiler.cc }} default
-        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
         
-    - name: Set libstd
+    - name: Extend default profile
       if: ${{ matrix.compiler.cc != 'msvc' }}
       run: |
+        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
     - name: Install Dependencies

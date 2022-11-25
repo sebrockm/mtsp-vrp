@@ -85,10 +85,18 @@ jobs:
       run: conan install . -if ${{ github.workspace }}/build --build=missing
 
     - name: Configure CMake
+      if: ${{ matrix.os != 'macos-latest' }}
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
       env:
         CC:   ${{ matrix.compiler.cc }}-${{ matrix.compiler.version }}
         CXX:  ${{ matrix.compiler.cxx }}-${{ matrix.compiler.version }}
+        
+    - name: Configure CMake Mac
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+      env:
+        CC:   apple-${{ matrix.compiler.cc }}-${{ matrix.compiler.version }}
+        CXX:  apple-${{ matrix.compiler.cxx }}-${{ matrix.compiler.version }}
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

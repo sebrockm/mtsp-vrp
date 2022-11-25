@@ -45,6 +45,7 @@ jobs:
     - name: Update Clang
       if: ${{ matrix.compiler.cc == 'clang' }}
       run: |
+        clang --version
         brew update
         brew install llvm@${{ matrix.compiler.version }}
         echo 'export PATH="/usr/local/opt/llvm@${{ matrix.compiler.version }}/bin:$PATH"' >> /Users/runner/.bash_profile

@@ -7,28 +7,14 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  ubuntu-build:
     strategy:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        compiler: [{cc: gcc, cxx: g++, version: 10}, {cc: clang, cxx: clang++, version: 13}, {cc: msvc, cxx: msvc, version: 14}]
-        exclude:
-          - os: macos-latest
-            compiler: {cc: gcc}
-          - os: macos-latest
-            compiler: {cc: msvc}
-          - os: ubuntu-latest
-            compiler: {cc: clang}
-          - os: ubuntu-latest
-            compiler: {cc: msvc}
-          - os: windows-latest
-            compiler: {cc: gcc}
-          - os: windows-latest
-            compiler: {cc: clang}
+        gcc-version: 10
           
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -37,20 +23,9 @@ jobs:
     
     - name: Update GCC
       id: update-gcc
-      if: ${{ matrix.compiler.cc == 'gcc' }}
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: ${{ matrix.compiler.version }}
-    
-    - name: Update Clang
-      if: ${{ matrix.compiler.cc == 'clang' }}
-      run: |
-        clang --version
-        brew update
-        brew install llvm@${{ matrix.compiler.version }}
-        echo 'export PATH="/usr/local/opt/llvm@${{ matrix.compiler.version }}/bin:$PATH"' >> /Users/runner/.bash_profile
-        export LDFLAGS="-L/usr/local/opt/llvm@${{ matrix.compiler.version }}/lib"
-        export CPPFLAGS="-I/usr/local/opt/llvm@${{ matrix.compiler.version }}/include"
+        version: ${{ matrix.gcc-version }}
     
     - name: Select Python 3.10
       # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12
@@ -65,23 +40,95 @@ jobs:
       run: | 
         conan profile new default --detect
         conan profile update settings.build_type=${{ matrix.build-type }} default
-
-    - name: Extend default profile
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        conan profile update settings.compiler=${{ matrix.compiler.cc }} default
-        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
+        conan profile update settings.compiler=gcc default
+        conan profile update settings.compiler.version=${{ matrix.gcc-version }} default
         conan profile update settings.compiler.libcxx=libstdc++11 default
     
-    - name: Set x86_64 on mac
-      if: ${{ matrix.os == 'macos-latest' }}
-      # M1 is not supported by all dependencies
-      run: |
-        conan profile update settings.compiler=apple-${{ matrix.compiler.cc }} default
-        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
-        conan profile update settings.compiler.libcxx=libc++ default
+    - name: Install Dependencies
+      run: conan install . -if ${{ github.workspace }}/build --build=missing
+
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+      env:
+        CC:   gcc-${{ matrix.gcc-version }}
+        CXX:  g++-${{ matrix.gcc-version }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C ${{ matrix.build-type }} --output-on-failure
+      
+  macos-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [Debug, Release]
+          
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    
+    - name: Select Python 3.10
+      # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Get Conan
+      uses: turtlebrowser/get-conan@v1.1
+    
+    - name: Create default profile
+      run: | 
+        conan profile new default --detect
+        conan profile update settings.build_type=${{ matrix.build-type }} default
+        # M1 is not supported by all dependencies
         conan profile update settings.arch=x86_64 default
         conan profile update settings.arch_build=x86_64 default
+    
+    - name: Install Dependencies
+      run: conan install . -if ${{ github.workspace }}/build --build=missing
+        
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      run: ctest -C ${{ matrix.build-type }} --output-on-failure
+      
+  build-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        build-type: [Debug, Release]
+          
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
+    
+    - name: Select Python 3.10
+      # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Get Conan
+      uses: turtlebrowser/get-conan@v1.1
+    
+    - name: Create default profile
+      run: | 
+        conan profile new default --detect
+        conan profile update settings.build_type=${{ matrix.build-type }} default
     
     - name: Install Dependencies
       run: conan install . -if ${{ github.workspace }}/build --build=missing
@@ -89,16 +136,6 @@ jobs:
     - name: Configure CMake
       if: ${{ matrix.os != 'macos-latest' }}
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
-      env:
-        CC:   ${{ matrix.compiler.cc }}-${{ matrix.compiler.version }}
-        CXX:  ${{ matrix.compiler.cxx }}-${{ matrix.compiler.version }}
-        
-    - name: Configure CMake Mac
-      if: ${{ matrix.os == 'macos-latest' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
-      #env:
-      #  CC:   /usr/local/opt/llvm/bin/clang
-      #  CXX:  /usr/local/opt/llvm/bin/clang++
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

@@ -47,8 +47,9 @@ jobs:
       run: |
         brew update
         brew install llvm@${{ matrix.compiler.version }}
-        export CXX="/usr/local/opt/llvm/bin/clang++"
-        export CC="/usr/local/opt/llvm/bin/clang"
+        echo 'export PATH="/usr/local/opt/llvm@${{ matrix.compiler.version }}/bin:$PATH"' >> /Users/runner/.bash_profile
+        export LDFLAGS="-L/usr/local/opt/llvm@${{ matrix.compiler.version }}/lib"
+        export CPPFLAGS="-I/usr/local/opt/llvm@${{ matrix.compiler.version }}/include"
     
     - name: Select Python 3.10
       # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12

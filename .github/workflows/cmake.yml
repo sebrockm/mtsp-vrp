@@ -42,11 +42,11 @@ jobs:
       with:
         version: ${{ matrix.compiler.version }}
     
-    #- name: Update Clang
-    #  if: ${{ matrix.compiler.cc == 'clang' }}
-    #  run: |
-    #    brew update
-    #    brew install llvm@${{ matrix.compiler.version }}
+    - name: Update Clang
+      if: ${{ matrix.compiler.cc == 'clang' }}
+      run: |
+        brew update
+        brew install llvm@${{ matrix.compiler.version }}
     #    export CXX="/usr/local/opt/llvm/bin/clang++-${{ matrix.compiler.version }}"
     #    export CC="/usr/local/opt/llvm/bin/clang-${{ matrix.compiler.version }}"
     

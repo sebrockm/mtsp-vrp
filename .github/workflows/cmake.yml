@@ -42,13 +42,13 @@ jobs:
       with:
         version: ${{ matrix.compiler.version }}
     
-    - name: Update Clang
-      if: ${{ matrix.compiler.cc == 'clang' }}
-      run: |
-        brew update
-        brew install llvm@${{ matrix.compiler.version }}
-        export CXX="/usr/local/opt/llvm/bin/clang++-${{ matrix.compiler.version }}"
-        export CC="/usr/local/opt/llvm/bin/clang-${{ matrix.compiler.version }}"
+    #- name: Update Clang
+    #  if: ${{ matrix.compiler.cc == 'clang' }}
+    #  run: |
+    #    brew update
+    #    brew install llvm@${{ matrix.compiler.version }}
+    #    export CXX="/usr/local/opt/llvm/bin/clang++-${{ matrix.compiler.version }}"
+    #    export CC="/usr/local/opt/llvm/bin/clang-${{ matrix.compiler.version }}"
     
     - name: Select Python 3.10
       # otherwise turtlebrowser/get-conan@v1.1 fails on macos-12
@@ -65,7 +65,7 @@ jobs:
         conan profile update settings.build_type=${{ matrix.build-type }} default
 
     - name: Extend default profile
-      if: ${{ matrix.compiler.cc != 'msvc' }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         conan profile update settings.compiler=${{ matrix.compiler.cc }} default
         conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
@@ -75,6 +75,9 @@ jobs:
       if: ${{ matrix.os == 'macos-latest' }}
       # M1 is not supported by all dependencies
       run: |
+        conan profile update settings.compiler=apple-${{ matrix.compiler.cc }} default
+        conan profile update settings.compiler.version=${{ matrix.compiler.version }} default
+        conan profile update settings.compiler.libcxx=libc++11 default
         conan profile update settings.arch=x86_64 default
         conan profile update settings.arch_build=x86_64 default
     

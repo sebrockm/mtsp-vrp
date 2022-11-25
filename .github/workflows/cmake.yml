@@ -130,7 +130,7 @@ jobs:
       run: | 
         conan profile new default --detect
         conan profile update settings.build_type=${{ matrix.build-type }} default
-        conan profile update settings.compiler.version=${{ matrix.msvc-version }}
+        conan profile update settings.compiler.version=${{ matrix.msvc-version }} default
     
     - name: Install Dependencies
       run: conan install . -if ${{ github.workspace }}/build --build=missing

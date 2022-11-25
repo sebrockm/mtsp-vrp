@@ -95,9 +95,9 @@ jobs:
     - name: Configure CMake Mac
       if: ${{ matrix.os == 'macos-latest' }}
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
-      env:
-        CC:   /usr/local/opt/llvm/bin/clang
-        CXX:  /usr/local/opt/llvm/bin/clang++
+      #env:
+      #  CC:   /usr/local/opt/llvm/bin/clang
+      #  CXX:  /usr/local/opt/llvm/bin/clang++
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

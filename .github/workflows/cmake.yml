@@ -54,18 +54,22 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       run: ctest -C ${{ matrix.build-type }} --output-on-failure
 
+    - name: Prepare Codecov
+      if: ${{ matrix.build-type == 'Debug' }}
+      run: |
+        sudo apt-get install -y lcov
+        #lcov --directory . --zerocounters # clean cached files
+        lcov --directory . --capture --output-file coverage.info # capture coverage info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
+        lcov --list coverage.info #debug info
+
     - name: Codecov
       if: ${{ matrix.build-type == 'Debug' }}
-      # You may pin to the exact commit or the version.
-      # uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70
       uses: codecov/codecov-action@v3.1.1
       with:
-        # Directory to search for coverage reports.
-        directory: ${{ github.workspace }}/build
-        # Don't upload files to Codecov
-        #dry_run: # optional
-        # Specify whether or not CI build should fail if Codecov runs into an error during upload
+        files: coverage.info
         fail_ci_if_error: true
+        verbose: true
       
   macos-build:
     strategy:

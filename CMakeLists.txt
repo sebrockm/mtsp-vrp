@@ -40,6 +40,16 @@ add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
+# Code Coverage Configuration
+add_library(coverage_config INTERFACE)
+
+option(CODE_COVERAGE "Enable coverage reporting" OFF)
+
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
+    target_link_options(coverage_config INTERFACE --coverage)
+endif()
+
 add_subdirectory(graph-algos)
 add_subdirectory(mtsp-vrp-c)
 add_subdirectory(python)

@@ -58,10 +58,9 @@ jobs:
       if: ${{ matrix.build-type == 'Debug' }}
       run: |
         sudo apt-get install -y lcov
-        #lcov --directory . --zerocounters # clean cached files
         lcov --directory . --capture --output-file coverage.info # capture coverage info
         lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter out system
-        lcov --list coverage.info #debug info
+        lcov --list coverage.info # debug info
 
     - name: Codecov
       if: ${{ matrix.build-type == 'Debug' }}

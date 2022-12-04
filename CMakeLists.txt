@@ -37,8 +37,29 @@ endif()
 
 add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+
+if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+    file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
+        "${CMAKE_BINARY_DIR}/conan.cmake"
+        TLS_VERIFY ON)
+endif()
+
+include(${CMAKE_BINARY_DIR}/conan.cmake)
+conan_cmake_autodetect(settings)
+conan_cmake_install(PATH_OR_REFERENCE ..
+    BUILD missing
+    REMOTE conancenter
+
+    # SETTINGS ${settings}
+)
+
+find_package(boost 1.80.0)
+find_package(catch2 2.13.7)
+find_package(coin-clp 1.17.6)
+find_package(xtensor 0.23.10)
 
 # Code Coverage Configuration
 add_library(coverage_config INTERFACE)

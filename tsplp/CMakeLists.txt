@@ -10,8 +10,8 @@ target_include_directories(tsplp PUBLIC include)
 find_package(Threads REQUIRED)
 
 target_link_libraries(tsplp
-	PRIVATE graph-algos CONAN_PKG::coin-clp CONAN_PKG::boost coverage_config
-	PUBLIC CONAN_PKG::xtensor Threads::Threads)
+	PRIVATE graph-algos coin-clp::coin-clp Boost::Boost coverage_config
+	PUBLIC xtensor::xtensor Threads::Threads)
 
 target_precompile_headers(tsplp
 	PUBLIC

@@ -4,7 +4,7 @@ file(GLOB tests *.cpp)
 
 add_executable(graph-algos-test ${tests})
 
-target_link_libraries(graph-algos-test PRIVATE graph-algos CONAN_PKG::catch2)
+target_link_libraries(graph-algos-test PRIVATE graph-algos Catch2::Catch2)
 
 target_precompile_headers(graph-algos-test
 	PRIVATE

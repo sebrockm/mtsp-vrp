@@ -7,7 +7,7 @@ add_library(graph-algos STATIC ${headers} ${sources})
 
 target_include_directories(graph-algos PUBLIC include)
 
-target_link_libraries(graph-algos PUBLIC CONAN_PKG::boost PRIVATE coverage_config
+target_link_libraries(graph-algos PUBLIC Boost::Boost PRIVATE coverage_config
 )
 
 target_precompile_headers(graph-algos

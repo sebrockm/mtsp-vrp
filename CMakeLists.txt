@@ -52,12 +52,10 @@ conan_cmake_autodetect(settings)
 conan_cmake_install(PATH_OR_REFERENCE ..
     BUILD missing
     REMOTE conancenter
-
-    # SETTINGS ${settings}
 )
 
-find_package(boost 1.80.0)
-find_package(catch2 2.13.7)
+find_package(Boost 1.80.0)
+find_package(Catch2 2.13.7)
 find_package(coin-clp 1.17.6)
 find_package(xtensor 0.23.10)
 

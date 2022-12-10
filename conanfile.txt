@@ -5,7 +5,7 @@ coin-clp/1.17.6
 xtensor/0.23.10
 
 [generators]
-cmake
+cmake_find_package
 
 [options]
 boost:header_only=True

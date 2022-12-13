@@ -7,6 +7,11 @@
 
 #include <unordered_set>
 
+size_t tsplp::WeightManager::ToOriginal(size_t i) const
+{
+    return i < m_originalN ? i : m_toOriginal[i - m_originalN];
+}
+
 tsplp::WeightManager::WeightManager(
     xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> originalStartPositions,
     xt::xtensor<size_t, 1> originalEndPositions)
@@ -18,27 +23,37 @@ tsplp::WeightManager::WeightManager(
     if (m_startPositions.size() != m_endPositions.size())
         throw std::runtime_error("Start and end positions must have the same size.");
 
+    const auto A = m_startPositions.size();
+
+    if (A == 0)
+        throw std::runtime_error("There must be at least one agent.");
+
     if (m_weights.shape(0) != m_weights.shape(1))
         throw std::runtime_error("The weights must have shape (N, N).");
 
-    // ignore self referring arcs for convenience
-    for (size_t n = 0; n < m_weights.shape(0); ++n)
-        m_weights(n, n) = 0;
+    if (m_originalN < 2)
+        throw std::runtime_error("There must be at least two nodes.");
 
-    const auto A = m_startPositions.size();
+    // ignore self referring arcs for convenience
+    for (size_t n = 0; n < m_originalN; ++n)
+        m_weights(n, n) = 0;
 
     std::unordered_set<size_t> startEndInUse;
 
     for (size_t a = 0; a < A; ++a)
     {
-        if (const auto s = originalStartPositions[a]; startEndInUse.contains(s))
+        const auto s = originalStartPositions[a];
+        if (s >= m_originalN)
+            throw std::runtime_error("Invalid start position.");
+
+        if (startEndInUse.contains(s))
         {
             m_weights = xt::concatenate(
                 xtuple(m_weights, xt::view(m_weights, s, xt::newaxis(), xt::all())), 0);
             m_weights = xt::concatenate(
                 xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), s)), 1);
             m_startPositions[a] = m_weights.shape(0) - 1;
-            m_toOriginal[m_startPositions[a]] = s;
+            m_toOriginal.push_back(s);
 
             auto addedRow = xt::view(m_weights, -1, xt::all());
             xt::filtration(addedRow, equal(addedRow, -1))
@@ -49,14 +64,18 @@ tsplp::WeightManager::WeightManager(
             startEndInUse.insert(s);
         }
 
-        if (const auto e = originalEndPositions[a]; startEndInUse.contains(e))
+        const auto e = originalEndPositions[a];
+        if (e >= m_originalN)
+            throw std::runtime_error("Invalid end position.");
+
+        if (startEndInUse.contains(e))
         {
             m_weights = xt::concatenate(
                 xtuple(m_weights, xt::view(m_weights, e, xt::newaxis(), xt::all())), 0);
             m_weights = xt::concatenate(
                 xtuple(m_weights, xt::view(m_weights, xt::all(), xt::newaxis(), e)), 1);
             m_endPositions[a] = m_weights.shape(0) - 1;
-            m_toOriginal[m_endPositions[a]] = e;
+            m_toOriginal.push_back(e);
 
             auto addedColumn = xt::view(m_weights, xt::all(), -1);
             xt::filtration(addedColumn, equal(addedColumn, -1))
@@ -92,8 +111,7 @@ std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(
 {
     for (auto& path : paths)
         for (auto& i : path)
-            if (m_toOriginal.contains(i))
-                i = m_toOriginal.at(i);
+            i = ToOriginal(i);
 
     return paths;
 }
@@ -106,18 +124,18 @@ xt::xtensor<double, 3> tsplp::WeightManager::TransformTensorBack(
     xt::xtensor<double, 3> result
         = xt::view(tensor, xt::all(), xt::range(_, m_originalN), xt::range(_, m_originalN));
 
-    for (const auto* pSpecialPositions : { &m_startPositions, &m_endPositions })
+    for (size_t u = m_originalN; u < N(); ++u)
     {
-        for (const auto p : *pSpecialPositions)
-        {
-            if (p < m_originalN)
-                continue;
+        const auto ou = ToOriginal(u);
+        xt::view(result, xt::all(), xt::all(), ou)
+            += xt::view(tensor, xt::all(), xt::range(_, m_originalN), u);
+        xt::view(result, xt::all(), ou, xt::all())
+            += xt::view(tensor, xt::all(), u, xt::range(_, m_originalN));
 
-            const auto op = m_toOriginal.at(p);
-            xt::view(result, xt::all(), xt::all(), op)
-                += xt::view(tensor, xt::all(), xt::range(_, m_originalN), p);
-            xt::view(result, xt::all(), op, xt::all())
-                += xt::view(tensor, xt::all(), p, xt::range(_, m_originalN));
+        for (size_t v = m_originalN; v < N(); ++v)
+        {
+            const auto ov = ToOriginal(v);
+            xt::view(result, xt::all(), ou, ov) += xt::view(tensor, xt::all(), u, v);
         }
     }
 

@@ -4,6 +4,7 @@
 
 #include <xtensor/xtensor.hpp>
 
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -15,9 +16,11 @@ private:
     xt::xtensor<int, 2> m_weights;
     xt::xtensor<size_t, 1> m_startPositions;
     xt::xtensor<size_t, 1> m_endPositions;
-    std::unordered_map<size_t, size_t> m_toOriginal;
+    std::vector<size_t> m_toOriginal;
     std::unique_ptr<DependencyGraph> m_spDependencies;
     size_t m_originalN;
+
+    size_t ToOriginal(size_t i) const;
 
 public:
     WeightManager(

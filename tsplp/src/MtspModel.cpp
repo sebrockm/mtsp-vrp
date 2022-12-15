@@ -74,7 +74,7 @@ tsplp::MtspModel::MtspModel(
     auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
         std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies());
 
-    m_bestResult.Paths = std::move(twoOptedPaths);
+    m_bestResult.Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths));
     m_bestResult.UpperBound -= twoOptImprovement;
 
     if (std::chrono::steady_clock::now() >= m_endTime)
@@ -333,7 +333,8 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                         if (exploitedObjective < m_bestResult.UpperBound)
                         {
                             m_bestResult.UpperBound = exploitedObjective;
-                            m_bestResult.Paths = std::move(twoOptedPaths);
+                            m_bestResult.Paths
+                                = m_weightManager.TransformPathsBack(std::move(twoOptedPaths));
                         }
                     }
                 }

@@ -1,6 +1,6 @@
 from ctypes import *
 import numpy as np
-from numpy.ctypeslib import ndpointer, as_array
+from numpy.ctypeslib import ndpointer
 from os import path
 
 with open(path.join(path.dirname(path.abspath(__file__)), '_mtsp_vrp_c_lib_path.txt')) as f:
@@ -38,7 +38,8 @@ def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_t
     if fractional_callback:
         @CFUNCTYPE(c_int, POINTER(c_double))
         def fractional_callback_c(fractional_values):
-            fractional_callback(np.copy(as_array(fractional_values, shape=(A, N, N))))
+            tensor = np.array(fractional_values[:A * N * N]).reshape((A, N, N))
+            fractional_callback(tensor)
             return 0
     else:
         fractional_callback_c = None

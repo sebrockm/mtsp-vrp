@@ -15,7 +15,7 @@ python \"${CMAKE_CURRENT_SOURCE_DIR}/progress_visualization.py\"\n\
 
 add_custom_target(progress-visualization
 	COMMENT "setting up virtual python environment and running demos"
-	COMMAND "${demo_script}"
+	COMMAND "./demo_script.sh"
 	VERBATIM
 	USES_TERMINAL
 	SOURCES requirements.txt progress_visualization.py
@@ -26,4 +26,5 @@ add_dependencies(progress-visualization mtsp-vrp-python-package)
 add_test(
 	NAME progress-visualization-test
 	COMMAND "${demo_script}"
+	WORKING_DIRECTORY
 )

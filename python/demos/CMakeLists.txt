@@ -22,3 +22,8 @@ add_custom_target(progress-visualization
 )
 
 add_dependencies(progress-visualization mtsp-vrp-python-package)
+
+add_test(
+	NAME progress-visualization-test
+	COMMAND "${demo_script}"
+)

@@ -259,6 +259,12 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
+            if (std::chrono::steady_clock::now() >= m_endTime)
+            {
+                queue.ClearAll();
+                break;
+            }
+
             // unfix variables from previous loop iteration to get a clean model
             UnfixVariables(fixedVariables0, model);
             UnfixVariables(fixedVariables1, model);
@@ -266,12 +272,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
                 break;
-
-            if (std::chrono::steady_clock::now() >= m_endTime)
-            {
-                queue.ClearAll();
-                break;
-            }
 
             fixedVariables0 = std::move(top->FixedVariables0);
             fixedVariables1 = std::move(top->FixedVariables1);

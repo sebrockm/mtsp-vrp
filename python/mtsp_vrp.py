@@ -39,7 +39,7 @@ def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_t
         @CFUNCTYPE(c_int, POINTER(c_double))
         def fractional_callback_c(fractional_values):
             x = as_array(fractional_values, shape=(A, N, N))
-            fractional_callback(x)
+            fractional_callback(np.copy(x))
             return 0
     else:
         fractional_callback_c = None

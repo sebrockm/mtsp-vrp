@@ -39,7 +39,7 @@ public:
     void SetObjective(const LinearVariableComposition& objective);
     template <typename RandIterator>
     void AddConstraints(RandIterator first, RandIterator last);
-    Status Solve(std::chrono::milliseconds timeout);
+    Status Solve(std::chrono::steady_clock::time_point endTime);
 };
 
 void swap(Model& m1, Model& m2) noexcept;

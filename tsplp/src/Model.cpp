@@ -116,7 +116,7 @@ template void tsplp::Model::AddConstraints(
     std::vector<tsplp::LinearConstraint>::const_iterator first,
     std::vector<tsplp::LinearConstraint>::const_iterator last);
 
-tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
+tsplp::Status tsplp::Model::Solve(std::chrono::steady_clock::time_point endTime)
 {
     const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel,
                                std::shared_ptr<std::mutex> spModelMutex, std::promise<void> promise)
@@ -133,7 +133,7 @@ tsplp::Status tsplp::Model::Solve(std::chrono::milliseconds timeout)
     std::thread solverThread(
         solverTask, m_spSimplexModel, m_spModelMutex, std::move(solverPromise));
 
-    const auto futureStatus = solverFuture.wait_for(timeout);
+    const auto futureStatus = solverFuture.wait_until(endTime);
 
     if (futureStatus == std::future_status::timeout)
     {

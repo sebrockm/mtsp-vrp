@@ -14,7 +14,7 @@
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSolution(
     xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
     const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
-    const DependencyGraph& dependencies, std::chrono::milliseconds timeout)
+    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
 {
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
@@ -23,7 +23,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
         weights = xt::repeat(xt::view(weights, xt::newaxis(), xt::all()), A, 0);
 
     const auto [heuristicPaths, _] = NearestInsertion(
-        (1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, timeout);
+        (1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, endTime);
 
     if (heuristicPaths.empty())
         return { heuristicPaths, 0 };
@@ -39,10 +39,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
     xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
     const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
-    std::chrono::milliseconds timeout)
+    std::chrono::steady_clock::time_point endTime)
 {
-    const auto startTime = std::chrono::steady_clock::now();
-
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
 
@@ -101,7 +99,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
 
     for (const auto n : boost::adaptors::reverse(order))
     {
-        if (std::chrono::steady_clock::now() >= startTime + timeout)
+        if (std::chrono::steady_clock::now() >= endTime)
             return { std::vector<std::vector<size_t>> {}, 0 };
 
         if (std::find(startPositions.begin(), startPositions.end(), n) != startPositions.end()
@@ -147,7 +145,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::NearestInsertion(
 
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(
     std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
-    const DependencyGraph& dependencies)
+    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
 {
     assert(weights.dimension() == 2);
 
@@ -157,7 +155,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(
     bool hasImproved = true;
     double improvementSum = 0.0;
 
-    while (hasImproved)
+    while (hasImproved && std::chrono::steady_clock::now() < endTime)
     {
         hasImproved = false;
 

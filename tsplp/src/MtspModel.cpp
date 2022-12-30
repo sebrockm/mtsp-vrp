@@ -63,16 +63,14 @@ tsplp::MtspModel::MtspModel(
     , X(xt::adapt(m_model.GetVariables(), { A, N, N }))
     , m_objective(xt::sum(m_weightManager.W() * X)())
 {
-    const auto heuristicTimeout = timeout
-        - std::chrono::duration_cast<std::chrono::milliseconds>(
-                                      std::chrono::steady_clock::now() - m_startTime);
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
         m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(),
-        m_weightManager.Dependencies(), heuristicTimeout);
+        m_weightManager.Dependencies(), m_endTime);
 
     m_bestResult.UpperBound = nearestInsertionObjective;
     auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
-        std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies());
+        std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies(),
+        m_endTime);
 
     m_bestResult.Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths));
     m_bestResult.UpperBound -= twoOptImprovement;
@@ -230,10 +228,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
     const auto threadCount
         = noOfThreads && *noOfThreads > 0 ? *noOfThreads : std::thread::hardware_concurrency();
 
-    auto remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-        m_endTime - std::chrono::steady_clock::now());
-
-    if (remainingTime <= 0ms)
+    if (std::chrono::steady_clock::now() >= m_endTime)
     {
         m_bestResult.IsTimeoutHit = true;
         return m_bestResult;
@@ -281,10 +276,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
             constraints.PopToModel(threadId, model);
 
-            remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                m_endTime - std::chrono::steady_clock::now());
-
-            if (model.Solve(remainingTime) != Status::Optimal)
+            if (model.Solve(m_endTime) != Status::Optimal)
             {
                 queue.NotifyNodeDone(threadId);
                 continue;
@@ -313,19 +305,15 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
                 {
-                    remainingTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        m_endTime - std::chrono::steady_clock::now());
-
                     auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
                         fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
-                        m_weightManager.EndPositions(), m_weightManager.Dependencies(),
-                        remainingTime);
+                        m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
 
                     if (!exploitedPaths.empty())
                     {
                         auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
                             std::move(exploitedPaths), m_weightManager.W(),
-                            m_weightManager.Dependencies());
+                            m_weightManager.Dependencies(), m_endTime);
                         exploitedObjective -= twoOptImprovement;
 
                         std::unique_lock lock { m_bestResultMutex };
@@ -549,7 +537,7 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
                 result.emplace_back(aa * N * N + uu * N + v);
         }
 
-        // edged entering u with a different agent cannot be used
+        // edges entering u with a different agent cannot be used
         // if u is a start node, agents are fixed anyway
         if (!isUStart && aa != a)
         {
@@ -557,7 +545,7 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
                 result.emplace_back(aa * N * N + w * N + u);
         }
 
-        // edged leaving v with a different agent cannot be used
+        // edges leaving v with a different agent cannot be used
         // if v is an end node, agents are fixed anyway
         if (!isVEnd && aa != a)
         {

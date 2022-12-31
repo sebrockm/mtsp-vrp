@@ -35,7 +35,7 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
     model.AddConstraints(constraints.cbegin(), constraints.cend());
 
     using namespace std::chrono_literals;
-    auto status = model.Solve(10ms);
+    auto status = model.Solve(std::chrono::steady_clock::now() + 10ms);
 
     REQUIRE(status == tsplp::Status::Optimal);
     REQUIRE(c1.Evaluate(model));

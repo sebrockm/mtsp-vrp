@@ -83,12 +83,6 @@ tsplp::MtspModel::MtspModel(
 
     m_model.SetObjective(m_objective);
 
-    if (std::chrono::steady_clock::now() >= m_endTime)
-    {
-        m_bestResult.IsTimeoutHit = true;
-        return;
-    }
-
     std::vector<LinearConstraint> constraints;
 
     // don't use self referring arcs (entries on diagonal)

@@ -53,8 +53,8 @@ public:
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
 private:
-    std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
+    [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
 
-    std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
+    [[nodiscard]] std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
 };
 }

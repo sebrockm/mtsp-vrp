@@ -30,12 +30,12 @@ public:
         const Model& model);
     ~Separator() noexcept;
 
-    std::optional<LinearConstraint> Ucut() const;
+    [[nodiscard]] std::optional<LinearConstraint> Ucut() const;
 
-    std::optional<LinearConstraint> Pi() const;
-    std::optional<LinearConstraint> Sigma() const;
-    std::optional<LinearConstraint> PiSigma() const;
+    [[nodiscard]] std::optional<LinearConstraint> Pi() const;
+    [[nodiscard]] std::optional<LinearConstraint> Sigma() const;
+    [[nodiscard]] std::optional<LinearConstraint> PiSigma() const;
 
-    std::vector<LinearConstraint> TwoMatching() const;
+    [[nodiscard]] std::vector<LinearConstraint> TwoMatching() const;
 };
 }

@@ -35,7 +35,7 @@ public:
 
     friend void swap(Model& m1, Model& m2) noexcept;
 
-    const std::vector<Variable>& GetVariables() const { return m_variables; }
+    [[nodiscard]] const std::vector<Variable>& GetVariables() const { return m_variables; }
     void SetObjective(const LinearVariableComposition& objective);
     template <typename RandIterator>
     void AddConstraints(RandIterator first, RandIterator last);

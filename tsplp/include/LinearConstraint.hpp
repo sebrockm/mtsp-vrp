@@ -28,12 +28,12 @@ private:
     LinearConstraint(LinearVariableComposition&& convertee);
 
 public:
-    double GetUpperBound() const { return m_upperBound; }
-    double GetLowerBound() const { return m_lowerBound; }
-    auto const& GetCoefficients() const { return m_coefficients; }
-    auto const& GetVariables() const { return m_variables; }
+    [[nodiscard]] double GetUpperBound() const { return m_upperBound; }
+    [[nodiscard]] double GetLowerBound() const { return m_lowerBound; }
+    [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }
+    [[nodiscard]] auto const& GetVariables() const { return m_variables; }
 
-    bool Evaluate(const Model& model, double tolerance = 1.e-10) const;
+    [[nodiscard]] bool Evaluate(const Model& model, double tolerance = 1.e-10) const;
 };
 
 LinearConstraint operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs);

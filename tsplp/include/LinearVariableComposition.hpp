@@ -35,11 +35,11 @@ public:
     LinearVariableComposition(double constant);
     LinearVariableComposition(const Variable& variable);
 
-    auto const& GetVariables() const { return m_variables; }
-    auto const& GetCoefficients() const { return m_coefficients; }
-    double GetConstant() const { return m_constant; }
+    [[nodiscard]] auto const& GetVariables() const { return m_variables; }
+    [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }
+    [[nodiscard]] double GetConstant() const { return m_constant; }
 
-    double Evaluate(const Model& model) const;
+    [[nodiscard]] double Evaluate(const Model& model) const;
 };
 
 LinearVariableComposition operator*(double factor, LinearVariableComposition linearComp);

@@ -1,9 +1,14 @@
 #ifndef MTSP_VRP_C_H
 #define MTSP_VRP_C_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "mtsp-vrp-c_export.h"
 
-#include <stddef.h>
+#include <stddef.h> // NOLINT(modernize-deprecated-headers)
 
 #define MTSP_VRP_C_RESULT_SOLVED 0
 #define MTSP_VRP_C_RESULT_TIMEOUT 1
@@ -23,5 +28,9 @@ extern "C"
         double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets,
         int (*fractional_callback)(const double*));
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

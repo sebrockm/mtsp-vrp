@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.25)
 
 project(mtsp-vrp)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 enable_testing()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -68,6 +69,21 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
     target_link_options(coverage_config INTERFACE --coverage)
 endif()
+
+set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=*)
+
+# boost*
+# bugprone*
+# clang-analyzer*,
+# cppcore*,
+# google*,
+# hicpp*,
+# llvm*,
+# misc*,
+# performance*,
+# portability*,
+# readability*,
+
 
 add_subdirectory(graph-algos)
 add_subdirectory(mtsp-vrp-c)

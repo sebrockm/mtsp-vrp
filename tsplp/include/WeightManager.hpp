@@ -36,6 +36,7 @@ public:
     [[nodiscard]] std::vector<std::vector<size_t>> TransformPathsBack(
         std::vector<std::vector<size_t>> paths) const;
 
-    [[nodiscard]] xt::xtensor<double, 3> TransformTensorBack(const xt::xtensor<double, 3>& tensor) const;
+    [[nodiscard]] xt::xtensor<double, 3> TransformTensorBack(
+        const xt::xtensor<double, 3>& tensor) const;
 };
 }

@@ -70,7 +70,7 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_link_options(coverage_config INTERFACE --coverage)
 endif()
 
-set(CMAKE_CXX_CLANG_TIDY clang-tidy -fix -checks=-*,modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=*)
+set(CMAKE_CXX_CLANG_TIDY clang-tidy -fix -format-style=file -checks=-*,modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=*)
 
 # boost*
 # bugprone*

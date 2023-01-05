@@ -2,6 +2,8 @@
 
 #include "Model.hpp"
 
+#include <algorithm>
+
 tsplp::ConstraintDeque::ConstraintDeque(size_t numberOfThreads)
     : m_readPositions(numberOfThreads)
 {

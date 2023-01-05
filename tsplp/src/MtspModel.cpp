@@ -7,6 +7,7 @@
 #include "SeparationAlgorithms.hpp"
 
 #include <xtensor/xadapt.hpp>
+#include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>
 
 #include <algorithm>

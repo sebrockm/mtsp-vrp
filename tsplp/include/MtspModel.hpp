@@ -11,6 +11,7 @@
 #include <functional>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace tsplp

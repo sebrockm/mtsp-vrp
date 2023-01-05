@@ -8,6 +8,7 @@
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <xtensor/xmanipulation.hpp>
+#include <xtensor/xview.hpp>
 
 #include <unordered_set>
 

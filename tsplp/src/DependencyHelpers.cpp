@@ -3,22 +3,9 @@
 #include "MtspModel.hpp"
 #include "TsplpExceptions.hpp"
 
-#include <boost/graph/depth_first_search.hpp>
+#include <HasCycle.hpp>
+
 #include <boost/graph/transitive_closure.hpp>
-
-namespace
-{
-struct CycleDetector : public boost::dfs_visitor<>
-{
-    void back_edge(auto, auto) { throw tsplp::CyclicDependenciesException {}; }
-};
-
-template <typename Graph>
-void ThrowOnCycle(const Graph& graph)
-{
-    boost::depth_first_search(graph, visitor(CycleDetector {}));
-}
-}
 
 namespace tsplp
 {
@@ -28,7 +15,8 @@ xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights)
     for (const auto [v, u] : xt::argwhere(equal(weights, -1)))
         add_edge(u, v, dependencyGraph);
 
-    ThrowOnCycle(dependencyGraph);
+    if (graph_algos::HasCycle(dependencyGraph))
+        throw tsplp::CyclicDependenciesException {};
 
     boost::adjacency_list<> transitiveClosure;
     transitive_closure(dependencyGraph, transitiveClosure);

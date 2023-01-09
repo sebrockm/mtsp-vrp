@@ -1,7 +1,8 @@
 #include "GomoryHuTree.hpp"
 
+#include "HasCycle.hpp"
+
 #include <boost/graph/connected_components.hpp>
-#include <boost/graph/undirected_dfs.hpp>
 #include <catch2/catch.hpp>
 
 #include <algorithm>
@@ -63,28 +64,7 @@ private:
         REQUIRE(
             boost::connected_components(m_gomoryHuTree, componentIds.data()) == (N == 0 ? 0 : 1));
 
-        const auto hasCircle = [&]
-        {
-            struct CircleFinder : boost::default_dfs_visitor
-            {
-                void back_edge(g::EdgeType, const g::UndirectedGraph&) const { throw 0; }
-            };
-            try
-            {
-                std::unordered_map<g::EdgeType, boost::default_color_type, boost::hash<g::EdgeType>>
-                    colorMap;
-                boost::undirected_dfs(
-                    m_gomoryHuTree,
-                    boost::visitor(CircleFinder {})
-                        .edge_color_map(boost::make_assoc_property_map(colorMap)));
-            }
-            catch (int)
-            {
-                return true;
-            }
-            return false;
-        }();
-        REQUIRE(!hasCircle);
+        REQUIRE(!g::HasCycle(m_gomoryHuTree));
     }
 
     void CheckExpectedMinCuts() const

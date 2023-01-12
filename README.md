@@ -2,3 +2,5 @@
 
 # mtsp-vrp
 
+## Visualization of how the [TSPLIB](http://comopt.ifi.uni-heidelberg.de/software/TSPLIB95/) instance [berlin52](python/tsplib/tsp/berlin52.tsp) is being solved
+![progress](berlin52.tsp.gif)

@@ -74,10 +74,10 @@ if(USE_CLANG_TIDY)
     endif()
 
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy -format-style=file -checks=-*,modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=* -extra-arg=-Wno-unknown-warning-option)
+    set(false_positives "-clang-analyzer-cplusplus.NewDelete,-clang-analyzer-core.uninitialized.Assign") # false positives (likely?) reported inside of boost, which should be ignored anyway
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -format-style=file -checks=-*,clang-analyzer*,${false_positives},modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=* -extra-arg=-Wno-unknown-warning-option)
 endif()
 # bugprone*
-# clang-analyzer*,
 # cppcore*,
 # google*,
 # hicpp*,

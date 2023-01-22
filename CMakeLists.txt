@@ -74,19 +74,8 @@ if(USE_CLANG_TIDY)
     endif()
 
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    set(false_positives "-clang-analyzer-cplusplus.NewDelete,-clang-analyzer-core.uninitialized.Assign") # false positives (likely?) reported inside of boost, which should be ignored anyway
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy -format-style=file -checks=-*,clang-analyzer*,${false_positives},modernize*,-modernize-use-trailing-return-type -p ${CMAKE_BINARY_DIR} -header-filter=.* -warnings-as-errors=* -extra-arg=-Wno-unknown-warning-option)
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
 endif()
-# bugprone*
-# cppcore*,
-# google*,
-# hicpp*,
-# llvm*,
-# misc*,
-# performance*,
-# portability*,
-# readability*,
-
 
 add_subdirectory(graph-algos)
 add_subdirectory(mtsp-vrp-c)

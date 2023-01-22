@@ -432,11 +432,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                     queue.ClearAll();
                     break;
                 }
-                else
-                {
-                    queue.NotifyNodeDone(threadId);
-                    continue;
-                }
+
+                queue.NotifyNodeDone(threadId);
+                continue;
             }
 
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());

@@ -43,7 +43,7 @@ int solve_mtsp_vrp(
 
         tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
 
-        const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback
+        const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback != nullptr
             ? [=](const xt::xtensor<double, 3>& tensor) {
                 assert(tensor.shape() == (std::array{numberOfAgents, numberOfNodes, numberOfNodes}));
                 fractional_callback(tensor.data()); }

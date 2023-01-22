@@ -1,26 +1,33 @@
 Checks: '-*,
+        bugprone-*
         clang-analyzer-*,
         -clang-analyzer-cplusplus.NewDelete,
         -clang-analyzer-core.uninitialized.Assign,
         llvm-*,
-        -llvm-header-guard,
         -llvm-namespace-comment,
+        -llvm-header-guard,
         modernize-*,
-        -modernize-use-trailing-return-type'
+        -modernize-use-trailing-return-type,
+        readability-*,
+        -readability-named-parameter,
+        -readability-function-cognitive-complexity,
+        -readability-magic-numbers,
+        -readability-redundant-access-specifiers,
+        '
 
-# bugprone*
-# cppcore*,
+# abseil
+# concurrency-*
+# cppcoreguidelines-*,
 # google*,
 # hicpp*,
-# llvm*,
 # misc*,
 # performance*,
 # portability*,
-# readability*,
 
 FormatStyle:          file
 HeaderFilterRegex:    '.*'
 WarningsAsErrors:     '*'
-#CheckOptions:
-#      - key:     readability-implicit-bool-conversion.AllowIntegerConditions
-#        value:   '1'
+
+CheckOptions:
+      - key:     readability-braces-around-statements.ShortStatementLines
+        value:   '2'

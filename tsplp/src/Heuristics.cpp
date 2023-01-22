@@ -31,8 +31,10 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
 
     double sum = 0.0;
     for (size_t a = 0; a < A; ++a)
+    {
         for (size_t i = 1; i < heuristicPaths[a].size(); ++i)
             sum += weights(a, heuristicPaths[a][i - 1], heuristicPaths[a][i]);
+    }
 
     return { heuristicPaths, sum };
 }

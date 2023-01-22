@@ -71,8 +71,10 @@ tsplp::graph::PiSigmaSupportGraph::FindMinCut(PiSigmaVertex s, PiSigmaVertex t, 
         // version above
         double sum = 0.0;
         for (size_t a = 0; a < A; ++a)
+        {
             sum += m_variables(a, source(e, filteredSupportGraph), target(e, filteredSupportGraph))
                        .GetObjectiveValue(m_model);
+        }
         return sum;
     };
 

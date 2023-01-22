@@ -110,8 +110,10 @@ std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(
     std::vector<std::vector<size_t>> paths) const
 {
     for (auto& path : paths)
+    {
         for (auto& i : path)
             i = ToOriginal(i);
+    }
 
     return paths;
 }

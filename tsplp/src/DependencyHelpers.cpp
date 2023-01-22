@@ -40,8 +40,10 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
         const auto rangeBegin = ssize(m_outgoing);
 
         for (size_t v = 0; v < N; ++v)
+        {
             if (weights(v, u) == -1)
                 m_outgoing.push_back(v);
+        }
 
         const auto rangeEnd = ssize(m_outgoing);
         m_node2outgoingSpanMap.emplace_back(rangeBegin, rangeEnd);

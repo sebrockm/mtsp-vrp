@@ -64,9 +64,13 @@ std::optional<LinearConstraint> Separator::Ucut() const
 
     LinearVariableComposition sum;
     for (size_t u = 0; u < N; ++u)
+    {
         for (size_t v = 0; v < N; ++v)
+        {
             if (get(parities, u) != get(parities, v))
                 sum += xt::sum(xt::view(m_variables, xt::all(), u, v) + 0)();
+        }
+    }
 
     return sum >= 2;
 }
@@ -246,7 +250,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
             bool isOdd = false;
             for (const auto v : compU)
-                isOdd ^= odd[v];
+                isOdd = isOdd ^ odd[v];
 
             if (isOdd)
             {

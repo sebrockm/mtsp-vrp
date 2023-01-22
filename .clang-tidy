@@ -1,5 +1,6 @@
 Checks: '-*,
         bugprone-*
+        concurrency-*,
         clang-analyzer-*,
         -clang-analyzer-cplusplus.NewDelete,
         -clang-analyzer-core.uninitialized.Assign,
@@ -8,6 +9,7 @@ Checks: '-*,
         -llvm-header-guard,
         modernize-*,
         -modernize-use-trailing-return-type,
+        portability-*,
         readability-*,
         -readability-named-parameter,
         -readability-function-cognitive-complexity,
@@ -16,13 +18,11 @@ Checks: '-*,
         '
 
 # abseil
-# concurrency-*
 # cppcoreguidelines-*,
 # google*,
 # hicpp*,
 # misc*,
 # performance*,
-# portability*,
 
 FormatStyle:          file
 HeaderFilterRegex:    '.*'

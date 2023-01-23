@@ -18,6 +18,7 @@ Checks: '-*,
         -readability-function-cognitive-complexity,
         -readability-magic-numbers,
         -readability-redundant-access-specifiers,
+        -readability-identifier-length
         '
 
 # abseil

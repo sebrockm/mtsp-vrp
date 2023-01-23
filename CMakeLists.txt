@@ -66,7 +66,7 @@ if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_link_options(coverage_config INTERFACE --coverage)
 endif()
 
-option(USE_CLANG_TIDY "Use clang-tidy" ON)
+option(USE_CLANG_TIDY "Use clang-tidy" OFF)
 
 if(USE_CLANG_TIDY)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")

@@ -268,7 +268,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                         }
                         else
                         {
-                            lhs += std::move(constraintPart);
+                            lhs += constraintPart;
                         }
                     });
 
@@ -317,7 +317,7 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
                             }
                             else
                             {
-                                lhs += std::move(constraintPart);
+                                lhs += constraintPart;
                             }
                         });
 

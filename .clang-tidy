@@ -11,6 +11,7 @@ Checks: '-*,
         -llvm-header-guard,
         modernize-*,
         -modernize-use-trailing-return-type,
+        performance-*,
         portability-*,
         readability-*,
         -readability-named-parameter,
@@ -23,7 +24,6 @@ Checks: '-*,
 # google*,
 # hicpp*,
 # misc*,
-# performance*,
 
 FormatStyle:          file
 HeaderFilterRegex:    '.*'
@@ -34,3 +34,5 @@ CheckOptions:
         value:   '2'
       - key:     cppcoreguidelines-macro-usage.AllowedRegexp
         value:   'MTSP_VRP_C_*'
+      - key:     performance-unnecessary-value-param.AllowedTypes
+        value:   'std::shared_ptr;xt::xarray'

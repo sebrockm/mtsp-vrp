@@ -98,17 +98,20 @@ struct PartiallyContractedGraph
 
 // incidence graph concept
 
-auto source(const PartiallyContractedGraph::edge_descriptor& e, const PartiallyContractedGraph&)
+inline auto source(
+    const PartiallyContractedGraph::edge_descriptor& e, const PartiallyContractedGraph&)
 {
     return e.first;
 }
 
-auto target(const PartiallyContractedGraph::edge_descriptor& e, const PartiallyContractedGraph&)
+inline auto target(
+    const PartiallyContractedGraph::edge_descriptor& e, const PartiallyContractedGraph&)
 {
     return e.second;
 }
 
-auto out_edges(PartiallyContractedGraph::vertex_descriptor u, const PartiallyContractedGraph& g)
+inline auto out_edges(
+    PartiallyContractedGraph::vertex_descriptor u, const PartiallyContractedGraph& g)
 {
     const PartiallyContractedGraph::FilterSame filter { u };
     const PartiallyContractedGraph::ToOutEdge toOutEdge { u };
@@ -121,27 +124,28 @@ auto out_edges(PartiallyContractedGraph::vertex_descriptor u, const PartiallyCon
             boost::make_filter_iterator(filter, last, last), toOutEdge));
 }
 
-auto out_degree(PartiallyContractedGraph::vertex_descriptor, const PartiallyContractedGraph& g)
+inline auto out_degree(
+    PartiallyContractedGraph::vertex_descriptor, const PartiallyContractedGraph& g)
 {
     return g.N - 1;
 }
 
 // vertex list graph concept
 
-auto vertices(const PartiallyContractedGraph& g)
+inline auto vertices(const PartiallyContractedGraph& g)
 {
     return std::make_pair(
         PartiallyContractedGraph::vertex_iterator { 0 },
         PartiallyContractedGraph::vertex_iterator { g.N });
 }
 
-auto num_vertices(const PartiallyContractedGraph& g) { return g.N; }
+inline auto num_vertices(const PartiallyContractedGraph& g) { return g.N; }
 
 // edge list graph concept
 
-auto num_edges(const PartiallyContractedGraph& g) { return g.N * (g.N - 1); }
+inline auto num_edges(const PartiallyContractedGraph& g) { return g.N * (g.N - 1); }
 
-auto edges(const PartiallyContractedGraph& g)
+inline auto edges(const PartiallyContractedGraph& g)
 {
     return std::make_pair(
         PartiallyContractedGraph::edge_iterator({ 0 }, { g.N }),
@@ -150,7 +154,7 @@ auto edges(const PartiallyContractedGraph& g)
 
 // adjacency matrix graph concept
 
-auto edge(
+inline auto edge(
     PartiallyContractedGraph::vertex_descriptor u, PartiallyContractedGraph::vertex_descriptor v,
     const PartiallyContractedGraph&)
 {
@@ -159,7 +163,7 @@ auto edge(
 
 // property maps for boykov_kolmogorov_max_flow
 
-auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
+inline auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
 {
     return boost::make_function_property_map<PartiallyContractedGraph::edge_descriptor>(
         [&](PartiallyContractedGraph::edge_descriptor e)
@@ -170,18 +174,18 @@ auto get(boost::edge_index_t, const PartiallyContractedGraph& g)
         });
 }
 
-auto get(boost::edge_capacity_t, const PartiallyContractedGraph& g)
+inline auto get(boost::edge_capacity_t, const PartiallyContractedGraph& g)
 {
     return boost::make_iterator_property_map(g.EdgeCapacities.begin(), get(boost::edge_index, g));
 }
 
-auto get(boost::edge_residual_capacity_t, PartiallyContractedGraph& g)
+inline auto get(boost::edge_residual_capacity_t, PartiallyContractedGraph& g)
 {
     return boost::make_iterator_property_map(
         g.EdgeResidualCapacities.begin(), get(boost::edge_index, g));
 }
 
-auto get(boost::edge_reverse_t, const PartiallyContractedGraph&)
+inline auto get(boost::edge_reverse_t, const PartiallyContractedGraph&)
 {
     return boost::make_function_property_map<PartiallyContractedGraph::edge_descriptor>(
         [](PartiallyContractedGraph::edge_descriptor e) {
@@ -189,22 +193,22 @@ auto get(boost::edge_reverse_t, const PartiallyContractedGraph&)
         });
 }
 
-auto get(boost::vertex_index_t, const PartiallyContractedGraph&)
+inline auto get(boost::vertex_index_t, const PartiallyContractedGraph&)
 {
     return boost::typed_identity_property_map<PartiallyContractedGraph::vertex_descriptor> {};
 }
 
-auto get(boost::vertex_predecessor_t, PartiallyContractedGraph& g)
+inline auto get(boost::vertex_predecessor_t, PartiallyContractedGraph& g)
 {
     return boost::make_container_vertex_map(g.VertexPredecessors);
 }
 
-auto get(boost::vertex_color_t, PartiallyContractedGraph& g)
+inline auto get(boost::vertex_color_t, PartiallyContractedGraph& g)
 {
     return boost::make_container_vertex_map(g.VertexColors);
 }
 
-auto get(boost::vertex_distance_t, PartiallyContractedGraph& g)
+inline auto get(boost::vertex_distance_t, PartiallyContractedGraph& g)
 {
     return boost::make_container_vertex_map(g.VertexDistances);
 }

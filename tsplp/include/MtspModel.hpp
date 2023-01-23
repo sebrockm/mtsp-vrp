@@ -49,7 +49,7 @@ public:
         xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
 
 public:
-    MtspResult BranchAndCutSolve(
+    [[nodiscard]] MtspResult BranchAndCutSolve(
         std::optional<size_t> noOfThreads = std::nullopt,
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 

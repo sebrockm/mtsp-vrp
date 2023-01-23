@@ -34,10 +34,10 @@ public:
 public:
     void ClearAll();
     void NotifyNodeDone(size_t threadId);
-    std::optional<double> GetLowerBound() const;
+    [[nodiscard]] std::optional<double> GetLowerBound() const;
     void UpdateCurrentLowerBound(size_t threadId, double currentLowerBound);
-    size_t GetSize() const;
-    size_t GetWorkedOnSize() const;
+    [[nodiscard]] size_t GetSize() const;
+    [[nodiscard]] size_t GetWorkedOnSize() const;
     std::optional<SData> Pop(size_t threadId);
     void Push(
         double lowerBound, std::vector<Variable> fixedVariables0,

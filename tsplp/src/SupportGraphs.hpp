@@ -41,7 +41,7 @@ public:
         PiSigma
     };
 
-    std::pair<double, std::vector<std::pair<PiSigmaVertex, PiSigmaVertex>>> FindMinCut(
-        PiSigmaVertex s, PiSigmaVertex t, ConstraintType x);
+    [[nodiscard]] std::pair<double, std::vector<std::pair<PiSigmaVertex, PiSigmaVertex>>>
+    FindMinCut(PiSigmaVertex s, PiSigmaVertex t, ConstraintType x);
 };
 }

@@ -36,7 +36,10 @@ public:
     [[nodiscard]] bool Evaluate(const Model& model, double tolerance = 1.e-10) const;
 };
 
-LinearConstraint operator<=(LinearVariableComposition lhs, LinearVariableComposition rhs);
-LinearConstraint operator>=(LinearVariableComposition lhs, LinearVariableComposition rhs);
-LinearConstraint operator==(LinearVariableComposition lhs, LinearVariableComposition rhs);
+[[nodiscard]] LinearConstraint operator<=(
+    LinearVariableComposition lhs, LinearVariableComposition rhs);
+[[nodiscard]] LinearConstraint operator>=(
+    LinearVariableComposition lhs, LinearVariableComposition rhs);
+[[nodiscard]] LinearConstraint operator==(
+    LinearVariableComposition lhs, LinearVariableComposition rhs);
 }

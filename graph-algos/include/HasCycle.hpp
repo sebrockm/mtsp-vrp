@@ -15,7 +15,7 @@ struct CycleDetector : public boost::dfs_visitor<>
 };
 
 template <typename Graph>
-bool HasCycle(const Graph& graph)
+[[nodiscard]] bool HasCycle(const Graph& graph)
 {
     try
     {

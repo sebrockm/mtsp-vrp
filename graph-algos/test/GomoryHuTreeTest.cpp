@@ -60,7 +60,7 @@ private:
     {
         REQUIRE(num_edges(m_gomoryHuTree) == (N == 0 ? 0 : N - 1));
 
-        std::array<size_t, N> componentIds; // NOLINT(cppcoreguidelines-pro-type-member-init)
+        std::array<size_t, N> componentIds {};
         REQUIRE(
             boost::connected_components(m_gomoryHuTree, componentIds.data()) == (N == 0 ? 0 : 1));
 

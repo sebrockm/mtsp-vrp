@@ -8,7 +8,11 @@ extern "C"
 
 #include "mtsp-vrp-c_export.h"
 
-#include <stddef.h> // NOLINT(modernize-deprecated-headers)
+#ifdef __cplusplus
+#include <cstddef>
+#else
+#include <stddef.h>
+#endif
 
 #define MTSP_VRP_C_RESULT_SOLVED 0
 #define MTSP_VRP_C_RESULT_TIMEOUT 1
@@ -20,14 +24,11 @@ extern "C"
 #define MTSP_VRP_C_CYCLIC_DEPENDENCIES -5
 #define MTSP_VRP_C_INCOMPATIBLE_DEPENDENCIES -6
 
-    extern "C"
-    {
-        MTSP_VRP_C_EXPORT int solve_mtsp_vrp(
-            size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions,
-            const size_t* end_positions, const int* weights, int timeout_ms, size_t numberOfThreads,
-            double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets,
-            int (*fractional_callback)(const double*));
-    }
+    MTSP_VRP_C_EXPORT int solve_mtsp_vrp(
+        size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions,
+        const size_t* end_positions, const int* weights, int timeout_ms, size_t numberOfThreads,
+        double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets,
+        int (*fractional_callback)(const double*));
 
 #ifdef __cplusplus
 }

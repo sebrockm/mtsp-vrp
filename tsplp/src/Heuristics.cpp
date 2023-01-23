@@ -168,7 +168,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(
             {
                 for (size_t i = 1; i < paths[a1].size() - 1; ++i)
                 {
-                    const auto jStart = a1 == a2 ? i + 1 : size_t(1);
+                    const auto jStart = a1 == a2 ? i + 1 : static_cast<size_t>(1);
                     for (size_t j = jStart; j < paths[a2].size() - 1; ++j)
                     {
                         const auto u = paths[a1][i];

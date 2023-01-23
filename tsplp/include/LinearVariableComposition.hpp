@@ -32,24 +32,29 @@ private:
 
 public:
     LinearVariableComposition() = default;
+    // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
     LinearVariableComposition(double constant);
+    // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
     LinearVariableComposition(const Variable& variable);
 
-    auto const& GetVariables() const { return m_variables; }
-    auto const& GetCoefficients() const { return m_coefficients; }
-    double GetConstant() const { return m_constant; }
+    [[nodiscard]] auto const& GetVariables() const { return m_variables; }
+    [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }
+    [[nodiscard]] double GetConstant() const { return m_constant; }
 
-    double Evaluate(const Model& model) const;
+    [[nodiscard]] double Evaluate(const Model& model) const;
 };
 
-LinearVariableComposition operator*(double factor, LinearVariableComposition linearComp);
+[[nodiscard]] LinearVariableComposition operator*(
+    double factor, LinearVariableComposition linearComp);
 
-LinearVariableComposition operator+(LinearVariableComposition lhs, LinearVariableComposition rhs);
-LinearVariableComposition operator+(LinearVariableComposition lhs, double rhs);
+[[nodiscard]] LinearVariableComposition operator+(
+    LinearVariableComposition lhs, LinearVariableComposition rhs);
+[[nodiscard]] LinearVariableComposition operator+(LinearVariableComposition lhs, double rhs);
 
 LinearVariableComposition& operator+=(
     LinearVariableComposition& lhs, LinearVariableComposition const& rhs);
 
-LinearVariableComposition operator-(LinearVariableComposition operand);
-LinearVariableComposition operator-(LinearVariableComposition lhs, LinearVariableComposition rhs);
+[[nodiscard]] LinearVariableComposition operator-(LinearVariableComposition operand);
+[[nodiscard]] LinearVariableComposition operator-(
+    LinearVariableComposition lhs, LinearVariableComposition rhs);
 }

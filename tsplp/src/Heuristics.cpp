@@ -8,6 +8,7 @@
 #include <boost/graph/topological_sort.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <xtensor/xmanipulation.hpp>
+#include <xtensor/xview.hpp>
 
 #include <unordered_set>
 
@@ -30,8 +31,10 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
 
     double sum = 0.0;
     for (size_t a = 0; a < A; ++a)
+    {
         for (size_t i = 1; i < heuristicPaths[a].size(); ++i)
             sum += weights(a, heuristicPaths[a][i - 1], heuristicPaths[a][i]);
+    }
 
     return { heuristicPaths, sum };
 }
@@ -165,7 +168,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::TwoOptPaths(
             {
                 for (size_t i = 1; i < paths[a1].size() - 1; ++i)
                 {
-                    const auto jStart = a1 == a2 ? i + 1 : size_t(1);
+                    const auto jStart = a1 == a2 ? i + 1 : static_cast<size_t>(1);
                     for (size_t j = jStart; j < paths[a2].size() - 1; ++j)
                     {
                         const auto u = paths[a1][i];

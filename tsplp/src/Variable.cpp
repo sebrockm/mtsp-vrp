@@ -11,11 +11,13 @@ tsplp::Variable::Variable(size_t id)
 
 double tsplp::Variable::GetUpperBound(const Model& model) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return model.m_spSimplexModel->getColUpper()[m_id];
 }
 
 double tsplp::Variable::GetLowerBound(const Model& model) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return model.m_spSimplexModel->getColLower()[m_id];
 }
 
@@ -31,11 +33,13 @@ void tsplp::Variable::SetLowerBound(double lowerBound, Model& model) const
 
 double tsplp::Variable::GetObjectiveValue(const Model& model) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return model.m_spSimplexModel->primalColumnSolution()[m_id];
 }
 
 double tsplp::Variable::GetReducedCosts(const Model& model) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return model.m_spSimplexModel->getReducedCost()[m_id];
 }
 

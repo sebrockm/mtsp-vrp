@@ -2,6 +2,9 @@
 
 #include "Model.hpp"
 
+#include <algorithm>
+#include <cassert>
+
 tsplp::BranchAndCutQueue::BranchAndCutQueue() { m_heap.emplace_back(); }
 
 void tsplp::BranchAndCutQueue::ClearAll()

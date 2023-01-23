@@ -7,6 +7,7 @@
 #include "SeparationAlgorithms.hpp"
 
 #include <xtensor/xadapt.hpp>
+#include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>
 
 #include <algorithm>
@@ -87,8 +88,10 @@ tsplp::MtspModel::MtspModel(
 
     // don't use self referring arcs (entries on diagonal)
     for (size_t a = 0; a < A; ++a)
+    {
         for (size_t n = 0; n < N; ++n)
             constraints.emplace_back(X(a, n, n) == 0);
+    }
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
@@ -109,9 +112,11 @@ tsplp::MtspModel::MtspModel(
             == m_weightManager.StartPositions().end())
         {
             for (size_t a = 0; a < A; ++a)
+            {
                 constraints.emplace_back(
                     xt::sum(xt::view(X + 0, a, xt::all(), n))()
                     == xt::sum(xt::view(X + 0, a, n, xt::all()))());
+            }
         }
     }
 
@@ -169,9 +174,11 @@ tsplp::MtspModel::MtspModel(
 
         // require the same agent to visit dependent nodes
         for (size_t a = 0; a < A; ++a)
+        {
             constraints.emplace_back(
                 xt::sum(xt::view(X + 0, a, u, xt::all()))()
                 == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+        }
 
         for (const auto s : m_weightManager.StartPositions())
         {
@@ -198,10 +205,12 @@ tsplp::MtspModel::MtspModel(
     for (size_t u = 0; u < N; ++u)
     {
         for (size_t v = u + 1; v < N; ++v)
+        {
             constraints.emplace_back(
                 (xt::sum(xt::view(X + 0, xt::all(), u, v))
                  + xt::sum(xt::view(X + 0, xt::all(), v, u)))()
                 <= 1);
+        }
 
         if (std::chrono::steady_clock::now() >= m_endTime)
         {
@@ -431,11 +440,9 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                     queue.ClearAll();
                     break;
                 }
-                else
-                {
-                    queue.NotifyNodeDone(threadId);
-                    continue;
-                }
+
+                queue.NotifyNodeDone(threadId);
+                continue;
             }
 
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());

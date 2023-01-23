@@ -110,8 +110,10 @@ std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(
     std::vector<std::vector<size_t>> paths) const
 {
     for (auto& path : paths)
+    {
         for (auto& i : path)
             i = ToOriginal(i);
+    }
 
     return paths;
 }
@@ -119,7 +121,7 @@ std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(
 xt::xtensor<double, 3> tsplp::WeightManager::TransformTensorBack(
     const xt::xtensor<double, 3>& tensor) const
 {
-    using namespace xt::placeholders;
+    using xt::placeholders::_;
 
     xt::xtensor<double, 3> result
         = xt::view(tensor, xt::all(), xt::range(_, m_originalN), xt::range(_, m_originalN));

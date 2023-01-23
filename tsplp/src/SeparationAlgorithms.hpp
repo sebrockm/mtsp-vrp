@@ -30,12 +30,17 @@ public:
         const Model& model);
     ~Separator() noexcept;
 
-    std::optional<LinearConstraint> Ucut() const;
+    Separator(const Separator&) = delete;
+    Separator(Separator&&) = delete;
+    Separator& operator=(const Separator&) = delete;
+    Separator& operator=(Separator&&) = delete;
 
-    std::optional<LinearConstraint> Pi() const;
-    std::optional<LinearConstraint> Sigma() const;
-    std::optional<LinearConstraint> PiSigma() const;
+    [[nodiscard]] std::optional<LinearConstraint> Ucut() const;
 
-    std::vector<LinearConstraint> TwoMatching() const;
+    [[nodiscard]] std::optional<LinearConstraint> Pi() const;
+    [[nodiscard]] std::optional<LinearConstraint> Sigma() const;
+    [[nodiscard]] std::optional<LinearConstraint> PiSigma() const;
+
+    [[nodiscard]] std::vector<LinearConstraint> TwoMatching() const;
 };
 }

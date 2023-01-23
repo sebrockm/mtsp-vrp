@@ -11,6 +11,7 @@
 #include <functional>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace tsplp
@@ -48,13 +49,14 @@ public:
         xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
 
 public:
-    MtspResult BranchAndCutSolve(
+    [[nodiscard]] MtspResult BranchAndCutSolve(
         std::optional<size_t> noOfThreads = std::nullopt,
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
 private:
-    std::vector<std::vector<size_t>> CreatePathsFromVariables(const Model& model) const;
+    [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(
+        const Model& model) const;
 
-    std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
+    [[nodiscard]] std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
 };
 }

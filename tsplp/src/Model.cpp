@@ -17,7 +17,6 @@
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel { std::make_shared<ClpSimplex>() }
     , m_spModelMutex { std::make_shared<std::mutex>() }
-    , m_variables {}
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
@@ -67,8 +66,10 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
     for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
+    {
         m_spSimplexModel->setObjectiveCoefficient(
             static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
+    }
 }
 
 template <typename RandIterator>
@@ -78,7 +79,8 @@ void tsplp::Model::AddConstraints(RandIterator first, RandIterator last)
     if (numberOfConstraints > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many constraints");
 
-    std::vector<double> lowerBounds, upperBounds;
+    std::vector<double> lowerBounds;
+    std::vector<double> upperBounds;
     lowerBounds.reserve(numberOfConstraints);
     upperBounds.reserve(numberOfConstraints);
 

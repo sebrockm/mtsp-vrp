@@ -1,7 +1,8 @@
 #include "GomoryHuTree.hpp"
 
+#include "HasCycle.hpp"
+
 #include <boost/graph/connected_components.hpp>
-#include <boost/graph/undirected_dfs.hpp>
 #include <catch2/catch.hpp>
 
 #include <algorithm>
@@ -36,8 +37,8 @@ public:
         REQUIRE(u != v);
         REQUIRE(compU.size() + compV.size() == N);
 
-        REQUIRE(m_expectedMinCuts[u][v] == cutSize);
-        REQUIRE(m_expectedMinCuts[v][u] == cutSize);
+        REQUIRE(m_expectedMinCuts.at(u).at(v) == cutSize);
+        REQUIRE(m_expectedMinCuts.at(v).at(u) == cutSize);
 
         REQUIRE(std::find(compU.begin(), compU.end(), u) != compU.end());
         REQUIRE(std::find(compV.begin(), compV.end(), v) != compV.end());
@@ -59,32 +60,11 @@ private:
     {
         REQUIRE(num_edges(m_gomoryHuTree) == (N == 0 ? 0 : N - 1));
 
-        std::array<size_t, N> componentIds;
+        std::array<size_t, N> componentIds {};
         REQUIRE(
             boost::connected_components(m_gomoryHuTree, componentIds.data()) == (N == 0 ? 0 : 1));
 
-        const auto hasCircle = [&]
-        {
-            struct CircleFinder : boost::default_dfs_visitor
-            {
-                void back_edge(g::EdgeType, const g::UndirectedGraph&) const { throw 0; }
-            };
-            try
-            {
-                std::unordered_map<g::EdgeType, boost::default_color_type, boost::hash<g::EdgeType>>
-                    colorMap;
-                boost::undirected_dfs(
-                    m_gomoryHuTree,
-                    boost::visitor(CircleFinder {})
-                        .edge_color_map(boost::make_assoc_property_map(colorMap)));
-            }
-            catch (int)
-            {
-                return true;
-            }
-            return false;
-        }();
-        REQUIRE(!hasCircle);
+        REQUIRE(!g::HasCycle(m_gomoryHuTree));
     }
 
     void CheckExpectedMinCuts() const
@@ -97,7 +77,7 @@ private:
                     continue;
 
                 const auto minCut = g::GetMinCutFromGomoryHuTree(m_gomoryHuTree, u, v);
-                REQUIRE(minCut == m_expectedMinCuts[u][v]);
+                REQUIRE(minCut == m_expectedMinCuts.at(u).at(v));
             }
         }
     }
@@ -360,11 +340,21 @@ TEST_CASE("Stoer-Wagner Regression Test", "[Gomory Hu Tree]")
     // https://github.com/boostorg/graph/issues/286
 
     constexpr int N = 8;
-    const std::pair<int, int> edges[]
-        = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 2 }, { 1, 3 }, { 2, 3 }, { 4, 5 },
-            { 4, 6 }, { 4, 7 }, { 5, 6 }, { 5, 7 }, { 6, 7 }, { 0, 4 } };
-    const int ws[] = { 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 6 };
-    g::UndirectedGraph graph(edges, edges + 13, ws, N, 13);
+    const std::array<std::pair<int, int>, 13> edges { { { 0, 1 },
+                                                        { 0, 2 },
+                                                        { 0, 3 },
+                                                        { 1, 2 },
+                                                        { 1, 3 },
+                                                        { 2, 3 },
+                                                        { 4, 5 },
+                                                        { 4, 6 },
+                                                        { 4, 7 },
+                                                        { 5, 6 },
+                                                        { 5, 7 },
+                                                        { 6, 7 },
+                                                        { 0, 4 } } };
+    const std::array<int, 13> ws = { 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 6 };
+    g::UndirectedGraph graph(edges.begin(), edges.end(), ws.begin(), N, edges.size());
 
     g::UndirectedGraph gomoryHuTree(N);
     g::CreateGomoryHuTree(

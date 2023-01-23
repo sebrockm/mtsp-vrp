@@ -3,22 +3,9 @@
 #include "MtspModel.hpp"
 #include "TsplpExceptions.hpp"
 
-#include <boost/graph/depth_first_search.hpp>
+#include <HasCycle.hpp>
+
 #include <boost/graph/transitive_closure.hpp>
-
-namespace
-{
-struct CycleDetector : public boost::dfs_visitor<>
-{
-    void back_edge(auto, auto) { throw tsplp::CyclicDependenciesException {}; }
-};
-
-template <typename Graph>
-void ThrowOnCycle(const Graph& graph)
-{
-    boost::depth_first_search(graph, visitor(CycleDetector {}));
-}
-}
 
 namespace tsplp
 {
@@ -28,7 +15,8 @@ xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights)
     for (const auto [v, u] : xt::argwhere(equal(weights, -1)))
         add_edge(u, v, dependencyGraph);
 
-    ThrowOnCycle(dependencyGraph);
+    if (graph_algos::HasCycle(dependencyGraph))
+        throw tsplp::CyclicDependenciesException {};
 
     boost::adjacency_list<> transitiveClosure;
     transitive_closure(dependencyGraph, transitiveClosure);
@@ -52,8 +40,10 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
         const auto rangeBegin = ssize(m_outgoing);
 
         for (size_t v = 0; v < N; ++v)
+        {
             if (weights(v, u) == -1)
                 m_outgoing.push_back(v);
+        }
 
         const auto rangeEnd = ssize(m_outgoing);
         m_node2outgoingSpanMap.emplace_back(rangeBegin, rangeEnd);
@@ -80,12 +70,14 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
 std::span<const size_t> DependencyGraph::GetIncomingSpan(size_t n) const
 {
     const auto [s, t] = m_node2incomingSpanMap[n];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return { m_incoming.data() + s, m_incoming.data() + t };
 }
 
 std::span<const size_t> DependencyGraph::GetOutgoingSpan(size_t n) const
 {
     const auto [s, t] = m_node2outgoingSpanMap[n];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return { m_outgoing.data() + s, m_outgoing.data() + t };
 }
 }

@@ -38,11 +38,11 @@ jobs:
 
     - name: Configure CMake Debug
       if: ${{ matrix.build-type == 'Debug' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Debug -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
 
     - name: Configure CMake Release
       if: ${{ matrix.build-type == 'Release' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release -DUSE_CLANG_TIDY=ON
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

@@ -24,10 +24,9 @@ using PartiallyContractedGraphVertexType = PartiallyContractedGraph::vertex_desc
 
 void CreateGomoryHuTree(
     const UndirectedGraph& inputGraph,
-    std::function<bool(
+    const std::function<bool(
         VertexType u, VertexType v, double cutSize, std::span<const VertexType> compU,
-        std::span<const VertexType> compV)>
-        newEdgeCallback)
+        std::span<const VertexType> compV)>& newEdgeCallback)
 {
     const auto N = num_vertices(inputGraph);
     if (N <= 1)
@@ -184,6 +183,7 @@ void CreateGomoryHuTree(
         const auto isStopRequested = newEdgeCallback(
             inputSource, inputSink, cutSize,
             std::span { inputGraphVertexStorage.data(), blackLength },
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             std::span { inputGraphVertexStorage.data() + blackLength,
                         inputGraphVertexStorage.size() - blackLength });
         if (isStopRequested)

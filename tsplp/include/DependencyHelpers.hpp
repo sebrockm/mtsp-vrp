@@ -23,10 +23,10 @@ private:
 public:
     explicit DependencyGraph(const xt::xtensor<int, 2>& weights);
 
-    const auto& GetArcs() const { return m_arcs; }
-    std::span<const size_t> GetIncomingSpan(size_t n) const;
-    std::span<const size_t> GetOutgoingSpan(size_t n) const;
+    [[nodiscard]] const auto& GetArcs() const { return m_arcs; }
+    [[nodiscard]] std::span<const size_t> GetIncomingSpan(size_t n) const;
+    [[nodiscard]] std::span<const size_t> GetOutgoingSpan(size_t n) const;
 
-    bool HasArc(size_t u, size_t v) const { return m_weights(v, u) == -1; }
+    [[nodiscard]] bool HasArc(size_t u, size_t v) const { return m_weights(v, u) == -1; }
 };
 }

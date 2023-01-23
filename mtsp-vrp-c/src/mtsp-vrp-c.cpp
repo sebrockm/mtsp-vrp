@@ -43,7 +43,7 @@ int solve_mtsp_vrp(
 
         tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
 
-        const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback
+        const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback != nullptr
             ? [=](const xt::xtensor<double, 3>& tensor) {
                 assert(tensor.shape() == (std::array{numberOfAgents, numberOfNodes, numberOfNodes}));
                 fractional_callback(tensor.data()); }
@@ -62,10 +62,11 @@ int solve_mtsp_vrp(
         size_t offset = 0;
         for (size_t a = 0; a < numberOfAgents; ++a)
         {
-            pathOffsets[a] = offset;
+            pathOffsets[a] = offset; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto length = result.Paths[a].size();
             if (startPositions[a] == endPositions[a])
                 --length; // don't copy unneeded (duplicate) last entry
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             std::copy_n(result.Paths[a].begin(), length, paths + offset);
             offset += length;
         }

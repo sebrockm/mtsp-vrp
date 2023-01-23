@@ -76,8 +76,8 @@ TEST_CASE("vrp", "[WeightManager]")
 
     REQUIRE(wm.W() == expectedWeights);
 
-    const auto spt = wm.StartPositions();
-    const auto ept = wm.EndPositions();
+    const auto& spt = wm.StartPositions();
+    const auto& ept = wm.EndPositions();
     const xt::xtensor<size_t, 1> pt
         = xt::concatenate(xt::xtuple(wm.StartPositions(), wm.EndPositions()));
     const std::vector<size_t> expectedPt = { 0, 2, 3, 4, 5, 6, 7, 8 };
@@ -202,8 +202,8 @@ TEST_CASE("start-end-circle", "[WeightManager]")
 
     REQUIRE(wm.W() == expectedWeights);
 
-    const auto spt = wm.StartPositions();
-    const auto ept = wm.EndPositions();
+    const auto& spt = wm.StartPositions();
+    const auto& ept = wm.EndPositions();
     const xt::xtensor<size_t, 1> pt
         = xt::concatenate(xt::xtuple(wm.StartPositions(), wm.EndPositions()));
     const std::vector<size_t> expectedPt = { 0, 2, 3, 4 };

@@ -70,7 +70,7 @@ struct PartiallyContractedGraph
     using edge_iterator = boost::transform_iterator<N2Edge, boost::counting_iterator<size_t>>;
     using edges_size_type = size_t;
 
-    PartiallyContractedGraph(size_t maxN)
+    explicit PartiallyContractedGraph(size_t maxN)
         : EdgeCapacities(maxN * maxN)
         , EdgeResidualCapacities(maxN * maxN)
         , VertexPredecessors(maxN)

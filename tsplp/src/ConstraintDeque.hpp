@@ -18,7 +18,7 @@ private:
     std::mutex m_mutex;
 
 public:
-    ConstraintDeque(size_t numberOfThreads);
+    explicit ConstraintDeque(size_t numberOfThreads);
 
 public:
     template <typename LinearConstraintIterator>

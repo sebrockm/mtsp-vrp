@@ -25,7 +25,7 @@ private:
     double m_lowerBound = 0.0;
 
 private:
-    LinearConstraint(LinearVariableComposition&& convertee);
+    explicit LinearConstraint(LinearVariableComposition&& convertee);
 
 public:
     [[nodiscard]] double GetUpperBound() const { return m_upperBound; }

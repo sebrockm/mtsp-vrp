@@ -32,8 +32,8 @@ private:
 
 public:
     LinearVariableComposition() = default;
-    LinearVariableComposition(double constant);
-    LinearVariableComposition(const Variable& variable);
+    LinearVariableComposition(double constant); // NOLINT(google-explicit-constructor)
+    LinearVariableComposition(const Variable& variable); // NOLINT(google-explicit-constructor)
 
     [[nodiscard]] auto const& GetVariables() const { return m_variables; }
     [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }

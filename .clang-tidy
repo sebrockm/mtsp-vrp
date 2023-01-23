@@ -5,7 +5,9 @@ Checks: '-*,
         -clang-analyzer-cplusplus.NewDelete,
         -clang-analyzer-core.uninitialized.Assign,
         cppcoreguidelines-*,
-        -cppcoreguidelines-avoid-magic-numbers,
+        google-*,
+        -google-readability-namespace-comments,
+        -google-readability-todo,
         llvm-*,
         -llvm-namespace-comment,
         -llvm-header-guard,
@@ -16,13 +18,11 @@ Checks: '-*,
         readability-*,
         -readability-named-parameter,
         -readability-function-cognitive-complexity,
-        -readability-magic-numbers,
         -readability-redundant-access-specifiers,
-        -readability-identifier-length
+        -readability-identifier-length,
+        -*-magic-numbers
         '
 
-# abseil
-# google*,
 # hicpp*,
 # misc*,
 
@@ -32,6 +32,8 @@ WarningsAsErrors:     '*'
 
 CheckOptions:
       - key:     readability-braces-around-statements.ShortStatementLines
+        value:   '2'
+      - key:     google-readability-braces-around-statements.ShortStatementLines
         value:   '2'
       - key:     cppcoreguidelines-macro-usage.AllowedRegexp
         value:   'MTSP_VRP_C_*'

@@ -30,6 +30,11 @@ public:
         const Model& model);
     ~Separator() noexcept;
 
+    Separator(const Separator&) = delete;
+    Separator(Separator&&) = delete;
+    Separator& operator=(const Separator&) = delete;
+    Separator& operator=(Separator&&) = delete;
+
     [[nodiscard]] std::optional<LinearConstraint> Ucut() const;
 
     [[nodiscard]] std::optional<LinearConstraint> Pi() const;

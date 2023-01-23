@@ -184,6 +184,7 @@ void CreateGomoryHuTree(
         const auto isStopRequested = newEdgeCallback(
             inputSource, inputSink, cutSize,
             std::span { inputGraphVertexStorage.data(), blackLength },
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             std::span { inputGraphVertexStorage.data() + blackLength,
                         inputGraphVertexStorage.size() - blackLength });
         if (isStopRequested)

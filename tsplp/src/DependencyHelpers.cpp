@@ -70,12 +70,14 @@ DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
 std::span<const size_t> DependencyGraph::GetIncomingSpan(size_t n) const
 {
     const auto [s, t] = m_node2incomingSpanMap[n];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return { m_incoming.data() + s, m_incoming.data() + t };
 }
 
 std::span<const size_t> DependencyGraph::GetOutgoingSpan(size_t n) const
 {
     const auto [s, t] = m_node2outgoingSpanMap[n];
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return { m_outgoing.data() + s, m_outgoing.data() + t };
 }
 }

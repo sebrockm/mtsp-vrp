@@ -62,10 +62,11 @@ int solve_mtsp_vrp(
         size_t offset = 0;
         for (size_t a = 0; a < numberOfAgents; ++a)
         {
-            pathOffsets[a] = offset;
+            pathOffsets[a] = offset; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             auto length = result.Paths[a].size();
             if (startPositions[a] == endPositions[a])
                 --length; // don't copy unneeded (duplicate) last entry
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
             std::copy_n(result.Paths[a].begin(), length, paths + offset);
             offset += length;
         }

@@ -37,8 +37,8 @@ public:
         REQUIRE(u != v);
         REQUIRE(compU.size() + compV.size() == N);
 
-        REQUIRE(m_expectedMinCuts[u][v] == cutSize);
-        REQUIRE(m_expectedMinCuts[v][u] == cutSize);
+        REQUIRE(m_expectedMinCuts.at(u).at(v) == cutSize);
+        REQUIRE(m_expectedMinCuts.at(v).at(u) == cutSize);
 
         REQUIRE(std::find(compU.begin(), compU.end(), u) != compU.end());
         REQUIRE(std::find(compV.begin(), compV.end(), v) != compV.end());
@@ -60,7 +60,7 @@ private:
     {
         REQUIRE(num_edges(m_gomoryHuTree) == (N == 0 ? 0 : N - 1));
 
-        std::array<size_t, N> componentIds;
+        std::array<size_t, N> componentIds; // NOLINT(cppcoreguidelines-pro-type-member-init)
         REQUIRE(
             boost::connected_components(m_gomoryHuTree, componentIds.data()) == (N == 0 ? 0 : 1));
 
@@ -77,7 +77,7 @@ private:
                     continue;
 
                 const auto minCut = g::GetMinCutFromGomoryHuTree(m_gomoryHuTree, u, v);
-                REQUIRE(minCut == m_expectedMinCuts[u][v]);
+                REQUIRE(minCut == m_expectedMinCuts.at(u).at(v));
             }
         }
     }

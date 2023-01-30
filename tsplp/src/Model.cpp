@@ -8,15 +8,13 @@
 #include <boost/range/iterator_range.hpp>
 
 #include <deque>
-#include <future>
 #include <limits>
 #include <stdexcept>
-#include <thread>
 #include <vector>
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
-    : m_spSimplexModel { std::make_shared<ClpSimplex>() }
-    , m_spModelMutex { std::make_shared<std::mutex>() }
+    : m_spSimplexModel { std::make_unique<ClpSimplex>() }
+    , m_spModelMutex { std::make_unique<std::mutex>() }
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
@@ -40,8 +38,8 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
 tsplp::Model::~Model() noexcept = default;
 
 tsplp::Model::Model(const Model& other)
-    : m_spSimplexModel(std::make_shared<ClpSimplex>(*other.m_spSimplexModel))
-    , m_spModelMutex { std::make_shared<std::mutex>() }
+    : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
+    , m_spModelMutex { std::make_unique<std::mutex>() }
     , m_variables(other.m_variables)
 {
 }
@@ -120,30 +118,12 @@ template void tsplp::Model::AddConstraints(
 
 tsplp::Status tsplp::Model::Solve(std::chrono::steady_clock::time_point endTime)
 {
-    const auto solverTask = [](std::shared_ptr<ClpSimplex> spSimplexModel,
-                               std::shared_ptr<std::mutex> spModelMutex, std::promise<void> promise)
-    {
-        std::unique_lock lock { *spModelMutex };
+    const std::chrono::duration<double> remainingTime = endTime - std::chrono::steady_clock::now();
 
-        spSimplexModel->dual();
-        promise.set_value();
-    };
+    std::unique_lock lock { *m_spModelMutex };
 
-    std::promise<void> solverPromise;
-    const auto solverFuture = solverPromise.get_future();
-
-    std::thread solverThread(
-        solverTask, m_spSimplexModel, m_spModelMutex, std::move(solverPromise));
-
-    const auto futureStatus = solverFuture.wait_until(endTime);
-
-    if (futureStatus == std::future_status::timeout)
-    {
-        solverThread.detach();
-        return Status::Timeout;
-    }
-
-    solverThread.join();
+    m_spSimplexModel->setMaximumSeconds(remainingTime.count());
+    m_spSimplexModel->dual();
 
     const auto modelStatus = m_spSimplexModel->status();
 
@@ -155,6 +135,8 @@ tsplp::Status tsplp::Model::Solve(std::chrono::steady_clock::time_point endTime)
         return Status::Infeasible;
     case 2:
         return Status::Unbounded;
+    case 3:
+        return Status::Timeout;
     default:
         return Status::Error;
     }

@@ -20,8 +20,8 @@ class Model
     friend class Variable;
 
 private:
-    std::shared_ptr<ClpSimplex> m_spSimplexModel;
-    std::shared_ptr<std::mutex> m_spModelMutex;
+    std::unique_ptr<ClpSimplex> m_spSimplexModel;
+    std::unique_ptr<std::mutex> m_spModelMutex;
     std::vector<Variable> m_variables;
 
 public:

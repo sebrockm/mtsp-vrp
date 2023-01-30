@@ -55,7 +55,6 @@ target_precompile_headers(tsplp
 	<cassert>
 	<cmath>
 	<condition_variable>
-	<future>
 	<limits>
 	<mutex>
 	<optional>

@@ -12,9 +12,9 @@ TEST_CASE("3 variables, 3 constraints", "[lp]")
 {
     tsplp::Model model(3);
 
-    auto x1 = model.GetVariables()[0];
-    auto x2 = model.GetVariables()[1];
-    auto x3 = model.GetVariables()[2];
+    auto x1 = model.GetBinaryVariables()[0];
+    auto x2 = model.GetBinaryVariables()[1];
+    auto x3 = model.GetBinaryVariables()[2];
 
     x1.SetLowerBound(0, model);
     x1.SetUpperBound(4, model);

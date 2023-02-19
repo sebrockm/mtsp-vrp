@@ -15,6 +15,7 @@
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel { std::make_unique<ClpSimplex>() }
     , m_spModelMutex { std::make_unique<std::mutex>() }
+    , m_numberOfBinaryVariables(numberOfBinaryVariables)
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
@@ -55,6 +56,11 @@ tsplp::Model& tsplp::Model::operator=(Model other)
 {
     swap(*this, other);
     return *this;
+}
+
+std::span<const tsplp::Variable> tsplp::Model::GetBinaryVariables() const
+{
+    return { m_variables.data(), m_variables.data() + m_numberOfBinaryVariables };
 }
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
@@ -149,4 +155,5 @@ void tsplp::swap(tsplp::Model& m1, tsplp::Model& m2) noexcept
     swap(m1.m_spSimplexModel, m2.m_spSimplexModel);
     swap(m1.m_spModelMutex, m2.m_spModelMutex);
     swap(m1.m_variables, m2.m_variables);
+    swap(m1.m_numberOfBinaryVariables, m2.m_numberOfBinaryVariables);
 }

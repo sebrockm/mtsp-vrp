@@ -16,6 +16,12 @@
 
 namespace tsplp
 {
+enum class OptimizationMode
+{
+    Sum,
+    Max
+};
+
 struct MtspResult
 {
     std::vector<std::vector<size_t>> Paths {};
@@ -32,6 +38,8 @@ private:
 
     WeightManager m_weightManager;
 
+    OptimizationMode m_optimizationMode;
+
     size_t A;
     size_t N;
 
@@ -46,7 +54,7 @@ private:
 public:
     MtspModel(
         xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
-        xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout);
+        xt::xtensor<int, 2> weights, OptimizationMode optimizationMode, std::chrono::milliseconds timeout);
 
 public:
     [[nodiscard]] MtspResult BranchAndCutSolve(
@@ -59,4 +67,7 @@ private:
 
     [[nodiscard]] std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
 };
+
+LinearVariableComposition CreateSumObjective(
+    xt::xarray<double> weights, xt::xarray<Variable> variables);
 }

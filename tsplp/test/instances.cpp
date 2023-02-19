@@ -41,7 +41,8 @@ TEST_CASE("br17.atsp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(39));
@@ -76,7 +77,8 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(39));
@@ -103,7 +105,8 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(2125));
@@ -131,7 +134,8 @@ TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
     REQUIRE_THROWS_AS(
-        tsplp::MtspModel(startPositions, endPositions, weights, timeLimit),
+        tsplp::MtspModel(
+            startPositions, endPositions, weights, tsplp::OptimizationMode::Sum, timeLimit),
         tsplp::IncompatibleDependenciesException);
 }
 
@@ -155,7 +159,8 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(1200));

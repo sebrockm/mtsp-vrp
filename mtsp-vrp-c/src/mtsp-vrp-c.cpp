@@ -41,7 +41,7 @@ int solve_mtsp_vrp(
             - std::chrono::duration_cast<std::chrono::milliseconds>(
                                  std::chrono::steady_clock::now() - startTime);
 
-        tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
+        tsplp::MtspModel model(startPositions, endPositions, weights_, tsplp::OptimizationMode::Sum, timeout);
 
         const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback != nullptr
             ? [=](const xt::xtensor<double, 3>& tensor) {

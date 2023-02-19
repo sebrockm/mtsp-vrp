@@ -35,7 +35,7 @@ std::optional<tsplp::Variable> FindFractionalVariable(
 {
     std::optional<tsplp::Variable> closest = std::nullopt;
     double minAbs = 1.0;
-    for (const auto v : model.GetVariables())
+    for (const auto v : model.GetBinaryVariables())
     {
         if (epsilon <= v.GetObjectiveValue(model) && v.GetObjectiveValue(model) <= 1.0 - epsilon)
         {
@@ -55,14 +55,15 @@ std::optional<tsplp::Variable> FindFractionalVariable(
 
 tsplp::MtspModel::MtspModel(
     xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
-    xt::xtensor<int, 2> weights, std::chrono::milliseconds timeout)
+    xt::xtensor<int, 2> weights, OptimizationMode optimizationMode, std::chrono::milliseconds timeout)
     : m_endTime(m_startTime + timeout)
     , m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions))
+    , m_optimizationMode(optimizationMode)
     , A(m_weightManager.A())
     , N(m_weightManager.N())
     , m_model(A * N * N)
-    , X(xt::adapt(m_model.GetVariables(), { A, N, N }))
-    , m_objective(xt::sum(m_weightManager.W() * X)())
+    , X(xt::adapt(m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {}, std::array{ A, N, N }))
+    , m_objective(CreateSumObjective(m_weightManager.W(), X))
 {
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
         m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(),
@@ -353,7 +354,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
             }
 
             // fix variables according to reduced costs
-            for (auto v : model.GetVariables())
+            for (auto v : model.GetBinaryVariables())
             {
                 if (v.GetLowerBound(model) == 0.0 && v.GetUpperBound(model) == 1.0)
                 {
@@ -599,4 +600,10 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
     }
 
     return result;
+}
+
+tsplp::LinearVariableComposition tsplp::CreateSumObjective(
+    xt::xarray<double> weights, xt::xarray<Variable> variables)
+{
+    return xt::sum(weights * variables)();
 }

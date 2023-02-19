@@ -23,6 +23,7 @@ private:
     std::unique_ptr<ClpSimplex> m_spSimplexModel;
     std::unique_ptr<std::mutex> m_spModelMutex;
     std::vector<Variable> m_variables;
+    size_t m_numberOfBinaryVariables;
 
 public:
     explicit Model(size_t numberOfBinaryVariables);
@@ -37,7 +38,7 @@ public:
 
     friend void swap(Model& m1, Model& m2) noexcept;
 
-    [[nodiscard]] const std::vector<Variable>& GetVariables() const { return m_variables; }
+    [[nodiscard]] std::span<const Variable> GetBinaryVariables() const;
     void SetObjective(const LinearVariableComposition& objective);
     template <typename RandIterator>
     void AddConstraints(RandIterator first, RandIterator last);

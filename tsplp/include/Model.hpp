@@ -42,6 +42,7 @@ public:
     void SetObjective(const LinearVariableComposition& objective);
     template <typename RandIterator>
     void AddConstraints(RandIterator first, RandIterator last);
+    Variable AddVariable(double lowerBound, double upperBound);
     Status Solve(std::chrono::steady_clock::time_point endTime);
 };
 

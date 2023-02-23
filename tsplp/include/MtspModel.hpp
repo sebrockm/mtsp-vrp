@@ -54,7 +54,8 @@ private:
 public:
     MtspModel(
         xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
-        xt::xtensor<int, 2> weights, OptimizationMode optimizationMode, std::chrono::milliseconds timeout);
+        xt::xtensor<int, 2> weights, OptimizationMode optimizationMode,
+        std::chrono::milliseconds timeout);
 
 public:
     [[nodiscard]] MtspResult BranchAndCutSolve(
@@ -62,6 +63,12 @@ public:
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
 private:
+    template <OptimizationMode optimizationMode>
+    [[nodiscard]] MtspResult CreateInitialResult() const;
+
+    template <OptimizationMode optimizationMode>
+    [[nodiscard]] MtspResult ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues) const;
+
     [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(
         const Model& model) const;
 
@@ -70,4 +77,7 @@ private:
 
 LinearVariableComposition CreateSumObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables);
+
+std::tuple<LinearVariableComposition, std::vector<LinearConstraint>> CreateMaxObjective(
+    xt::xarray<double> weights, xt::xarray<Variable> variables, Variable maxVariable);
 }

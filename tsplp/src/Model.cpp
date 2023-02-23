@@ -27,13 +27,8 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
         static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr,
         nullptr);
 
-    m_variables.reserve(numberOfBinaryVariables);
     for (size_t i = 0; i < numberOfBinaryVariables; ++i)
-    {
-        m_variables.emplace_back(i);
-        m_variables.back().SetLowerBound(0.0, *this);
-        m_variables.back().SetUpperBound(1.0, *this);
-    }
+        AddVariable(0.0, 1.0);
 }
 
 tsplp::Model::~Model() noexcept = default;
@@ -121,6 +116,14 @@ template void tsplp::Model::AddConstraints(
 template void tsplp::Model::AddConstraints(
     std::vector<tsplp::LinearConstraint>::const_iterator first,
     std::vector<tsplp::LinearConstraint>::const_iterator last);
+
+tsplp::Variable tsplp::Model::AddVariable(double lowerBound, double upperBound)
+{
+    m_variables.emplace_back(m_variables.size());
+    m_variables.back().SetLowerBound(lowerBound, *this);
+    m_variables.back().SetUpperBound(upperBound, *this);
+    return m_variables.back();
+}
 
 tsplp::Status tsplp::Model::Solve(std::chrono::steady_clock::time_point endTime)
 {

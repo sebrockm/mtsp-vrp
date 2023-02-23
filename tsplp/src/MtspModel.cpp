@@ -55,27 +55,39 @@ std::optional<tsplp::Variable> FindFractionalVariable(
 
 tsplp::MtspModel::MtspModel(
     xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
-    xt::xtensor<int, 2> weights, OptimizationMode optimizationMode, std::chrono::milliseconds timeout)
+    xt::xtensor<int, 2> weights, OptimizationMode optimizationMode,
+    std::chrono::milliseconds timeout)
     : m_endTime(m_startTime + timeout)
     , m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions))
     , m_optimizationMode(optimizationMode)
     , A(m_weightManager.A())
     , N(m_weightManager.N())
     , m_model(A * N * N)
-    , X(xt::adapt(m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {}, std::array{ A, N, N }))
-    , m_objective(CreateSumObjective(m_weightManager.W(), X))
+    , X(xt::adapt(
+          m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {},
+          std::array { A, N, N }))
+    , m_objective()
 {
-    auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
-        m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(),
-        m_weightManager.Dependencies(), m_endTime);
 
-    m_bestResult.UpperBound = nearestInsertionObjective;
-    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
-        std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies(),
-        m_endTime);
+    switch (m_optimizationMode)
+    {
+    case OptimizationMode::Sum:
+        m_objective = CreateSumObjective(m_weightManager.W(), X);
+        m_bestResult = CreateInitialResult<OptimizationMode::Sum>();
+        break;
+    case OptimizationMode::Max:
+    {
+        std::vector<LinearConstraint> maximizationConstraints;
+        std::tie(m_objective, maximizationConstraints)
+            = CreateMaxObjective(m_weightManager.W(), X, m_model.AddVariable(0.0, COIN_DBL_MAX));
+        m_model.AddConstraints(cbegin(maximizationConstraints), cbegin(maximizationConstraints));
+        m_bestResult = CreateInitialResult<OptimizationMode::Max>();
 
-    m_bestResult.Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths));
-    m_bestResult.UpperBound -= twoOptImprovement;
+        break;
+    }
+    default:
+        return;
+    }
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
@@ -309,26 +321,14 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
                 {
-                    auto [exploitedPaths, exploitedObjective] = ExploitFractionalSolution(
-                        fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
-                        m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
+                    auto exploitedResult = m_optimizationMode == OptimizationMode::Sum
+                        ? ExploitFractionalSolution<OptimizationMode::Sum>(fractionalValues)
+                        : ExploitFractionalSolution<OptimizationMode::Max>(fractionalValues);
 
-                    if (!exploitedPaths.empty())
-                    {
-                        auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
-                            std::move(exploitedPaths), m_weightManager.W(),
-                            m_weightManager.Dependencies(), m_endTime);
-                        exploitedObjective -= twoOptImprovement;
+                    std::unique_lock lock { m_bestResultMutex };
 
-                        std::unique_lock lock { m_bestResultMutex };
-
-                        if (exploitedObjective < m_bestResult.UpperBound)
-                        {
-                            m_bestResult.UpperBound = exploitedObjective;
-                            m_bestResult.Paths
-                                = m_weightManager.TransformPathsBack(std::move(twoOptedPaths));
-                        }
-                    }
+                    if (exploitedResult.UpperBound < m_bestResult.UpperBound)
+                        m_bestResult = std::move(exploitedResult);
                 }
             }
 
@@ -602,8 +602,67 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
     return result;
 }
 
+template <tsplp::OptimizationMode optimizationMode>
+tsplp::MtspResult tsplp::MtspModel::CreateInitialResult() const
+{
+    auto [nearestInsertionPaths, nearestInsertionObjective]
+        = NearestInsertion<OptimizationMode::Max>(
+            m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(),
+            m_weightManager.Dependencies(), m_endTime);
+
+    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths<OptimizationMode::Max>(
+        std::move(nearestInsertionPaths), m_weightManager.W(), m_weightManager.Dependencies(),
+        m_endTime);
+
+    return MtspResult { .Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths)),
+                        .UpperBound = nearestInsertionObjective - twoOptImprovement };
+}
+
+template tsplp::MtspResult tsplp::MtspModel::CreateInitialResult<tsplp::OptimizationMode::Sum>()
+    const;
+template tsplp::MtspResult tsplp::MtspModel::CreateInitialResult<tsplp::OptimizationMode::Max>()
+    const;
+
+template <tsplp::OptimizationMode optimizationMode>
+tsplp::MtspResult tsplp::MtspModel::ExploitFractionalSolution(
+    const xt::xtensor<double, 3>& fractionalValues) const
+{
+    auto [exploitedPaths, exploitedObjective] = tsplp::ExploitFractionalSolution<optimizationMode>(
+        fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
+        m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
+
+    if (exploitedPaths.empty())
+        return {};
+
+    auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths<optimizationMode>(
+        std::move(exploitedPaths), m_weightManager.W(), m_weightManager.Dependencies(), m_endTime);
+
+    return MtspResult { .Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths)),
+                        .UpperBound = exploitedObjective - twoOptImprovement };
+}
+
+template tsplp::MtspResult tsplp::MtspModel::ExploitFractionalSolution<
+    tsplp::OptimizationMode::Sum>(const xt::xtensor<double, 3>& fractionalValues) const;
+template tsplp::MtspResult tsplp::MtspModel::ExploitFractionalSolution<
+    tsplp::OptimizationMode::Max>(const xt::xtensor<double, 3>& fractionalValues) const;
+
 tsplp::LinearVariableComposition tsplp::CreateSumObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables)
 {
     return xt::sum(weights * variables)();
+}
+
+std::tuple<tsplp::LinearVariableComposition, std::vector<tsplp::LinearConstraint>>
+tsplp::CreateMaxObjective(
+    xt::xarray<double> weights, xt::xarray<Variable> variables, Variable maxVariable)
+{
+    const auto A = variables.shape(0);
+    std::vector<tsplp::LinearConstraint> maximizingConstraints;
+    maximizingConstraints.reserve(A);
+
+    for (size_t a = 0; a < A; ++a)
+        maximizingConstraints.push_back(
+            maxVariable >= xt::sum(weights * xt::view(variables + 0, a))());
+
+    return { maxVariable, maximizingConstraints };
 }

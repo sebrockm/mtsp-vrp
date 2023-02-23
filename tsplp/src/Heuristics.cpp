@@ -12,6 +12,33 @@
 
 #include <unordered_set>
 
+// declare explicit specializations
+template <>
+std::tuple<std::vector<std::vector<size_t>>, double>
+tsplp::NearestInsertion<tsplp::OptimizationMode::Sum>(
+    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
+    const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
+    std::chrono::steady_clock::time_point endTime);
+
+template <>
+std::tuple<std::vector<std::vector<size_t>>, double>
+tsplp::NearestInsertion<tsplp::OptimizationMode::Max>(
+    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
+    const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
+    std::chrono::steady_clock::time_point endTime);
+
+template <>
+std::tuple<std::vector<std::vector<size_t>>, double>
+tsplp::TwoOptPaths<tsplp::OptimizationMode::Sum>(
+    std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
+    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
+
+template <>
+std::tuple<std::vector<std::vector<size_t>>, double>
+tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
+    std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
+    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
+
 template <tsplp::OptimizationMode optimizationMode>
 std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSolution(
     xt::xarray<double> fractionalSolution, xt::xarray<double> weights,

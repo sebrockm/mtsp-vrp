@@ -67,7 +67,8 @@ private:
     [[nodiscard]] MtspResult CreateInitialResult() const;
 
     template <OptimizationMode optimizationMode>
-    [[nodiscard]] MtspResult ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues) const;
+    [[nodiscard]] MtspResult ExploitFractionalSolution(
+        const xt::xtensor<double, 3>& fractionalValues) const;
 
     [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(
         const Model& model) const;

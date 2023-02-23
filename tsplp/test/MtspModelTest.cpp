@@ -28,7 +28,8 @@ TEST_CASE("circular start and end", "[MtspModel]")
     xt::xtensor<int, 1> startPositions { 0, 1 };
     xt::xtensor<int, 1> endPositions { 1, 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     const auto result = model.BranchAndCutSolve(1);
 
     REQUIRE(!result.IsTimeoutHit);

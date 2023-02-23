@@ -2,14 +2,14 @@
 
 #include "LinearVariableComposition.hpp"
 
-#include <CoinFinite.hpp>
+#include <limits>
 
 tsplp::LinearConstraint tsplp::operator<=(
     LinearVariableComposition lhs, LinearVariableComposition rhs)
 {
     LinearConstraint result { std::move(lhs) - std::move(rhs) };
     result.m_upperBound *= -1;
-    result.m_lowerBound = -COIN_DBL_MAX;
+    result.m_lowerBound = -std::numeric_limits<double>::max();
     return result;
 }
 
@@ -18,7 +18,7 @@ tsplp::LinearConstraint tsplp::operator>=(
 {
     LinearConstraint result { std::move(lhs) - std::move(rhs) };
     result.m_lowerBound = -result.m_upperBound;
-    result.m_upperBound = COIN_DBL_MAX;
+    result.m_upperBound = std::numeric_limits<double>::max();
     return result;
 }
 

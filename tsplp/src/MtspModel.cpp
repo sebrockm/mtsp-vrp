@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <thread>
 
@@ -66,7 +67,6 @@ tsplp::MtspModel::MtspModel(
     , X(xt::adapt(
           m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {},
           std::array { A, N, N }))
-    , m_objective()
 {
 
     switch (m_optimizationMode)
@@ -78,8 +78,8 @@ tsplp::MtspModel::MtspModel(
     case OptimizationMode::Max:
     {
         std::vector<LinearConstraint> maximizationConstraints;
-        std::tie(m_objective, maximizationConstraints)
-            = CreateMaxObjective(m_weightManager.W(), X, m_model.AddVariable(0.0, COIN_DBL_MAX));
+        std::tie(m_objective, maximizationConstraints) = CreateMaxObjective(
+            m_weightManager.W(), X, m_model.AddVariable(0.0, std::numeric_limits<double>::max()));
         m_model.AddConstraints(cbegin(maximizationConstraints), cbegin(maximizationConstraints));
         m_bestResult = CreateInitialResult<OptimizationMode::Max>();
 
@@ -661,8 +661,10 @@ tsplp::CreateMaxObjective(
     maximizingConstraints.reserve(A);
 
     for (size_t a = 0; a < A; ++a)
+    {
         maximizingConstraints.push_back(
             maxVariable >= xt::sum(weights * xt::view(variables + 0, a))());
+    }
 
     return { maxVariable, maximizingConstraints };
 }

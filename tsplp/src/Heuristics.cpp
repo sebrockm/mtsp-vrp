@@ -60,9 +60,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     double objective = 0.0;
     for (size_t a = 0; a < A; ++a)
     {
-        double pathLength = 0.0;
-        for (size_t i = 1; i < heuristicPaths[a].size(); ++i)
-            pathLength += weights(a, heuristicPaths[a][i - 1], heuristicPaths[a][i]);
+        const auto pathLength = CalculatePathLength(heuristicPaths[a], xt::view(weights, a));
 
         if constexpr (optimizationMode == OptimizationMode::Sum)
             objective += pathLength;
@@ -436,8 +434,7 @@ tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
     std::vector<double> pathLengths(A);
     for (size_t a = 0; a < A; ++a)
     {
-        for (size_t i = 1; i < paths[a].size(); ++i)
-            pathLengths[a] += weights(paths[a][i - 1], paths[a][i]);
+        pathLengths[a] = CalculatePathLength(paths[a], weights);
 
         if (pathLengths[a] > pathLengths[longestA])
             longestA = a;
@@ -551,4 +548,20 @@ tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
     }
 
     return { paths, improvementSum };
+}
+
+double tsplp::CalculatePathLength(const std::vector<size_t>& path, const xt::xarray<double> weights) { 
+    assert(weights.dimension() == 2);
+    [[maybe_unused]] const auto N = weights.shape(0);
+    assert(weights.shape(1) == N);
+
+    double length = 0.0;
+    for (size_t i = 1; i < path.size(); ++i)
+    {
+        assert(path[i - 1] < N);
+        assert(path[i] < N);
+        length += weights(path[i - 1], path[i]);
+    }
+
+    return length;
 }

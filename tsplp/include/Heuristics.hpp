@@ -28,4 +28,6 @@ template <OptimizationMode optimizationMode>
 [[nodiscard]] std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
     std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
     const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
+
+double CalculatePathLength(const std::vector<size_t>& path, xt::xarray<double> weights);
 }

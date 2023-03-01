@@ -32,12 +32,6 @@ jobs:
       with:
         version: 1.59
 
-    - name: Create default profile
-      run: | 
-        conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
-        conan profile update settings.compiler.libcxx=libstdc++11 default
-
     - name: Configure CMake Debug
       if: ${{ matrix.build-type == 'Debug' }}
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Debug -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
@@ -97,8 +91,7 @@ jobs:
     - name: Create default profile
       # M1 is not supported by all dependencies
       run: | 
-        conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
+        conan profile new default
         conan profile update settings.arch=x86_64 default
         conan profile update settings.arch_build=x86_64 default
 
@@ -133,8 +126,7 @@ jobs:
 
     - name: Create default profile
       run: | 
-        conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
+        conan profile new default
         conan profile update settings.compiler.version=${{ matrix.msvc-version }} default
 
     - name: Configure CMake

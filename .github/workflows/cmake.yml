@@ -27,8 +27,18 @@ jobs:
         version: 1.59
 
     - name: Create default profile
-      run: | 
+      if: ${{ matrix.compiler.c == 'gcc'}}
+      run: |
         conan profile new default --detect
+        conan profile update settings.compiler=gcc default
+        conan profile update settings.compiler.version=11 default
+
+    - name: Create default profile
+      if: ${{ matrix.compiler.c == 'clang'}}
+      run: |
+        conan profile new default --detect
+        conan profile update settings.compiler=clang default
+        conan profile update settings.compiler.version=14 default
 
     - name: Configure CMake Debug
       if: ${{ matrix.build-type == 'Debug' }}
@@ -125,7 +135,7 @@ jobs:
     - name: Create default profile
       run: | 
         conan profile new default --detect
-        conan profile update compiler.version=16 default
+        conan profile update settings.compiler.version=16 default
 
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }} -G "${{ matrix.msvc-version }}"

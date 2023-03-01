@@ -1,6 +1,6 @@
 [requires]
 boost/[>=1.80]
-catch2/[>=2]
+catch2/[>=2 <3]
 coin-clp/[>=1.17]
 xtensor/[>=0.23]
 

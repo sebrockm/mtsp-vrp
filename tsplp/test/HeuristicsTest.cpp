@@ -22,5 +22,5 @@ TEST_CASE("path length", "[Heuristics]")
     REQUIRE(tsplp::CalculatePathLength({ 3, 2, 1 }, weights) == 7);
     REQUIRE(tsplp::CalculatePathLength({ 0, 3 }, weights) == 4);
     REQUIRE(tsplp::CalculatePathLength({ 3 }, weights) == 0);
-    REQUIRE(tsplp::CalculatePathLength({ }, weights) == 0);
+    REQUIRE(tsplp::CalculatePathLength({}, weights) == 0);
 }

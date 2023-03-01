@@ -550,9 +550,10 @@ tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
     return { paths, improvementSum };
 }
 
-double tsplp::CalculatePathLength(const std::vector<size_t>& path, const xt::xarray<double> weights) { 
-    assert(weights.dimension() == 2);
+double tsplp::CalculatePathLength(const std::vector<size_t>& path, const xt::xarray<double> weights)
+{
     [[maybe_unused]] const auto N = weights.shape(0);
+    assert(weights.dimension() == 2);
     assert(weights.shape(1) == N);
 
     double length = 0.0;

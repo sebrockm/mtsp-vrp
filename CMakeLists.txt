@@ -46,15 +46,17 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_autodetect(settings)
+list(FILTER settings EXCLUDE REGEX "compiler.cppstd=") # don't require C++ standard for conan packages
 conan_cmake_install(PATH_OR_REFERENCE ..
     BUILD missing
     REMOTE conancenter
+    SETTINGS ${settings}
 )
 
-find_package(Boost 1.80.0)
-find_package(Catch2 2.13.7)
-find_package(coin-clp 1.17.6)
-find_package(xtensor 0.23.10)
+find_package(Boost 1.80)
+find_package(Catch2 2.13)
+find_package(coin-clp 1.17)
+find_package(xtensor 0.23)
 
 # Code Coverage Configuration
 add_library(coverage_config INTERFACE)

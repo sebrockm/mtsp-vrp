@@ -46,7 +46,24 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_autodetect(settings)
+
+ # some conan packages do not exist and cannot be built with latest compiler versions
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+    list(FILTER settings EXCLUDE REGEX "compiler.version=")
+    list(APPEND settings "compiler.version=13")
+    if (APPLE)
+        list(FILTER settings EXCLUDE REGEX "compiler=")
+        list(PREPEND settings "compiler=apple-clang")
+    endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#todo
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
+    list(FILTER settings EXCLUDE REGEX "compiler.version=")
+    list(APPEND settings "compiler.version=16")
+endif()
+
 list(FILTER settings EXCLUDE REGEX "compiler.cppstd=") # don't require C++ standard for conan packages
+
 conan_cmake_install(PATH_OR_REFERENCE ..
     BUILD missing
     REMOTE conancenter

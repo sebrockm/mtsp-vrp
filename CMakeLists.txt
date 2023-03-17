@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # -fPIC
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(MSVC)
     set(warning_flags
@@ -48,17 +49,17 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_autodetect(settings)
 
  # some conan packages do not exist and cannot be built with latest compiler versions
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
-    list(FILTER settings EXCLUDE REGEX "compiler.version=")
-    list(APPEND settings "compiler.version=13")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(FILTER settings EXCLUDE REGEX "compiler.libcxx=")
     list(APPEND settings "compiler.libcxx=libc++")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+        list(FILTER settings EXCLUDE REGEX "compiler.version=")
+        list(APPEND settings "compiler.version=13")
+    endif()
     if (APPLE)
         list(FILTER settings EXCLUDE REGEX "compiler=")
         list(PREPEND settings "compiler=apple-clang")
     endif()
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-#todo
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
     list(FILTER settings EXCLUDE REGEX "compiler.version=")
     list(APPEND settings "compiler.version=16")

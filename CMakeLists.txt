@@ -91,19 +91,8 @@ endif()
 option(USE_CLANG_TIDY "Use clang-tidy" OFF)
 
 if(USE_CLANG_TIDY)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # GCC's pch format causes errors with clang-tidy
-    endif()
-
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND EXISTS ${CMAKE_C_COMPILER}-tidy)
-        set(clang_tidy_exe ${CMAKE_C_COMPILER}-tidy)
-    else()
-        message(STATUS "Using default clang-tidy because ${CMAKE_C_COMPILER}-tidy does not exist.")
-        set(clang_tidy_exe clang-tidy)
-    endif()
-    set(CMAKE_CXX_CLANG_TIDY ${clang_tidy_exe} -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
-    message(STATUS "clang-tidy command: ${CMAKE_CXX_CLANG_TIDY}")
+    set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # As it turns out it is quite difficlult to get pch right with clang-tidy
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
 endif()
 
 add_subdirectory(graph-algos)

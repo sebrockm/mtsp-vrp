@@ -15,7 +15,6 @@ if (CMAKE_CXX_COMPILE_ID STREQUAL "Clang")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 endif()
 
-
 if(MSVC)
     set(warning_flags
         /permissive- /W4 /w14242 /w14254 /w14263 /w14265 /w14287 /we4289 /w14296 /w14311 /w14545 /w14546 /w14547 /w14549 /w14555 /w14619 /w14640 /w14826 /w14905 /w14906 /w14928)
@@ -56,8 +55,8 @@ conan_cmake_autodetect(settings)
 
  # some conan packages do not exist and cannot be built with latest compiler versions
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    #list(FILTER settings EXCLUDE REGEX "compiler.libcxx=")
-    #list(APPEND settings "compiler.libcxx=libc++")
+    list(FILTER settings EXCLUDE REGEX "compiler.libcxx=")
+    list(APPEND settings "compiler.libcxx=libc++")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
         list(FILTER settings EXCLUDE REGEX "compiler.version=")
         list(APPEND settings "compiler.version=13")

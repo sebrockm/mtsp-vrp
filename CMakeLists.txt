@@ -50,8 +50,8 @@ conan_cmake_autodetect(settings)
 
  # some conan packages do not exist and cannot be built with latest compiler versions
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    list(FILTER settings EXCLUDE REGEX "compiler.libcxx=")
-    list(APPEND settings "compiler.libcxx=libc++")
+    #list(FILTER settings EXCLUDE REGEX "compiler.libcxx=")
+    #list(APPEND settings "compiler.libcxx=libc++")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
         list(FILTER settings EXCLUDE REGEX "compiler.version=")
         list(APPEND settings "compiler.version=13")

@@ -59,7 +59,7 @@ jobs:
       uses: codecov/codecov-action@v3.1.1
       with:
         files: coverage.info
-        fail_ci_if_error: false
+        fail_ci_if_error: true
         verbose: true
 
   macos-build:
@@ -108,7 +108,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        vs-version: ["Visual Studio 16 2019", "Visual Studio 17 2022"]
+        vs-version: ["Visual Studio 17 2022"]
 
     runs-on: windows-latest
 
@@ -127,7 +127,7 @@ jobs:
         conan profile new default --detect
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -G "${{ matrix.vs-version }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }} -DUSE_CLANG_TIDY=OFF
+      run: cmake -B ${{ github.workspace }}/build -G "${{ matrix.vs-version }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }}
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

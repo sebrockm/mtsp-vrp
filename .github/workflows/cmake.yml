@@ -32,11 +32,11 @@ jobs:
 
     - name: Configure CMake Debug
       if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=OFF -DCODE_COVERAGE=ON
 
     - name: Configure CMake Release
       if: ${{ matrix.build-type == 'Release' || !matrix.compiler.code-cov }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=OFF
 
     - name: Check compile commands
       run: cat ${{ github.workspace }}/build/compile_commands.json

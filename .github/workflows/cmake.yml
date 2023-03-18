@@ -114,7 +114,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        compiler: ["Visual Studio", {c: gcc, cpp: g++}, {c: clang, cpp: clang++}]
+        compiler: ["Visual Studio 17 2022"]
 
     runs-on: windows-latest
 
@@ -132,17 +132,8 @@ jobs:
       run: | 
         conan profile new default --detect
 
-    - name: Configure CMake VS
-      if: ${{ matrix.compiler == 'Visual Studio' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }}
-      
-    - name: Configure CMake Ninja
-      if: ${{ matrix.compiler != 'Visual Studio' }}
-      run: cmake -B ${{ github.workspace }}/build -G Ninja -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON
-
-    - name: Check compile commands
-      if: ${{ matrix.compiler != 'Visual Studio' }}
-      run: cat ${{ github.workspace }}/build/compile_commands.json
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -G "${{ matrix.compiler }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }}
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

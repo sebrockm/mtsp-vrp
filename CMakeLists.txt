@@ -49,17 +49,25 @@ endif()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 conan_cmake_autodetect(settings)
 
- # some conan packages do not exist and cannot be built with latest compiler versions
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+        # some conan packages do not exist and cannot be built with latest clang version
         list(FILTER settings EXCLUDE REGEX "compiler.version=")
         list(APPEND settings "compiler.version=13")
     endif()
     if (APPLE)
+        # some conan packages do not exist and cannot be built with normal clang on apple
         list(FILTER settings EXCLUDE REGEX "compiler=")
         list(PREPEND settings "compiler=apple-clang")
+    elseif ("compiler.libcxx=libstdc++11" IN_LIST settings)
+        # system doesn't have libc++ installed and some conan packages do not exist and cannot be built with clang + libstdc++, so try gcc packages
+        list(FILTER settings EXCLUDE REGEX "compiler=")
+        list(PREPEND settings "compiler=gcc")
+        list(FILTER settings EXCLUDE REGEX "compiler.version=")
+        list(APPEND settings "compiler.version=12")
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
+    # some conan packages do not exist and cannot be built with latest msvc version
     list(FILTER settings EXCLUDE REGEX "compiler.version=")
     list(APPEND settings "compiler.version=16")
 endif()

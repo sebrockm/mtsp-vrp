@@ -64,7 +64,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         list(FILTER settings EXCLUDE REGEX "compiler=")
         list(PREPEND settings "compiler=gcc")
         list(FILTER settings EXCLUDE REGEX "compiler.version=")
-        list(APPEND settings "compiler.version=12")
+        list(APPEND settings "compiler.version=11")
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
     # some conan packages do not exist and cannot be built with latest msvc version

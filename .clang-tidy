@@ -21,6 +21,7 @@ Checks: '-*,
         readability-*,
         -readability-function-cognitive-complexity,
         -readability-redundant-access-specifiers,
+        -readability-identifier-length,
         -*-magic-numbers,
         -*-named-parameter
         '

@@ -47,38 +47,61 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-conan_cmake_autodetect(settings)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
-        # some conan packages do not exist and cannot be built with latest clang version
-        list(FILTER settings EXCLUDE REGEX "compiler.version=")
-        list(APPEND settings "compiler.version=13")
-    endif()
-    if (APPLE)
-        # some conan packages do not exist and cannot be built with normal clang on apple
-        list(FILTER settings EXCLUDE REGEX "compiler=")
-        list(PREPEND settings "compiler=apple-clang")
-    elseif ("compiler.libcxx=libstdc++11" IN_LIST settings)
-        # system doesn't have libc++ installed and some conan packages do not exist and cannot be built with clang + libstdc++, so try gcc packages
-        list(FILTER settings EXCLUDE REGEX "compiler=")
-        list(PREPEND settings "compiler=gcc")
-        list(FILTER settings EXCLUDE REGEX "compiler.version=")
-        list(APPEND settings "compiler.version=11")
-    endif()
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
-    # some conan packages do not exist and cannot be built with latest msvc version
-    list(FILTER settings EXCLUDE REGEX "compiler.version=")
-    list(APPEND settings "compiler.version=16")
+if (CMAKE_CONFIGURATION_TYPES)
+    set(CONFIGS ${CMAKE_CONFIGURATION_TYPES})
+    set(CONAN_GENERATOR cmake_find_package_multi)
+else()
+    set(CONFIGS ${CMAKE_BUILD_TYPE})
+    set(CONAN_GENERATOR cmake_find_package)
 endif()
 
-list(FILTER settings EXCLUDE REGEX "compiler.cppstd=") # don't require C++ standard for conan packages
-
-conan_cmake_install(PATH_OR_REFERENCE ..
-    BUILD missing
-    REMOTE conancenter
-    SETTINGS ${settings}
+conan_cmake_configure(
+    # REQUIRES
+    # boost/[>=1.80]
+    # catch2/[>=2 <3]
+    # coin-clp/[>=1.17]
+    # xtensor/[>=0.23]
+    GENERATORS
+        ${CONAN_GENERATOR}
+        # OPTIONS
+        # boost:header_only=True
 )
+
+foreach (CONFIG ${CONFIGS})
+    conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+            # some conan packages do not exist and cannot be built with latest clang version
+            list(FILTER settings EXCLUDE REGEX "compiler.version=")
+            list(APPEND settings "compiler.version=13")
+        endif()
+        if (APPLE)
+            # some conan packages do not exist and cannot be built with normal clang on apple
+            list(FILTER settings EXCLUDE REGEX "compiler=")
+            list(PREPEND settings "compiler=apple-clang")
+        elseif ("compiler.libcxx=libstdc++11" IN_LIST settings)
+            # system doesn't have libc++ installed and some conan packages do not exist and cannot be built with clang + libstdc++, so try gcc packages
+            list(FILTER settings EXCLUDE REGEX "compiler=")
+            list(PREPEND settings "compiler=gcc")
+            list(FILTER settings EXCLUDE REGEX "compiler.version=")
+            list(APPEND settings "compiler.version=11")
+        endif()
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
+        # some conan packages do not exist and cannot be built with latest msvc version
+        list(FILTER settings EXCLUDE REGEX "compiler.version=")
+        list(APPEND settings "compiler.version=16")
+    endif()
+
+    list(FILTER settings EXCLUDE REGEX "compiler.cppstd=") # don't require C++ standard for conan packages
+
+    conan_cmake_install(PATH_OR_REFERENCE ..
+        BUILD missing
+        REMOTE conancenter
+        SETTINGS ${settings}
+    )
+endforeach()
 
 find_package(Boost 1.80)
 find_package(Catch2 2.13)

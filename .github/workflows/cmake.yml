@@ -133,7 +133,7 @@ jobs:
         conan profile new default --detect
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -G "${{ matrix.compiler }}" -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }}
+      run: cmake -B ${{ github.workspace }}/build -G "${{ matrix.compiler }}"
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

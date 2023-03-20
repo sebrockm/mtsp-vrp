@@ -59,17 +59,7 @@ else()
     set(CONAN_GENERATOR cmake_find_package)
 endif()
 
-conan_cmake_configure(
-    # REQUIRES
-    # boost/[>=1.80]
-    # catch2/[>=2 <3]
-    # coin-clp/[>=1.17]
-    # xtensor/[>=0.23]
-    GENERATORS
-        ${CONAN_GENERATOR}
-        # OPTIONS
-        # boost:header_only=True
-)
+conan_cmake_configure(GENERATORS ${CONAN_GENERATOR}) # choose conan generator in addition to what is stated in conanfile.txt
 
 foreach (CONFIG ${CONFIGS})
     conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})

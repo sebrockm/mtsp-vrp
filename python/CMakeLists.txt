@@ -18,11 +18,11 @@ if (WIN32)
 else()
 	set(activate_command "source \"${testenv}/bin/activate\"")
 endif()
-set(mtsp_vrp_c_lib_path_file "${CMAKE_CURRENT_SOURCE_DIR}/$<CONFIG>/_mtsp_vrp_c_lib_path.txt")
+set(mtsp_vrp_c_lib_path_file "${CMAKE_CURRENT_SOURCE_DIR}/_mtsp_vrp_c_lib_path.txt")
 
-file(GENERATE
+add_custom_command(
 	OUTPUT ${mtsp_vrp_c_lib_path_file}
-	CONTENT "$<TARGET_FILE:mtsp-vrp-c>"
+	COMMAND ${CMAKE_COMMAND} -E echo "$<TARGET_FILE:mtsp-vrp-c>"
 )
 
 add_custom_target(mtsp-vrp-python-package ALL

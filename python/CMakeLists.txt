@@ -22,7 +22,7 @@ set(mtsp_vrp_c_lib_path_file "${CMAKE_CURRENT_SOURCE_DIR}/_mtsp_vrp_c_lib_path.t
 
 add_custom_command(
 	OUTPUT ${mtsp_vrp_c_lib_path_file}
-	COMMAND ${CMAKE_COMMAND} -E echo "$<TARGET_FILE:mtsp-vrp-c>" > ${mtsp_vrp_c_lib_path_file}
+	COMMAND ${CMAKE_COMMAND} -E echo_append "$<TARGET_FILE:mtsp-vrp-c>" > ${mtsp_vrp_c_lib_path_file}
 )
 
 add_custom_target(mtsp-vrp-python-package ALL

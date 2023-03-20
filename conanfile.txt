@@ -4,5 +4,8 @@ catch2/[>=2 <3]
 coin-clp/[>=1.17]
 xtensor/[>=0.23]
 
+[generators]
+cmake_find_package_multi
+
 [options]
 boost:header_only=True

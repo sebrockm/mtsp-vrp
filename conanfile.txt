@@ -1,11 +1,11 @@
 [requires]
-boost/1.80.0
-catch2/2.13.7
-coin-clp/1.17.6
-xtensor/0.23.10
+boost/[>=1.80]
+catch2/[>=2 <3]
+coin-clp/[>=1.17]
+xtensor/[>=0.23]
 
 [generators]
-cmake_find_package
+cmake_find_package_multi
 
 [options]
 boost:header_only=True

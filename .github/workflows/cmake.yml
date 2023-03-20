@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        gcc-version: [10]
+        compiler: [{c: gcc-10, cpp: g++-10}, {c: gcc-11, cpp: g++-11, code-cov: true}, {c: clang-12, cpp: clang++-12}, {c: clang-13, cpp: clang++-13}, {c: clang-14, cpp: clang++-14}]
           
     runs-on: ubuntu-latest
 
@@ -21,30 +21,25 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Update GCC
-      id: update-gcc
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: ${{ matrix.gcc-version }}
-
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.2
       with:
         version: 1.59
 
     - name: Create default profile
-      run: | 
+      run: |
         conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
-        conan profile update settings.compiler.libcxx=libstdc++11 default
 
-    - name: Configure CMake Debug
-      if: ${{ matrix.build-type == 'Debug' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Debug -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
+    - name: Configure CMake with Codecov
+      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
 
-    - name: Configure CMake Release
-      if: ${{ matrix.build-type == 'Release' }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=Release -DUSE_CLANG_TIDY=ON
+    - name: Configure CMake
+      if: ${{ matrix.build-type == 'Release' || !matrix.compiler.code-cov }}
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON
+
+    - name: Check compile commands
+      run: cat ${{ github.workspace }}/build/compile_commands.json
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
@@ -54,7 +49,7 @@ jobs:
       run: ctest -C ${{ matrix.build-type }} --output-on-failure
 
     - name: Prepare Codecov
-      if: ${{ matrix.build-type == 'Debug' }}
+      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
       run: |
         sudo apt-get install -y lcov
         lcov --directory . --capture --output-file coverage.info --rc lcov_branch_coverage=1 # capture coverage info
@@ -63,7 +58,7 @@ jobs:
         lcov --list coverage.info --rc lcov_branch_coverage=1 # debug info
 
     - name: Codecov
-      if: ${{ matrix.build-type == 'Debug' }}
+      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
       uses: codecov/codecov-action@v3.1.1
       with:
         files: coverage.info
@@ -98,12 +93,14 @@ jobs:
       # M1 is not supported by all dependencies
       run: | 
         conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
         conan profile update settings.arch=x86_64 default
         conan profile update settings.arch_build=x86_64 default
 
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+    - name: Check compile commands
+      run: cat ${{ github.workspace }}/build/compile_commands.json
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
@@ -117,9 +114,9 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, Release]
-        msvc-version: [16]
+        os: [windows-latest, windows-2019]
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -134,11 +131,9 @@ jobs:
     - name: Create default profile
       run: | 
         conan profile new default --detect
-        conan profile update settings.build_type=${{ matrix.build-type }} default
-        conan profile update settings.compiler.version=${{ matrix.msvc-version }} default
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DCMAKE_CONFIGURATION_TYPES=${{ matrix.build-type }}
+      run: cmake -B ${{ github.workspace }}/build
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

@@ -8,6 +8,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # -fPIC
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if (CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Default multi config types" FORCE)
+endif()
 
 if(MSVC)
     set(warning_flags
@@ -45,16 +50,54 @@ if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-conan_cmake_autodetect(settings)
-conan_cmake_install(PATH_OR_REFERENCE ..
-    BUILD missing
-    REMOTE conancenter
-)
 
-find_package(Boost 1.80.0)
-find_package(Catch2 2.13.7)
-find_package(coin-clp 1.17.6)
-find_package(xtensor 0.23.10)
+if (CMAKE_CONFIGURATION_TYPES)
+    set(CONFIGS ${CMAKE_CONFIGURATION_TYPES})
+    set(CONAN_GENERATOR cmake_find_package_multi)
+else()
+    set(CONFIGS ${CMAKE_BUILD_TYPE})
+    set(CONAN_GENERATOR cmake_find_package)
+endif()
+
+foreach (CONFIG ${CONFIGS})
+    conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+            # some conan packages do not exist and cannot be built with latest clang version
+            list(FILTER settings EXCLUDE REGEX "compiler.version=")
+            list(APPEND settings "compiler.version=13")
+        endif()
+        if (APPLE)
+            # some conan packages do not exist and cannot be built with normal clang on apple
+            list(FILTER settings EXCLUDE REGEX "compiler=")
+            list(PREPEND settings "compiler=apple-clang")
+        elseif ("compiler.libcxx=libstdc++11" IN_LIST settings)
+            # system doesn't have libc++ installed and some conan packages do not exist and cannot be built with clang + libstdc++, so try gcc packages
+            list(FILTER settings EXCLUDE REGEX "compiler=")
+            list(PREPEND settings "compiler=gcc")
+            list(FILTER settings EXCLUDE REGEX "compiler.version=")
+            list(APPEND settings "compiler.version=11")
+        endif()
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
+        # some conan packages do not exist and cannot be built with latest msvc version
+        list(FILTER settings EXCLUDE REGEX "compiler.version=")
+        list(APPEND settings "compiler.version=16")
+    endif()
+
+    list(FILTER settings EXCLUDE REGEX "compiler.cppstd=") # don't require C++ standard for conan packages
+
+    conan_cmake_install(PATH_OR_REFERENCE ..
+        BUILD missing
+        REMOTE conancenter
+        SETTINGS ${settings}
+    )
+endforeach()
+
+find_package(Boost 1.80)
+find_package(Catch2 2.13)
+find_package(coin-clp 1.17)
+find_package(xtensor 0.23)
 
 # Code Coverage Configuration
 add_library(coverage_config INTERFACE)
@@ -69,11 +112,7 @@ endif()
 option(USE_CLANG_TIDY "Use clang-tidy" OFF)
 
 if(USE_CLANG_TIDY)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # GCC's pch format causes errors with clang-tidy
-    endif()
-
-    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # As it turns out it is quite difficlult to get pch right with clang-tidy
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
 endif()
 

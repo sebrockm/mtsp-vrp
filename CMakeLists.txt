@@ -59,8 +59,6 @@ else()
     set(CONAN_GENERATOR cmake_find_package)
 endif()
 
-conan_cmake_configure(GENERATORS ${CONAN_GENERATOR}) # choose conan generator in addition to what is stated in conanfile.txt
-
 foreach (CONFIG ${CONFIGS})
     conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})
 

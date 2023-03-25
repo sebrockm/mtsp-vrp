@@ -12,38 +12,14 @@
 
 #include <unordered_set>
 
-// declare explicit specializations
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::NearestInsertion<tsplp::OptimizationMode::Sum>(
+namespace tsplp
+{
+
+std::vector<std::vector<size_t>> ExploitFractionalSolution(
+    OptimizationMode optimizationMode, xt::xarray<double> fractionalSolution,
     xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
     const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
-    std::chrono::steady_clock::time_point endTime);
-
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::NearestInsertion<tsplp::OptimizationMode::Max>(
-    xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
-    const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
-    std::chrono::steady_clock::time_point endTime);
-
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::TwoOptPaths<tsplp::OptimizationMode::Sum>(
-    std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
-    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
-
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
-    std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
-    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
-
-template <tsplp::OptimizationMode optimizationMode>
-std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSolution(
-    xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
-    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
-    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
+    std::chrono::steady_clock::time_point endTime)
 {
     const auto A = startPositions.size();
     assert(endPositions.size() == A);
@@ -51,41 +27,14 @@ std::tuple<std::vector<std::vector<size_t>>, double> tsplp::ExploitFractionalSol
     if (weights.dimension() == 2)
         weights = xt::repeat(xt::view(weights, xt::newaxis(), xt::all()), A, 0);
 
-    const auto [heuristicPaths, _] = NearestInsertion<optimizationMode>(
-        (1.0 - fractionalSolution) * weights, startPositions, endPositions, dependencies, endTime);
+    const auto [heuristicPaths, _] = NearestInsertion(
+        optimizationMode, (1.0 - fractionalSolution) * weights, startPositions, endPositions,
+        dependencies, endTime);
 
-    if (heuristicPaths.empty())
-        return { heuristicPaths, 0 };
-
-    double objective = 0.0;
-    for (size_t a = 0; a < A; ++a)
-    {
-        const auto pathLength = CalculatePathLength(heuristicPaths[a], xt::view(weights, a));
-
-        if constexpr (optimizationMode == OptimizationMode::Sum)
-            objective += pathLength;
-        else
-            objective = std::max(objective, pathLength);
-    }
-
-    return { heuristicPaths, objective };
+    return heuristicPaths;
 }
 
-template std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::ExploitFractionalSolution<tsplp::OptimizationMode::Sum>(
-    xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
-    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
-    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
-
-template std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::ExploitFractionalSolution<tsplp::OptimizationMode::Max>(
-    xt::xarray<double> fractionalSolution, xt::xarray<double> weights,
-    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
-    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime);
-
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::NearestInsertion<tsplp::OptimizationMode::Sum>(
+std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionSum(
     xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
     const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
     std::chrono::steady_clock::time_point endTime)
@@ -192,9 +141,7 @@ tsplp::NearestInsertion<tsplp::OptimizationMode::Sum>(
     return { paths, cost };
 }
 
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::NearestInsertion<tsplp::OptimizationMode::Max>(
+std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
     xt::xarray<double> weights, const xt::xtensor<size_t, 1>& startPositions,
     const xt::xtensor<size_t, 1>& endPositions, const DependencyGraph& dependencies,
     std::chrono::steady_clock::time_point endTime)
@@ -317,9 +264,23 @@ tsplp::NearestInsertion<tsplp::OptimizationMode::Max>(
     return { paths, cost };
 }
 
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::TwoOptPaths<tsplp::OptimizationMode::Sum>(
+std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertion(
+    OptimizationMode optimizationMode, xt::xarray<double> weights,
+    const xt::xtensor<size_t, 1>& startPositions, const xt::xtensor<size_t, 1>& endPositions,
+    const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
+{
+    switch (optimizationMode)
+    {
+    case OptimizationMode::Max:
+        return NearestInsertionMax(weights, startPositions, endPositions, dependencies, endTime);
+    case OptimizationMode::Sum:
+        return NearestInsertionSum(weights, startPositions, endPositions, dependencies, endTime);
+    default:
+        throw TsplpException();
+    }
+}
+
+std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPathsSum(
     std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
     const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
 {
@@ -419,9 +380,7 @@ tsplp::TwoOptPaths<tsplp::OptimizationMode::Sum>(
     return { paths, improvementSum };
 }
 
-template <>
-std::tuple<std::vector<std::vector<size_t>>, double>
-tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
+std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPathsMax(
     std::vector<std::vector<size_t>> paths, xt::xarray<double> weights,
     const DependencyGraph& dependencies, std::chrono::steady_clock::time_point endTime)
 {
@@ -550,7 +509,23 @@ tsplp::TwoOptPaths<tsplp::OptimizationMode::Max>(
     return { paths, improvementSum };
 }
 
-double tsplp::CalculatePathLength(const std::vector<size_t>& path, const xt::xarray<double> weights)
+std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
+    OptimizationMode optimizationMode, std::vector<std::vector<size_t>> paths,
+    xt::xarray<double> weights, const DependencyGraph& dependencies,
+    std::chrono::steady_clock::time_point endTime)
+{
+    switch (optimizationMode)
+    {
+    case OptimizationMode::Max:
+        return TwoOptPathsMax(std::move(paths), weights, dependencies, endTime);
+    case OptimizationMode::Sum:
+        return TwoOptPathsSum(std::move(paths), weights, dependencies, endTime);
+    default:
+        throw TsplpException();
+    }
+}
+
+double CalculatePathLength(const std::vector<size_t>& path, const xt::xarray<double> weights)
 {
     [[maybe_unused]] const auto N = weights.shape(0);
     assert(weights.dimension() == 2);
@@ -565,4 +540,34 @@ double tsplp::CalculatePathLength(const std::vector<size_t>& path, const xt::xar
     }
 
     return length;
+}
+
+double CalculateObjective(
+    const OptimizationMode optimizationMode, const std::vector<std::vector<size_t>>& paths,
+    xt::xarray<double> weights)
+{
+    const auto A = paths.size();
+
+    assert(weights.dimension() == 2 || weights.dimension() == 3);
+    assert(weights.dimension() == 2 || weights.shape(0) == A);
+
+    double objective = 0.0;
+    for (size_t a = 0; a < A; ++a)
+    {
+        const auto pathLength = CalculatePathLength(
+            paths[a], weights.dimension() == 2 ? weights : xt ::view(weights, a));
+
+        switch (optimizationMode)
+        {
+        case OptimizationMode::Sum:
+            objective += pathLength;
+            break;
+        case OptimizationMode::Max:
+            objective = std::max(pathLength, objective);
+            break;
+        }
+    }
+
+    return objective;
+}
 }

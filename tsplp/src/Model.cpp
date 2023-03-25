@@ -37,6 +37,7 @@ tsplp::Model::Model(const Model& other)
     : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
     , m_spModelMutex { std::make_unique<std::mutex>() }
     , m_variables(other.m_variables)
+    , m_numberOfBinaryVariables(other.m_numberOfBinaryVariables)
 {
 }
 
@@ -44,6 +45,7 @@ tsplp::Model::Model(Model&& other) noexcept
     : m_spSimplexModel(std::move(other.m_spSimplexModel))
     , m_spModelMutex(std::move(other.m_spModelMutex))
     , m_variables(std::move(other.m_variables))
+    , m_numberOfBinaryVariables(other.m_numberOfBinaryVariables)
 {
 }
 
@@ -55,6 +57,7 @@ tsplp::Model& tsplp::Model::operator=(Model other)
 
 std::span<const tsplp::Variable> tsplp::Model::GetBinaryVariables() const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     return { m_variables.data(), m_variables.data() + m_numberOfBinaryVariables };
 }
 

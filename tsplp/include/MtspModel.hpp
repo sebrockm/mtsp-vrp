@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 #include "Model.hpp"
 #include "Variable.hpp"
@@ -30,6 +31,12 @@ struct MtspResult
     bool IsTimeoutHit = false;
 };
 
+struct LinearObjective
+{
+    LinearVariableComposition Objective;
+    std::vector<LinearConstraint> AdditionalConstraints;
+};
+
 class MtspModel
 {
 private:
@@ -46,7 +53,7 @@ private:
     Model m_model;
     xt::xtensor<Variable, 3> X;
 
-    LinearVariableComposition m_objective;
+    LinearObjective m_objective;
 
     MtspResult m_bestResult {};
     std::mutex m_bestResultMutex;
@@ -54,7 +61,7 @@ private:
 public:
     MtspModel(
         xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
-        xt::xtensor<int, 2> weights, OptimizationMode optimizationMode,
+        xt::xtensor<double, 2> weights, OptimizationMode optimizationMode,
         std::chrono::milliseconds timeout);
 
 public:
@@ -63,10 +70,8 @@ public:
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
 private:
-    template <OptimizationMode optimizationMode>
-    [[nodiscard]] MtspResult CreateInitialResult() const;
+    [[nodiscard]] MtspResult CreateInitialResult(OptimizationMode optimizationMode) const;
 
-    template <OptimizationMode optimizationMode>
     [[nodiscard]] MtspResult ExploitFractionalSolution(
         const xt::xtensor<double, 3>& fractionalValues) const;
 
@@ -76,9 +81,13 @@ private:
     [[nodiscard]] std::vector<Variable> CalculateRecursivelyFixableVariables(Variable var) const;
 };
 
-LinearVariableComposition CreateSumObjective(
+[[nodiscard]] LinearObjective CreateObjective(
+    xt::xarray<double> weights, xt::xarray<Variable> variables,
+    std::optional<Variable> maxVariable);
+
+[[nodiscard]] LinearObjective CreateSumObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables);
 
-std::tuple<LinearVariableComposition, std::vector<LinearConstraint>> CreateMaxObjective(
+[[nodiscard]] LinearObjective CreateMaxObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables, Variable maxVariable);
 }

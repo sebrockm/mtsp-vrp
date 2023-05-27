@@ -123,6 +123,9 @@ template void tsplp::Model::AddConstraints(
 tsplp::Variable tsplp::Model::AddVariable(double lowerBound, double upperBound)
 {
     m_variables.emplace_back(m_variables.size());
+    if (m_variables.size() >= static_cast<size_t>(m_spSimplexModel->getNumCols()))
+        m_spSimplexModel->addColumn(m_spSimplexModel->getNumCols(), nullptr, nullptr);
+
     m_variables.back().SetLowerBound(lowerBound, *this);
     m_variables.back().SetUpperBound(upperBound, *this);
     return m_variables.back();

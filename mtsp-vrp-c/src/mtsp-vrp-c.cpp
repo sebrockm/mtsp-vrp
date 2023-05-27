@@ -53,7 +53,8 @@ int solve_mtsp_vrp(
             == static_cast<tsplp::OptimizationMode>(MTSP_VRP_C_OPTIMIZATION_MODE_MAX));
 
         tsplp::MtspModel model(
-            startPositions, endPositions, weights_, static_cast<tsplp::OptimizationMode>(optimizationMode), timeout);
+            startPositions, endPositions, weights_,
+            static_cast<tsplp::OptimizationMode>(optimizationMode), timeout);
 
         const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback != nullptr
             ? [=](const xt::xtensor<double, 3>& tensor) {

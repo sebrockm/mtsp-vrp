@@ -276,14 +276,6 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
             if (!top.has_value())
                 break;
 
-            {
-                std::unique_lock lock { m_bestResultMutex };
-                std::cout << std::format(
-                    "thread: {} LB: {} UB {}", threadId,
-                    queue.GetLowerBound().value_or(top->LowerBound), m_bestResult.UpperBound)
-                          << std::endl;
-            }
-
             fixedVariables0 = std::move(top->FixedVariables0);
             fixedVariables1 = std::move(top->FixedVariables1);
 

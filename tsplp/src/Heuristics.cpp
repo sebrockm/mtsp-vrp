@@ -292,10 +292,10 @@ public:
         const xt::xarray<double> weights)
         : m_optimizationMode(optimizationMode)
     {
+        const auto A = paths.size();
+        m_pathLengths.resize(A);
         if (m_optimizationMode == OptimizationMode::Max)
         {
-            const auto A = paths.size();
-            m_pathLengths.resize(A);
             for (size_t a = 0; a < A; ++a)
             {
                 m_pathLengths[a] = CalculatePathLength(paths[a], weights);
@@ -306,22 +306,32 @@ public:
         }
     }
 
-    [[nodiscard]] std::array<size_t, 2> GetA2Range() const
+    [[nodiscard]] std::array<size_t, 2> GetA2Range(size_t a1) const
     {
-        return m_optimizationMode == OptimizationMode::Max
-            ? std::array<size_t, 2> { m_longestA, m_longestA + 1 }
-            : std::array<size_t, 2> { 0, m_pathLengths.size() };
+        switch (m_optimizationMode)
+        {
+        case OptimizationMode::Sum:
+            return { a1, m_pathLengths.size() };
+        case OptimizationMode::Max:
+            if (a1 < m_longestA)
+                return { m_longestA, m_longestA + 1 };
+            if (a1 == m_longestA)
+                return { m_longestA, m_pathLengths.size() };
+            if (a1 > m_longestA)
+                return { 0, 0 };
+        }
+
+        return { 0, 0 };
     }
 
-    [[nodiscard]] double ApplyImprovement(
-        size_t a1, double improvementA1, size_t a2, double improvementA2)
+    [[nodiscard]] double CalculateOverallImprovement(
+        size_t a1, double improvementA1, size_t a2, double improvementA2) const
     {
         if (m_optimizationMode == OptimizationMode::Sum)
             return improvementA1 + improvementA2;
 
         const auto oldObjective = m_pathLengths[m_longestA];
         double newObjective = 0.0;
-        size_t newLongestA = 0;
         for (size_t a = 0; a < m_pathLengths.size(); ++a)
         {
             auto aLength = m_pathLengths[a];
@@ -331,17 +341,22 @@ public:
                 aLength -= improvementA2;
 
             if (aLength > newObjective)
-            {
-                newLongestA = a;
                 newObjective = aLength;
-            }
         }
 
+        return oldObjective - newObjective;
+    }
+
+    void ApplyImprovement(size_t a1, double improvementA1, size_t a2, double improvementA2)
+    {
         m_pathLengths[a1] -= improvementA1;
         m_pathLengths[a2] -= improvementA2;
-        m_longestA = newLongestA;
-
-        return oldObjective - newObjective;
+        m_longestA = 0;
+        for (size_t a = 1; a < m_pathLengths.size(); ++a)
+        {
+            if (m_pathLengths[a] > m_pathLengths[m_longestA])
+                m_longestA = a;
+        }
     }
 };
 
@@ -366,12 +381,14 @@ std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
 
         for (size_t a1 = 0; a1 < A; ++a1)
         {
-            const auto [a2Start, a2End] = pathsInfo.GetA2Range();
+            const auto [a2Start, a2End] = pathsInfo.GetA2Range(a1);
             for (size_t a2 = a2Start; a2 < a2End; ++a2)
             {
                 for (size_t i = 1; i < paths[a1].size() - 1; ++i)
                 {
                     const auto jStart = a1 == a2 ? i + 1 : static_cast<size_t>(1);
+                    // TODO: Consider involving start and end nodes here unless enforced by
+                    // dependencies
                     for (size_t j = jStart; j < paths[a2].size() - 1; ++j)
                     {
                         const auto u = paths[a1][i];
@@ -434,13 +451,14 @@ std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
 
                         assert(weights(paths[a1][i], paths[a1][i]) == 0);
 
-                        const auto improvement
-                            = pathsInfo.ApplyImprovement(a1, improvementA1, a2, improvementA2);
+                        const auto improvement = pathsInfo.CalculateOverallImprovement(
+                            a1, improvementA1, a2, improvementA2);
 
                         if (improvement > 0)
                         {
                             hasImproved = true;
                             std::swap(paths[a1][i], paths[a2][j]);
+                            pathsInfo.ApplyImprovement(a1, improvementA1, a2, improvementA2);
                             improvementSum += improvement;
                         }
                     }

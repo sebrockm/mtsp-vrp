@@ -179,3 +179,82 @@ TEST_CASE("twoopt A==2", "[Heuristics]")
         CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Max, optPaths, weights) == 9);
     }
 }
+
+TEST_CASE("twoopt A==1 with dependencies", "[Heuristics]")
+{
+    // 1 -> 3
+    // clang-format off
+    xt::xarray<double> weights =
+    {
+        { 0, 2, 3, 4 },
+        { 2, 0, 6, 8 },
+        { 4, 5, 0, 7 },
+        { 0,-1, 2, 0 }
+    };
+    // clang-format on
+
+    const std::vector<std::vector<size_t>> paths = { { 0, 1, 3, 2, 0 } };
+
+    {
+        const auto [optPaths, improvement] = tsplp::TwoOptPaths(
+            tsplp::OptimizationMode::Sum, paths, weights, tsplp::DependencyGraph { weights },
+            std::chrono::steady_clock::now() + 1h);
+        // expected improvements
+        // { { 0, 1, 3, 2, 0 } } => 2 + 8 + 2 + 4
+        // { { 0, 1, 2, 3, 0 } } => 2 + 6 + 7 + 0
+        CHECK(improvement == 1);
+        CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Sum, optPaths, weights) == 15);
+    }
+    {
+        const auto [optPaths, improvement] = tsplp::TwoOptPaths(
+            tsplp::OptimizationMode::Max, paths, weights, tsplp::DependencyGraph { weights },
+            std::chrono::steady_clock::now() + 1h);
+        // expected improvements
+        // { { 0, 1, 3, 2, 0 } } => 2 + 8 + 2 + 4
+        // { { 0, 1, 2, 3, 0 } } => 2 + 6 + 7 + 0
+        CHECK(improvement == 1);
+        CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Max, optPaths, weights) == 15);
+    }
+}
+
+TEST_CASE("twoopt A==2 with dependencies", "[Heuristics]")
+{
+    // 1->3, 7->6
+    // clang-format off
+    xt::xarray<double> weights =
+    {
+        { 0, 2, 3, 4, 0, 2, 3, 4 },
+        { 2, 0, 6, 8, 2, 0, 6, 8 },
+        { 4, 5, 0, 7, 4, 5, 0, 7 },
+        { 0,-1, 2, 0, 0, 1, 2, 0 },
+        { 0, 2, 3, 4, 0, 2, 3, 4 },
+        { 2, 0, 6, 8, 2, 0, 6, 8 },
+        { 4, 5, 0, 7, 4, 5, 0,-1 },
+        { 0, 1, 2, 0, 0, 1, 2, 0 }
+    };
+    // clang-format on
+
+    const std::vector<std::vector<size_t>> paths = { { 0, 1, 3, 2, 0 }, { 5, 7, 6, 4, 5 } };
+
+    {
+        const auto [optPaths, improvement] = tsplp::TwoOptPaths(
+            tsplp::OptimizationMode::Sum, paths, weights, tsplp::DependencyGraph { weights },
+            std::chrono::steady_clock::now() + 1h);
+        // expected improvements
+        // { { 0, 1, 3, 2, 0 }, { 5, 7, 6, 4, 5 } } => 2 + 8 + 2 + 4, 8 + 2 + 4 + 2 => 16 + 16
+        // { { 0, 1, 2, 3, 0 }, { 5, 7, 6, 4, 5 } } => 2 + 6 + 7 + 0, 8 + 2 + 4 + 2 => 15 + 16
+        // { { 0, 1, 4, 3, 0 }, { 5, 7, 6, 2, 5 } } => 2 + 2 + 4 + 0, 8 + 2 + 0 + 5 =>  8 + 15
+        CHECK(improvement == 9);
+        CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Sum, optPaths, weights) == 23);
+    }
+    {
+        const auto [optPaths, improvement] = tsplp::TwoOptPaths(
+            tsplp::OptimizationMode::Max, paths, weights, tsplp::DependencyGraph { weights },
+            std::chrono::steady_clock::now() + 1h);
+        // expected improvements
+        // { { 0, 1, 3, 2, 0 }, { 5, 7, 6, 4, 5 } } => 2 + 8 + 2 + 4, 8 + 2 + 4 + 2 => 16, 16
+        // { { 0, 1, 3, 4, 0 }, { 5, 7, 6, 2, 5 } } => 2 + 8 + 0 + 0, 8 + 2 + 0 + 5 => 10, 15
+        CHECK(improvement == 1);
+        CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Max, optPaths, weights) == 15);
+    }
+}

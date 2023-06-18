@@ -349,6 +349,9 @@ public:
 
     void ApplyImprovement(size_t a1, double improvementA1, size_t a2, double improvementA2)
     {
+        if (m_optimizationMode == OptimizationMode::Sum)
+            return;
+
         m_pathLengths[a1] -= improvementA1;
         m_pathLengths[a2] -= improvementA2;
         m_longestA = 0;
@@ -386,18 +389,21 @@ std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
             {
                 for (size_t i = 1; i < paths[a1].size() - 1; ++i)
                 {
+                    const auto u = paths[a1][i];
+                    if (a1 != a2
+                        && (!dependencies.GetIncomingSpan(u).empty()
+                            || !dependencies.GetOutgoingSpan(u).empty()))
+                        continue;
+
                     const auto jStart = a1 == a2 ? i + 1 : static_cast<size_t>(1);
                     // TODO: Consider involving start and end nodes here unless enforced by
                     // dependencies
                     for (size_t j = jStart; j < paths[a2].size() - 1; ++j)
                     {
-                        const auto u = paths[a1][i];
                         const auto v = paths[a2][j];
 
                         if (a1 != a2
-                            && (!dependencies.GetIncomingSpan(u).empty()
-                                || !dependencies.GetIncomingSpan(v).empty()
-                                || !dependencies.GetOutgoingSpan(u).empty()
+                            && (!dependencies.GetIncomingSpan(v).empty()
                                 || !dependencies.GetOutgoingSpan(v).empty()))
                             continue;
 

@@ -114,7 +114,7 @@ option(USE_CLANG_TIDY "Use clang-tidy" OFF)
 
 if(USE_CLANG_TIDY)
     set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # As it turns out it is quite difficlult to get pch right with clang-tidy
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option -extra-arg=-Wno-error=ignored-optimization-argument)
 endif()
 
 add_subdirectory(graph-algos)

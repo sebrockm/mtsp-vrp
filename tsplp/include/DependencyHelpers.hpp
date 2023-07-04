@@ -28,5 +28,6 @@ public:
     [[nodiscard]] std::span<const size_t> GetOutgoingSpan(size_t n) const;
 
     [[nodiscard]] bool HasArc(size_t u, size_t v) const { return m_weights(v, u) == -1; }
+    [[nodiscard]] bool IsEmpty() const { return m_arcs.empty(); }
 };
 }

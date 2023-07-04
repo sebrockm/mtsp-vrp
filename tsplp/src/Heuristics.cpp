@@ -402,26 +402,29 @@ std::tuple<std::vector<std::vector<size_t>>, double> TwoOptPaths(
                     {
                         const auto v = paths[a2][j];
 
-                        if (a1 != a2
-                            && (!dependencies.GetIncomingSpan(v).empty()
-                                || !dependencies.GetOutgoingSpan(v).empty()))
-                            continue;
-
-                        if (a1 == a2)
+                        if (!dependencies.IsEmpty())
                         {
-                            bool wouldBreakDependency = false;
-                            for (auto k = i; k < j; ++k)
-                            {
-                                if (dependencies.HasArc(u, paths[a1][k + 1])
-                                    || dependencies.HasArc(paths[a1][k], v))
-                                {
-                                    wouldBreakDependency = true;
-                                    break;
-                                }
-                            }
-
-                            if (wouldBreakDependency)
+                            if (a1 != a2
+                                && (!dependencies.GetIncomingSpan(v).empty()
+                                    || !dependencies.GetOutgoingSpan(v).empty()))
                                 continue;
+
+                            if (a1 == a2)
+                            {
+                                bool wouldBreakDependency = false;
+                                for (auto k = i; k < j; ++k)
+                                {
+                                    if (dependencies.HasArc(u, paths[a1][k + 1])
+                                        || dependencies.HasArc(paths[a1][k], v))
+                                    {
+                                        wouldBreakDependency = true;
+                                        break;
+                                    }
+                                }
+
+                                if (wouldBreakDependency)
+                                    continue;
+                            }
                         }
 
                         double improvementA1 = 0.0;

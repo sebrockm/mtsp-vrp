@@ -24,15 +24,14 @@ private:
     std::unique_ptr<std::mutex> m_spModelMutex;
     std::vector<Variable> m_variables;
 
-public:
+public: 
+    Model() = default; 
     explicit Model(size_t numberOfBinaryVariables);
     ~Model() noexcept;
 
     Model(const Model& other);
     Model(Model&& other) noexcept;
 
-    Model& operator=(const Model&) = delete;
-    Model& operator=(Model&&) = delete;
     Model& operator=(Model other);
 
     friend void swap(Model& m1, Model& m2) noexcept;

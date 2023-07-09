@@ -60,13 +60,16 @@ tsplp::MtspModel::MtspModel(
     , m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions))
     , A(m_weightManager.A())
     , N(m_weightManager.N())
-    , m_model(A * N * N)
-    , X(xt::adapt(m_model.GetVariables(), { A, N, N }))
-    , m_objective(xt::sum(m_weightManager.W() * X)())
 {
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
         m_weightManager.W(), m_weightManager.StartPositions(), m_weightManager.EndPositions(),
         m_weightManager.Dependencies(), m_endTime);
+
+    if (std::chrono::steady_clock::now() >= m_endTime)
+    {
+        m_bestResult.IsTimeoutHit = true;
+        return;
+    }
 
     m_bestResult.UpperBound = nearestInsertionObjective;
     auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
@@ -82,6 +85,9 @@ tsplp::MtspModel::MtspModel(
         return;
     }
 
+    m_model = Model(A * N * N);
+    X = xt::adapt(m_model.GetVariables(), { A, N, N });
+    m_objective = xt::sum(m_weightManager.W() * X)();
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;

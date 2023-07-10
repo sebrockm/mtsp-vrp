@@ -12,6 +12,8 @@
 #include <stdexcept>
 #include <vector>
 
+tsplp::Model::Model() = default;
+
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel { std::make_unique<ClpSimplex>() }
     , m_spModelMutex { std::make_unique<std::mutex>() }

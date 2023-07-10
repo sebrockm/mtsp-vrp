@@ -25,7 +25,7 @@ private:
     std::vector<Variable> m_variables;
 
 public:
-    Model() = default;
+    Model();
     explicit Model(size_t numberOfBinaryVariables);
     ~Model() noexcept;
 

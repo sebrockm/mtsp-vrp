@@ -24,8 +24,8 @@ private:
     std::unique_ptr<std::mutex> m_spModelMutex;
     std::vector<Variable> m_variables;
 
-public: 
-    Model() = default; 
+public:
+    Model() = default;
     explicit Model(size_t numberOfBinaryVariables);
     ~Model() noexcept;
 

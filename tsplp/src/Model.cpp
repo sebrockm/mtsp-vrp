@@ -63,11 +63,8 @@ void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 
     m_spSimplexModel->setObjectiveOffset(-objective.GetConstant()); // offset is negative
 
-    for (size_t i = 0; i < objective.GetCoefficients().size(); ++i)
-    {
-        m_spSimplexModel->setObjectiveCoefficient(
-            static_cast<int>(objective.GetVariables()[i].GetId()), objective.GetCoefficients()[i]);
-    }
+    for (const auto& [varId, coef] : objective.GetVariableIdCoefficientMap())
+        m_spSimplexModel->setObjectiveCoefficient(static_cast<int>(varId), coef);
 }
 
 template <typename RandIterator>
@@ -93,12 +90,14 @@ void tsplp::Model::AddConstraints(RandIterator first, RandIterator last)
         lowerBounds.push_back(c.GetLowerBound());
         upperBounds.push_back(c.GetUpperBound());
 
-        rowStarts.push_back(rowStarts.back() + static_cast<int>(std::ssize(c.GetCoefficients())));
+        rowStarts.push_back(
+            rowStarts.back() + static_cast<int>(std::ssize(c.GetVariableIdCoefficientMap())));
 
-        for (const auto coef : c.GetCoefficients())
+        for (const auto& [varId, coef] : c.GetVariableIdCoefficientMap())
+        {
             elements.push_back(coef);
-        for (const auto var : c.GetVariables())
-            columns.push_back(static_cast<int>(var.GetId()));
+            columns.push_back(static_cast<int>(varId));
+        }
     }
 
     std::unique_lock lock { *m_spModelMutex };

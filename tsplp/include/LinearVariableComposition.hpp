@@ -26,8 +26,7 @@ class LinearVariableComposition
     friend class LinearConstraint;
 
 private:
-    std::vector<Variable> m_variables;
-    std::vector<double> m_coefficients;
+    std::unordered_map<size_t, double> m_variableIdCoefficientMap;
     double m_constant = 0;
 
 public:
@@ -37,8 +36,10 @@ public:
     // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
     LinearVariableComposition(const Variable& variable);
 
-    [[nodiscard]] auto const& GetVariables() const { return m_variables; }
-    [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }
+    [[nodiscard]] auto const& GetVariableIdCoefficientMap() const
+    {
+        return m_variableIdCoefficientMap;
+    }
     [[nodiscard]] double GetConstant() const { return m_constant; }
 
     [[nodiscard]] double Evaluate(const Model& model) const;

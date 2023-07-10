@@ -19,8 +19,7 @@ class LinearConstraint
         LinearVariableComposition lhs, LinearVariableComposition rhs);
 
 private:
-    std::vector<Variable> m_variables;
-    std::vector<double> m_coefficients;
+    std::unordered_map<size_t, double> m_variableIdCoefficientMap;
     double m_upperBound = 0.0;
     double m_lowerBound = 0.0;
 
@@ -30,8 +29,10 @@ private:
 public:
     [[nodiscard]] double GetUpperBound() const { return m_upperBound; }
     [[nodiscard]] double GetLowerBound() const { return m_lowerBound; }
-    [[nodiscard]] auto const& GetCoefficients() const { return m_coefficients; }
-    [[nodiscard]] auto const& GetVariables() const { return m_variables; }
+    [[nodiscard]] auto const& GetVariableIdCoefficientMap() const
+    {
+        return m_variableIdCoefficientMap;
+    }
 
     [[nodiscard]] bool Evaluate(const Model& model, double tolerance = 1.e-10) const;
 };

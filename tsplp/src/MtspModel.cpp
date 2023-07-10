@@ -87,7 +87,10 @@ tsplp::MtspModel::MtspModel(
 
     m_model = Model(A * N * N);
     X = xt::adapt(m_model.GetVariables(), { A, N, N });
-    m_objective = xt::sum(m_weightManager.W() * X)();
+    for (size_t a = 0; a < A; ++a)
+        for (size_t u = 0; u < N; ++u)
+            for (size_t v = 0; v < N; ++v)
+                m_objective += m_weightManager.W()(u, v) * X(a, u, v);
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
@@ -108,8 +111,17 @@ tsplp::MtspModel::MtspModel(
     // degree inequalities
     for (size_t n = 0; n < N; ++n)
     {
-        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
-        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
+        LinearVariableComposition incoming;
+        for (size_t a = 0; a < A; ++a)
+            for (size_t m = 0; m < N; ++m)
+                incoming += X(a, m, n);
+        constraints.emplace_back(std::move(incoming) == 1);
+
+        LinearVariableComposition outgoing;
+        for (size_t a = 0; a < A; ++a)
+            for (size_t m = 0; m < N; ++m)
+                outgoing += X(a, n, m);
+        constraints.emplace_back(std::move(outgoing) == 1);
 
         // each node must be entered and left by the same agent (except start nodes which are
         // artificially entered by previous agent)
@@ -119,9 +131,15 @@ tsplp::MtspModel::MtspModel(
         {
             for (size_t a = 0; a < A; ++a)
             {
-                constraints.emplace_back(
-                    xt::sum(xt::view(X + 0, a, xt::all(), n))()
-                    == xt::sum(xt::view(X + 0, a, n, xt::all()))());
+                LinearVariableComposition incomingA;
+                for (size_t m = 0; m < N; ++m)
+                    incomingA += X(a, m, n);
+
+                LinearVariableComposition outgoingA;
+                for (size_t m = 0; m < N; ++m)
+                    outgoingA += X(a, n, m);
+
+                constraints.emplace_back(std::move(incomingA) == std::move(outgoingA));
             }
         }
     }

@@ -88,9 +88,13 @@ tsplp::MtspModel::MtspModel(
     m_model = Model(A * N * N);
     X = xt::adapt(m_model.GetVariables(), { A, N, N });
     for (size_t a = 0; a < A; ++a)
+    {
         for (size_t u = 0; u < N; ++u)
+        {
             for (size_t v = 0; v < N; ++v)
                 m_objective += m_weightManager.W()(u, v) * X(a, u, v);
+        }
+    }
     m_model.SetObjective(m_objective);
 
     std::vector<LinearConstraint> constraints;
@@ -113,14 +117,18 @@ tsplp::MtspModel::MtspModel(
     {
         LinearVariableComposition incoming;
         for (size_t a = 0; a < A; ++a)
+        {
             for (size_t m = 0; m < N; ++m)
                 incoming += X(a, m, n);
+        }
         constraints.emplace_back(std::move(incoming) == 1);
 
         LinearVariableComposition outgoing;
         for (size_t a = 0; a < A; ++a)
+        {
             for (size_t m = 0; m < N; ++m)
                 outgoing += X(a, n, m);
+        }
         constraints.emplace_back(std::move(outgoing) == 1);
 
         // each node must be entered and left by the same agent (except start nodes which are

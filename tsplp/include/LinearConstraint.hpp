@@ -2,7 +2,7 @@
 
 #include "Variable.hpp"
 
-#include <vector>
+#include <unordered_map>
 
 namespace tsplp
 {

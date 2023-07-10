@@ -15,7 +15,7 @@ namespace tsplp
 class LinearVariableComposition;
 class LinearConstraint;
 
-class Model
+class Model // NOLINT(cppcoreguidelines-special-member-functions,hicpp-special-member-functions)
 {
     friend class Variable;
 

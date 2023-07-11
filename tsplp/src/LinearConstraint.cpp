@@ -32,8 +32,7 @@ tsplp::LinearConstraint tsplp::operator==(
 }
 
 tsplp::LinearConstraint::LinearConstraint(LinearVariableComposition&& convertee)
-    : m_variables(std::move(convertee.m_variables))
-    , m_coefficients(std::move(convertee.m_coefficients))
+    : m_variableIdCoefficientMap(std::move(convertee.m_variableIdCoefficientMap))
     , m_upperBound(convertee.m_constant)
 {
 }
@@ -41,8 +40,8 @@ tsplp::LinearConstraint::LinearConstraint(LinearVariableComposition&& convertee)
 bool tsplp::LinearConstraint::Evaluate(const Model& model, double tolerance) const
 {
     double value = 0.0;
-    for (size_t i = 0; i < m_coefficients.size(); ++i)
-        value += m_coefficients[i] * m_variables[i].GetObjectiveValue(model);
+    for (const auto& [varId, coef] : m_variableIdCoefficientMap)
+        value += coef * Variable { varId }.GetObjectiveValue(model);
 
     return m_lowerBound <= value + tolerance && value - tolerance <= m_upperBound;
 }

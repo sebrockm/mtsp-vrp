@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON) # -fPIC
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (CMAKE_CONFIGURATION_TYPES)
@@ -113,7 +114,7 @@ option(USE_CLANG_TIDY "Use clang-tidy" OFF)
 
 if(USE_CLANG_TIDY)
     set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # As it turns out it is quite difficlult to get pch right with clang-tidy
-    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option)
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -p ${CMAKE_BINARY_DIR} -extra-arg=-Wno-unknown-warning-option -extra-arg=-Wno-error=ignored-optimization-argument)
 endif()
 
 add_subdirectory(graph-algos)

@@ -8,7 +8,7 @@ file(GENERATE
 \"${Python3_EXECUTABLE}\" -m venv --system-site-packages \"${testenv}\"\n\
 ${activate_command}\n\
 pip install -r \"${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\"\n\
-python \"${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py\" 60000\n\
+python \"${CMAKE_CURRENT_SOURCE_DIR}/tsplib.py\"\n\
 "
 	FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )

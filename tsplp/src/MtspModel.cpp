@@ -63,29 +63,30 @@ tsplp::MtspModel::MtspModel(
     , m_optimizationMode(optimizationMode)
     , A(m_weightManager.A())
     , N(m_weightManager.N())
-    , m_model(A * N * N)
-    , X(xt::adapt(
-          m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {},
-          std::array { A, N, N }))
 {
     if (m_optimizationMode != OptimizationMode::Sum && m_optimizationMode != OptimizationMode::Max)
         return;
 
-    const auto isMaxObjective = m_optimizationMode == OptimizationMode::Max;
-    const auto maxVariable = isMaxObjective
-        ? std::make_optional(m_model.AddVariable(0.0, std::numeric_limits<double>::max()))
-        : std::nullopt;
-
-    m_objective = CreateObjective(m_weightManager.W(), X, maxVariable);
-    m_model.AddConstraints(
-        cbegin(m_objective.AdditionalConstraints), cend(m_objective.AdditionalConstraints));
-    m_bestResult = CreateInitialResult(m_optimizationMode);
+    m_bestResult = CreateInitialResult();
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
         m_bestResult.IsTimeoutHit = true;
         return;
     }
+
+    m_model = Model(A * N * N);
+    X = xt::adapt(
+        m_model.GetBinaryVariables().data(), A * N * N, xt::no_ownership {},
+        std::array { A, N, N });
+
+    const auto maxVariable = m_optimizationMode == OptimizationMode::Max
+        ? std::make_optional(m_model.AddVariable(0.0, std::numeric_limits<double>::max()))
+        : std::nullopt;
+
+    m_objective = CreateObjective(m_weightManager.W(), X, maxVariable);
+    m_model.AddConstraints(
+        cbegin(m_objective.AdditionalConstraints), cend(m_objective.AdditionalConstraints));
 
     m_model.SetObjective(m_objective.Objective);
 
@@ -107,8 +108,21 @@ tsplp::MtspModel::MtspModel(
     // degree inequalities
     for (size_t n = 0; n < N; ++n)
     {
-        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), xt::all(), n))() == 1);
-        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), n, xt::all()))() == 1);
+        LinearVariableComposition incoming;
+        for (size_t a = 0; a < A; ++a)
+        {
+            for (size_t m = 0; m < N; ++m)
+                incoming += X(a, m, n);
+        }
+        constraints.emplace_back(std::move(incoming) == 1);
+
+        LinearVariableComposition outgoing;
+        for (size_t a = 0; a < A; ++a)
+        {
+            for (size_t m = 0; m < N; ++m)
+                outgoing += X(a, n, m);
+        }
+        constraints.emplace_back(std::move(outgoing) == 1);
 
         // each node must be entered and left by the same agent (except start nodes which are
         // artificially entered by previous agent)
@@ -118,9 +132,15 @@ tsplp::MtspModel::MtspModel(
         {
             for (size_t a = 0; a < A; ++a)
             {
-                constraints.emplace_back(
-                    xt::sum(xt::view(X + 0, a, xt::all(), n))()
-                    == xt::sum(xt::view(X + 0, a, n, xt::all()))());
+                LinearVariableComposition incomingA;
+                for (size_t m = 0; m < N; ++m)
+                    incomingA += X(a, m, n);
+
+                LinearVariableComposition outgoingA;
+                for (size_t m = 0; m < N; ++m)
+                    outgoingA += X(a, n, m);
+
+                constraints.emplace_back(std::move(incomingA) == std::move(outgoingA));
             }
         }
     }
@@ -593,15 +613,14 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
     return result;
 }
 
-tsplp::MtspResult tsplp::MtspModel::CreateInitialResult(
-    tsplp::OptimizationMode optimizationMode) const
+tsplp::MtspResult tsplp::MtspModel::CreateInitialResult() const
 {
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
-        optimizationMode, m_weightManager.W(), m_weightManager.StartPositions(),
+        m_optimizationMode, m_weightManager.W(), m_weightManager.StartPositions(),
         m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
 
     auto [twoOptedPaths, twoOptImprovement] = TwoOptPaths(
-        optimizationMode, std::move(nearestInsertionPaths), m_weightManager.W(),
+        m_optimizationMode, std::move(nearestInsertionPaths), m_weightManager.W(),
         m_weightManager.Dependencies(), m_endTime);
 
     return MtspResult { .Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths)),
@@ -640,22 +659,39 @@ tsplp::LinearObjective tsplp::CreateObjective(
 tsplp::LinearObjective tsplp::CreateSumObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables)
 {
-    return LinearObjective { .Objective = xt::sum(weights * variables)(),
-                             .AdditionalConstraints {} };
+    const auto A = variables.shape(0);
+    const auto N = variables.shape(1);
+
+    LinearObjective objective {};
+    for (size_t a = 0; a < A; ++a)
+    {
+        for (size_t u = 0; u < N; ++u)
+        {
+            for (size_t v = 0; v < N; ++v)
+                objective.Objective += weights(u, v) * variables(a, u, v);
+        }
+    }
+    return objective;
 }
 
 tsplp::LinearObjective tsplp::CreateMaxObjective(
     xt::xarray<double> weights, xt::xarray<Variable> variables, Variable maxVariable)
 {
     const auto A = variables.shape(0);
+    const auto N = variables.shape(1);
 
     LinearObjective objective { .Objective = maxVariable, .AdditionalConstraints {} };
     objective.AdditionalConstraints.reserve(A);
 
     for (size_t a = 0; a < A; ++a)
     {
-        objective.AdditionalConstraints.push_back(
-            maxVariable >= xt::sum(weights * xt::view(variables + 0, a))());
+        LinearVariableComposition agentSum;
+        for (size_t u = 0; u < N; ++u)
+        {
+            for (size_t v = 0; v < N; ++v)
+                agentSum += weights(u, v) * variables(a, u, v);
+        }
+        objective.AdditionalConstraints.push_back(maxVariable >= std ::move(agentSum));
     }
 
     return objective;

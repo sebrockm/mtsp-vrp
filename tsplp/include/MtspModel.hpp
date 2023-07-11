@@ -70,7 +70,7 @@ public:
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
 private:
-    [[nodiscard]] MtspResult CreateInitialResult(OptimizationMode optimizationMode) const;
+    [[nodiscard]] MtspResult CreateInitialResult() const;
 
     [[nodiscard]] MtspResult ExploitFractionalSolution(
         const xt::xtensor<double, 3>& fractionalValues) const;

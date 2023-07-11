@@ -1,0 +1,294 @@
+[
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 1,
+        "mode": "sum",
+        "seconds": 0.020007848739624023,
+        "lower_bound": -1.7976931348623157e+308,
+        "upper_bound": 3168.0,
+        "gap": Infinity,
+        "path_lengths": [
+            3168.0
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 2,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 4,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 8,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 1,
+        "mode": "sum",
+        "seconds": 301.48101782798767,
+        "lower_bound": 2737.0,
+        "upper_bound": 3163.0,
+        "gap": 0.15564486664230914,
+        "path_lengths": [
+            3163.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 2,
+        "mode": "sum",
+        "seconds": 303.5648772716522,
+        "lower_bound": 2726.0,
+        "upper_bound": 3169.0,
+        "gap": 0.16250917094644168,
+        "path_lengths": [
+            3169.0,
+            0.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 4,
+        "mode": "sum",
+        "seconds": 300.24153661727905,
+        "lower_bound": 2702.0,
+        "upper_bound": 3261.0,
+        "gap": 0.20688378978534416,
+        "path_lengths": [
+            3030.0,
+            0.0,
+            153.0,
+            78.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 8,
+        "mode": "sum",
+        "seconds": 300.13401985168457,
+        "lower_bound": 2654.0,
+        "upper_bound": 3364.0,
+        "gap": 0.2675207234363226,
+        "path_lengths": [
+            1757.0,
+            0.0,
+            132.0,
+            0.0,
+            0.0,
+            1475.0,
+            0.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 1,
+        "mode": "sum",
+        "seconds": 0.09551811218261719,
+        "lower_bound": 699.0,
+        "upper_bound": 699.0,
+        "gap": 0.0,
+        "path_lengths": [
+            699.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 2,
+        "mode": "sum",
+        "seconds": 2.031628131866455,
+        "lower_bound": 661.0,
+        "upper_bound": 661.0,
+        "gap": 0.0,
+        "path_lengths": [
+            29.0,
+            632.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 4,
+        "mode": "sum",
+        "seconds": 15.723140716552734,
+        "lower_bound": 633.0,
+        "upper_bound": 633.0,
+        "gap": 0.0,
+        "path_lengths": [
+            29.0,
+            0.0,
+            0.0,
+            604.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 8,
+        "mode": "sum",
+        "seconds": 300.9626672267914,
+        "lower_bound": 615.0,
+        "upper_bound": 658.0,
+        "gap": 0.06991869918699178,
+        "path_lengths": [
+            658.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 1,
+        "mode": "sum",
+        "seconds": 303.7304608821869,
+        "lower_bound": 17456619.0,
+        "upper_bound": 20991939.0,
+        "gap": 0.20252031621930922,
+        "path_lengths": [
+            20991939.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 2,
+        "mode": "sum",
+        "seconds": 300.3435218334198,
+        "lower_bound": 17331032.0,
+        "upper_bound": 20916029.0,
+        "gap": 0.20685421387485747,
+        "path_lengths": [
+            20916029.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 4,
+        "mode": "sum",
+        "seconds": 300.82803678512573,
+        "lower_bound": 17204505.0,
+        "upper_bound": 20817965.0,
+        "gap": 0.2100298729896617,
+        "path_lengths": [
+            19062114.0,
+            0.0,
+            0.0,
+            1755851.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 8,
+        "mode": "sum",
+        "seconds": 303.0318946838379,
+        "lower_bound": -1.7976931348623157e+308,
+        "upper_bound": 20167637.0,
+        "gap": Infinity,
+        "path_lengths": [
+            12619125.0,
+            0.0,
+            0.0,
+            839770.0,
+            438081.0,
+            3740841.0,
+            1877960.0,
+            651860.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 1,
+        "mode": "sum",
+        "seconds": 303.1349549293518,
+        "lower_bound": 36769.0,
+        "upper_bound": 42738.0,
+        "gap": 0.16233783894041176,
+        "path_lengths": [
+            42738.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 2,
+        "mode": "sum",
+        "seconds": 304.4889545440674,
+        "lower_bound": 36599.0,
+        "upper_bound": 43325.0,
+        "gap": 0.18377551299215833,
+        "path_lengths": [
+            43325.0,
+            0.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 4,
+        "mode": "sum",
+        "seconds": 323.1051535606384,
+        "lower_bound": 34637.0,
+        "upper_bound": 45005.0,
+        "gap": 0.2993330831192078,
+        "path_lengths": [
+            1084.0,
+            0.0,
+            0.0,
+            43921.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 8,
+        "mode": "sum",
+        "seconds": 300.50049924850464,
+        "lower_bound": 33923.0,
+        "upper_bound": 45050.0,
+        "gap": 0.32800754650237307,
+        "path_lengths": [
+            1034.0,
+            0.0,
+            0.0,
+            0.0,
+            43972.0,
+            0.0,
+            0.0,
+            44.0
+        ]
+    }
+]

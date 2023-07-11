@@ -15,7 +15,7 @@ namespace tsplp
 class LinearVariableComposition;
 class LinearConstraint;
 
-class Model
+class Model // NOLINT(cppcoreguidelines-special-member-functions,hicpp-special-member-functions)
 {
     friend class Variable;
 
@@ -25,14 +25,13 @@ private:
     std::vector<Variable> m_variables;
 
 public:
+    Model();
     explicit Model(size_t numberOfBinaryVariables);
     ~Model() noexcept;
 
     Model(const Model& other);
     Model(Model&& other) noexcept;
 
-    Model& operator=(const Model&) = delete;
-    Model& operator=(Model&&) = delete;
     Model& operator=(Model other);
 
     friend void swap(Model& m1, Model& m2) noexcept;

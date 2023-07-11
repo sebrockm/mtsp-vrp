@@ -23,6 +23,15 @@ _solve_mtsp_vrp.argtypes = [
     c_void_p # fractionalCallback
 ]
 
+error_code_map = {
+    -1: 'Timeout, no result',
+    -2: 'Infeasible',
+    -3: 'Invalid input size',
+    -4: 'Invalid input pointer',
+    -5: 'Cyclic dependencies',
+    -6: 'Incompatible dependencies'
+}
+
 def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_threads=0, fractional_callback=None):
     A = len(start_positions)
     N = len(weights)
@@ -47,16 +56,16 @@ def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_t
     result = _solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, number_of_threads,
                              byref(lb), byref(ub), pathsBuffer, offsets, fractional_callback_c)
     if result < 0:
-        print(f'error: {result}')
-        return None, None, result, result
+        error = error_code_map.get(result, f'Unknown error code: {result}')
+        raise Exception(error)
 
     paths = []
     lengths = []
     for a in range(A):
         start = offsets[a]
         end = offsets[a+1] if a+1 < A else N
-        path = np.array(pathsBuffer[start:end])
-        length = np.sum(weights[path[:-1], path[1:]])
+        path = list(np.array(pathsBuffer[start:end]))
+        length = float(np.sum(weights[path[:-1], path[1:]]))
         if len(path) >= 2 and start_positions[a] == end_positions[a]:
             length += weights[path[-1], path[0]]
         paths.append(path)

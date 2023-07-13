@@ -26,9 +26,10 @@ def main():
     missing_best_known_solutions = ['ESC11.sop']
 
     agent_counts = [1, 2, 4, 8]
+    modes = ['sum', 'max']
 
     results = []
-    with tqdm(total=len(bench_instances)*len(agent_counts)) as progress_bar:
+    with tqdm(total=len(bench_instances)*len(agent_counts)*len(modes)) as progress_bar:
         for instance in bench_instances:
             base_name = os.path.basename(instance)
             problem_name, ext = os.path.splitext(base_name)
@@ -53,49 +54,50 @@ def main():
                         weights[i, j] = P.get_weight(nodes[i], nodes[j])
 
             for A in agent_counts:
-                progress_bar.set_description(f'Solving {base_name} with {A=}')
-                if A > 1 or base_name in missing_best_known_solutions:
-                    best_lb = None
-                    best_ub = None
-                else:
-                    solution = solutions[kind][problem_name]
-                    if isinstance(solution, int):
-                        best_lb = solution
-                        best_ub = solution
+                for mode in modes:
+                    progress_bar.set_description(f'Solving {base_name} with {A=}')
+                    if A > 1 or base_name in missing_best_known_solutions:
+                        best_lb = None
+                        best_ub = None
                     else:
-                        best_lb, best_ub = solution
+                        solution = solutions[kind][problem_name]
+                        if isinstance(solution, int):
+                            best_lb = solution
+                            best_ub = solution
+                        else:
+                            best_lb, best_ub = solution
 
-                if kind == 'sop':
-                    sp = [0] * A
-                    ep = [N - 1] * A
-                else:
-                    sp = list(range(1, A+1))
-                    ep = list(range(1, A+1))
+                    if kind == 'sop':
+                        sp = [0] * A
+                        ep = [N - 1] * A
+                    else:
+                        sp = list(range(1, A+1))
+                        ep = list(range(1, A+1))
 
-                star_time = time.time()
-                try:
-                    paths, lengths, lb, ub = solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, timeout=5*60*1000)
-                    error = None
-                except Exception as e:
-                    error = e.args
-                seconds = time.time() - star_time
-                if error is not None:
-                    results.append({'name': base_name, 'N': N, 'A': A, 'mode': 'sum', 'error': error})
-                else:
-                    if best_lb is not None and best_ub is not None:
-                        if lb > best_lb or ub < best_ub:
-                            input(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
-                            sys.exit(1)
-                        if lb >= ub and ub != best_ub:
-                            input(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
-                            sys.exit(1)
-                    gap = ub / lb - 1 if lb > 0 else float('inf')
-                    results.append({'name': base_name, 'N': N, 'A': A, 'mode': 'sum', 'seconds': seconds, 'lower_bound': lb, 'upper_bound': ub, 'gap': gap, 'path_lengths': lengths})
+                    star_time = time.time()
+                    try:
+                        paths, lengths, lb, ub = solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, optimization_mode=mode, timeout=5*60*1000)
+                        error = None
+                    except Exception as e:
+                        error = e.args
+                    seconds = time.time() - star_time
+                    if error is not None:
+                        results.append({'name': base_name, 'N': N, 'A': A, 'mode': 'sum', 'error': error})
+                    else:
+                        if best_lb is not None and best_ub is not None:
+                            if lb > best_lb or ub < best_ub:
+                                input(f'ERROR in {base_name}: bounds are [{lb}, {ub}] but best known bounds are [{best_lb}, {best_ub}]. Aborting...')
+                                sys.exit(1)
+                            if lb >= ub and ub != best_ub:
+                                input(f'ERROR in {base_name}: found solution {ub} but known solution is {best_ub}. Aborting...')
+                                sys.exit(1)
+                        gap = ub / lb - 1 if lb > 0 else float('inf')
+                        results.append({'name': base_name, 'N': N, 'A': A, 'mode': mode, 'seconds': seconds, 'lower_bound': lb, 'upper_bound': ub, 'gap': gap, 'path_lengths': lengths})
 
-                with open(bench_file, 'w') as f:
-                    json.dump(results, f, indent=4)
+                    with open(bench_file, 'w') as f:
+                        json.dump(results, f, indent=4)
 
-                progress_bar.update()
+                    progress_bar.update()
 
 if __name__ == '__main__':
     try:

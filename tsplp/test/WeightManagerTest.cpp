@@ -290,3 +290,34 @@ TEST_CASE("Depender on end node", "[WeightManager]")
     const xt::xtensor<size_t, 1> ep = { 1 };
     REQUIRE_THROWS([&] { tsplp::WeightManager { weights, sp, ep }; }());
 }
+
+TEST_CASE("End to start node has no cost", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        {  0,  0,  0, 1000 },
+        { -1,  0,  4, 0 },
+        { -1, -1,  0, 0 },
+        { -1, -1, -1, 0 }
+    };
+    // clang format on
+
+    // Dependencies: s -> 1 -> 2 -> e
+    const xt::xtensor<size_t, 1> sp = { 0 };
+    const xt::xtensor<size_t, 1> ep = { 3 };
+
+    const tsplp::WeightManager wm { weights, sp, ep };
+
+    // clang-format off
+    const xt::xtensor<int, 2> expectedWeights = 
+    {
+        {  0,  0,  0, 1000 },
+        { -1,  0,  4, 0 },
+        { -1, -1,  0, 0 },
+        {  0, -1, -1, 0 }
+    };
+    // clang format on
+
+    REQUIRE(wm.W() == expectedWeights);
+}

@@ -1,6 +1,7 @@
 #include "WeightManager.hpp"
 
 #include "DependencyHelpers.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <xtensor/xindex_view.hpp>
 #include <xtensor/xview.hpp>
@@ -104,6 +105,17 @@ tsplp::WeightManager::WeightManager(
 
     m_weights = CreateTransitiveDependencies(std::move(m_weights));
     m_spDependencies = std::make_unique<DependencyGraph>(m_weights);
+
+    for (const auto s : m_startPositions)
+    {
+        if (!m_spDependencies->GetIncomingSpan(s).empty())
+            throw IncompatibleDependenciesException();
+    }
+    for (const auto e : m_endPositions)
+    {
+        if (!m_spDependencies->GetOutgoingSpan(e).empty())
+            throw IncompatibleDependenciesException();
+    }
 }
 
 std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(

@@ -321,3 +321,34 @@ TEST_CASE("End to start node has no cost", "[WeightManager]")
 
     REQUIRE(wm.W() == expectedWeights);
 }
+
+TEST_CASE("Set diagonal to 0", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        { 1, 2, 3, 4 },
+        { 5, 6, 7, 8 },
+        { 9, 1, 2, 3 },
+        { 4, 5, 6, 7 }
+    };
+    // clang format on
+
+    // Dependencies: s -> 1 -> 2 -> e
+    const xt::xtensor<size_t, 1> sp = { 0 };
+    const xt::xtensor<size_t, 1> ep = { 3 };
+
+    const tsplp::WeightManager wm { weights, sp, ep };
+
+    // clang-format off
+    const xt::xtensor<int, 2> expectedWeights = 
+    {
+        { 0, 2, 3, 4 },
+        { 5, 0, 7, 8 },
+        { 9, 1, 0, 3 },
+        { 0, 5, 6, 0 }
+    };
+    // clang format on
+
+    REQUIRE(wm.W() == expectedWeights);
+}

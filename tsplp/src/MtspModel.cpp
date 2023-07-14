@@ -189,20 +189,28 @@ tsplp::MtspModel::MtspModel(
             [[maybe_unused]] const auto s = m_weightManager.StartPositions()[0];
             [[maybe_unused]] const auto e = m_weightManager.EndPositions()[0];
 
-            // TODO: ensure that W[e, s] == 0, even though W[e, s] == -1 would be plausible. Arc (e,
-            // s) must be used in case A == 1
-            assert(s != u || e != v);
+            assert(std::make_pair(u, v) != std::make_pair(e, s));
         }
 
-        // reverse edge of dependency must not be used
-        constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0);
+        // Reverse edge of dependency must not be used.
+        // Exception: in the case of A == 1, if there is a dependency from start to end node,
+        // the reverse edge must be used to complete a full TSP cycle.
+        // (see section "artificial connections from end to next start" above)
+        if (A > 1 || u != m_weightManager.StartPositions()[0]
+            || v != m_weightManager.EndPositions()[0])
+        {
+            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0);
+        }
 
         // require the same agent to visit dependent nodes
-        for (size_t a = 0; a < A; ++a)
+        if (A > 1)
         {
-            constraints.emplace_back(
-                xt::sum(xt::view(X + 0, a, u, xt::all()))()
-                == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+            for (size_t a = 0; a < A; ++a)
+            {
+                constraints.emplace_back(
+                    xt::sum(xt::view(X + 0, a, u, xt::all()))()
+                    == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+            }
         }
 
         for (const auto s : m_weightManager.StartPositions())

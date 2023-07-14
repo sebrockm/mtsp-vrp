@@ -1,6 +1,7 @@
 #include "WeightManager.hpp"
 
 #include "DependencyHelpers.hpp"
+#include "TsplpExceptions.hpp"
 
 #include <xtensor/xindex_view.hpp>
 #include <xtensor/xview.hpp>
@@ -97,13 +98,28 @@ tsplp::WeightManager::WeightManager(
         // and its weight must be 0. Hence, we cannot use it to store the dependency flag (-1) of
         // s->e. But also in the case A > 1 this complicates the heuristics. Fortunately, doing this
         // is optional because the initial constraints already enforce a path from s to e. So, we
-        // just leave it out.
-        // TODO: what if initial weights already have a -1 here?
+        // just leave it out and ensure there is a 0 for A == 1:
         // m_weights(m_endPositions[a], m_startPositions[a]) = -1; // set dependency s->e
     }
 
     m_weights = CreateTransitiveDependencies(std::move(m_weights));
+
+    // This weight needs to be zero as described above
+    if (A == 1)
+        m_weights(m_endPositions[0], m_startPositions[0]) = 0;
+
     m_spDependencies = std::make_unique<DependencyGraph>(m_weights);
+
+    for (const auto s : m_startPositions)
+    {
+        if (!m_spDependencies->GetIncomingSpan(s).empty())
+            throw IncompatibleDependenciesException();
+    }
+    for (const auto e : m_endPositions)
+    {
+        if (!m_spDependencies->GetOutgoingSpan(e).empty())
+            throw IncompatibleDependenciesException();
+    }
 }
 
 std::vector<std::vector<size_t>> tsplp::WeightManager::TransformPathsBack(

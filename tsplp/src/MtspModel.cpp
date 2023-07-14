@@ -210,11 +210,14 @@ tsplp::MtspModel::MtspModel(
         }
 
         // require the same agent to visit dependent nodes
-        for (size_t a = 0; a < A; ++a)
+        if (A > 1)
         {
-            constraints.emplace_back(
-                xt::sum(xt::view(X + 0, a, u, xt::all()))()
-                == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+            for (size_t a = 0; a < A; ++a)
+            {
+                constraints.emplace_back(
+                    xt::sum(xt::view(X + 0, a, u, xt::all()))()
+                    == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+            }
         }
 
         for (const auto s : m_weightManager.StartPositions())

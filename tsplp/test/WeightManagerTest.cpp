@@ -256,3 +256,99 @@ TEST_CASE("start-end-circle", "[WeightManager]")
         std::vector(backtransformedTensor.begin(), backtransformedTensor.end())
         == std::vector(expectedBacktransformedTensor.begin(), expectedBacktransformedTensor.end()));
 }
+
+TEST_CASE("Dependee of start node", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        { 0, 1, 2 },
+        { -1, 0, 4 },
+        { 5, 6, 0 }
+    };
+    // clang format on
+
+    // Dependencies: 0 -> s -> e
+    const xt::xtensor<size_t, 1> sp = { 1 };
+    const xt::xtensor<size_t, 1> ep = { 2 };
+    REQUIRE_THROWS([&] { tsplp::WeightManager { weights, sp, ep }; }());
+}
+
+TEST_CASE("Depender on end node", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        { 0, 1, 2 },
+        { 3, 0, 4 },
+        { 5, -1, 0 }
+    };
+    // clang format on
+
+    // Dependencies: s -> e -> 2
+    const xt::xtensor<size_t, 1> sp = { 0 };
+    const xt::xtensor<size_t, 1> ep = { 1 };
+    REQUIRE_THROWS([&] { tsplp::WeightManager { weights, sp, ep }; }());
+}
+
+TEST_CASE("End to start node has no cost", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        {  0,  0,  0, 1000 },
+        { -1,  0,  4, 0 },
+        { -1, -1,  0, 0 },
+        { -1, -1, -1, 0 }
+    };
+    // clang format on
+
+    // Dependencies: s -> 1 -> 2 -> e
+    const xt::xtensor<size_t, 1> sp = { 0 };
+    const xt::xtensor<size_t, 1> ep = { 3 };
+
+    const tsplp::WeightManager wm { weights, sp, ep };
+
+    // clang-format off
+    const xt::xtensor<int, 2> expectedWeights = 
+    {
+        {  0,  0,  0, 1000 },
+        { -1,  0,  4, 0 },
+        { -1, -1,  0, 0 },
+        {  0, -1, -1, 0 }
+    };
+    // clang format on
+
+    REQUIRE(wm.W() == expectedWeights);
+}
+
+TEST_CASE("Set diagonal to 0", "[WeightManager]")
+{
+    // clang-format off
+    const xt::xtensor<int, 2> weights = 
+    {
+        { 1, 2, 3, 4 },
+        { 5, 6, 7, 8 },
+        { 9, 1, 2, 3 },
+        { 4, 5, 6, 7 }
+    };
+    // clang format on
+
+    // Dependencies: s -> 1 -> 2 -> e
+    const xt::xtensor<size_t, 1> sp = { 0 };
+    const xt::xtensor<size_t, 1> ep = { 3 };
+
+    const tsplp::WeightManager wm { weights, sp, ep };
+
+    // clang-format off
+    const xt::xtensor<int, 2> expectedWeights = 
+    {
+        { 0, 2, 3, 4 },
+        { 5, 0, 7, 8 },
+        { 9, 1, 0, 3 },
+        { 0, 5, 6, 0 }
+    };
+    // clang format on
+
+    REQUIRE(wm.W() == expectedWeights);
+}

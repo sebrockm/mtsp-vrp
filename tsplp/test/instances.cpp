@@ -101,6 +101,33 @@ TEST_CASE("ESC07.sop", "[instances]")
     // clang-format on
 
     xt::xtensor<int, 1> startPositions { 0 };
+    xt::xtensor<int, 1> endPositions { 8 };
+
+    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    auto result = model.BranchAndCutSolve();
+
+    REQUIRE(result.LowerBound == Approx(2125));
+    REQUIRE(result.UpperBound == Approx(2125));
+}
+
+TEST_CASE("ESC07.sop start end same", "[instances]")
+{
+    // clang-format off
+    xt::xtensor<int, 2> weights =
+    {
+        {  0,   0,    0,    0,    0,    0,    0,    0, 1000000 },
+        { -1,   0,  100,  200,   75,    0,  300,  100, 0 },
+        { -1, 400,    0,  500,  325,  400,  600,    0, 0 },
+        { -1, 700,  800,    0,  550,  700,  900,  800, 0 },
+        { -1,  -1,  250,  225,    0,  275,  525,  250, 0 },
+        { -1,  -1,  100,  200,   -1,    0,   -1,   -1, 0 },
+        { -1,  -1, 1100, 1200, 1075, 1000,    0, 1100, 0 },
+        { -1,  -1,    0,  500,  325,  400,  600,    0, 0 },
+        { -1,  -1,   -1,   -1,   -1,   -1,   -1,   -1, 0 }
+    };
+    // clang-format on
+
+    xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
 
     tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };

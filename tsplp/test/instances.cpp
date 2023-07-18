@@ -105,7 +105,8 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 8 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
+                             timeLimit };
     auto result = model.BranchAndCutSolve();
 
     REQUIRE(result.LowerBound == Approx(2125));

@@ -551,7 +551,7 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
                 result.emplace_back(aa * N * N + u * N + vv);
         }
 
-        // all other edges entering v, no matte which agent, cannot be used
+        // all other edges entering v, no matter which agent, cannot be used
         for (size_t uu = 0; uu < N; ++uu)
         {
             if (uu != u)

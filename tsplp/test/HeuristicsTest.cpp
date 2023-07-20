@@ -258,3 +258,92 @@ TEST_CASE("twoopt A==2 with dependencies", "[Heuristics]")
         CHECK(tsplp::CalculateObjective(tsplp::OptimizationMode::Max, optPaths, weights) == 15);
     }
 }
+
+TEST_CASE("nearest insertion A==1", "[Heuristics]")
+{
+    // clang-format off
+    xt::xarray<double> weights =
+    {
+        { 0, 2, 3, 4 },
+        { 2, 0, 6, 8 },
+        { 4, 5, 0, 7 },
+        { 0, 1, 2, 0 }
+    };
+    // clang-format on
+
+    const xt::xtensor<size_t, 1> startPositions = { 3 };
+    const xt::xtensor<size_t, 1> endPositions = { 0 };
+    const std::vector<std::vector<size_t>> expectedPaths = { { 3, 2, 1, 0 } };
+
+    {
+        const auto [paths, objective] = tsplp::NearestInsertion(
+            tsplp::OptimizationMode::Sum, weights, startPositions, endPositions,
+            tsplp::DependencyGraph { weights }, std::chrono::steady_clock::now() + 1h);
+        // expected insertions
+        // { { 3, 0 } } => 0
+        // { { 3, 1, 0 } } => 1 + 2
+        // { { 3, 2, 1, 0 } } => 2 + 5 + 2
+        CHECK(objective == 9);
+        CHECK(paths == expectedPaths);
+    }
+    {
+        const auto [paths, objective] = tsplp::NearestInsertion(
+            tsplp::OptimizationMode::Max, weights, startPositions, endPositions,
+            tsplp::DependencyGraph { weights }, std::chrono::steady_clock::now() + 1h);
+        // expected insertions
+        // { { 3, 0 } } => 0
+        // { { 3, 1, 0 } } => 1 + 2
+        // { { 3, 2, 1, 0 } } => 2 + 5 + 2
+        CHECK(objective == 9);
+        CHECK(paths == expectedPaths);
+    }
+}
+
+TEST_CASE("nearest insertion A==2", "[Heuristics]")
+{
+    // clang-format off
+    xt::xarray<double> weights =
+    {
+        { 0, 2, 3, 4, 0, 2, 3, 4 },
+        { 2, 0, 6, 8, 2, 0, 6, 8 },
+        { 4, 5, 0, 7, 4, 5, 0, 7 },
+        { 0, 1, 2, 0, 0, 1, 2, 0 },
+        { 0, 2, 3, 4, 0, 2, 3, 4 },
+        { 2, 0, 6, 8, 2, 0, 6, 8 },
+        { 4, 5, 0, 7, 4, 5, 0, 7 },
+        { 0, 1, 2, 0, 0, 1, 2, 0 }
+    };
+    // clang-format on
+
+    const xt::xtensor<size_t, 1> startPositions = { 7, 3 };
+    const xt::xtensor<size_t, 1> endPositions = { 4, 0 };
+
+    {
+        const auto [paths, objective] = tsplp::NearestInsertion(
+            tsplp::OptimizationMode::Sum, weights, startPositions, endPositions,
+            tsplp::DependencyGraph { weights }, std::chrono::steady_clock::now() + 1h);
+        // expected insertions
+        // { { 7, 4 }, { 3, 0 } } => 0, 0
+        // { { 7, 6, 4 }, { 3, 0 } } => 2 + 4, 0
+        // { { 7, 6, 5, 4 }, { 3, 0 } } => 2 + 5 + 2, 0
+        // { { 7, 2, 6, 5, 4 }, { 3, 0 } } => 2 + 0 + 5 + 2, 0
+        // { { 7, 2, 6, 1, 5, 4 }, { 3, 0 } } => 2 + 0 + 5 + 0 + 2, 0
+        const std::vector<std::vector<size_t>> expectedPaths = { { 7, 2, 6, 1, 5, 4 }, { 3, 0 } };
+        CHECK(objective == 9);
+        CHECK(paths == expectedPaths);
+    }
+    {
+        const auto [paths, objective] = tsplp::NearestInsertion(
+            tsplp::OptimizationMode::Max, weights, startPositions, endPositions,
+            tsplp::DependencyGraph { weights }, std::chrono::steady_clock::now() + 1h);
+        // expected insertions
+        // { { 7, 4 }, { 3, 0 } } => 0, 0
+        // { { 7, 6, 4 }, { 3, 0 } } => 2 + 4, 0
+        // { { 7, 6, 4 }, { 3, 5, 0 } } = > 2 + 4, 1 + 2
+        // { { 7, 2, 6, 4 }, { 3, 5, 0 } } = > 2 + 0 + 4, 1 + 2
+        // { { 7, 2, 6, 4 }, { 3, 1, 5, 0 } } = > 2 + 0 + 4, 1 + 0 + 2
+        const std::vector<std::vector<size_t>> expectedPaths = { { 7, 2, 6, 4 }, { 3, 1, 5, 0 } };
+        CHECK(objective == 6);
+        CHECK(paths == expectedPaths);
+    }
+}

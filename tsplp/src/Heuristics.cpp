@@ -185,8 +185,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
 
     auto paths = std::vector<std::vector<size_t>>(A);
     auto pathLengths = std::vector<double>(A);
-    size_t longestA = A;
-    double cost = 0;
+    size_t longestA = 0;
     for (size_t a = 0; a < A; ++a)
     {
         assert(componentIds[startPositions[a]] == componentIds[endPositions[a]]);
@@ -195,11 +194,8 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
         paths[a].push_back(endPositions[a]);
 
         pathLengths[a] = weights(a, startPositions[a], endPositions[a]);
-        if (pathLengths[a] > cost)
-        {
+        if (pathLengths[a] > pathLengths[longestA])
             longestA = a;
-            cost = pathLengths[a];
-        }
 
         if (component2AgentMap[componentIds[startPositions[a]]] != A)
             throw IncompatibleDependenciesException();
@@ -220,9 +216,11 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
 
         const auto comp = componentIds[n];
 
-        auto minDeltaCost = std::numeric_limits<double>::max();
+        auto minCostIncrease = std::numeric_limits<double>::max();
+        auto newMaxPathLength = std::numeric_limits<double>::max();
         auto minA = std::numeric_limits<size_t>::max();
         auto minI = std::numeric_limits<size_t>::max();
+        auto newLongestA = A;
 
         const auto [aRangeFirst, aRangeLast] = component2AgentMap[comp] == A
             ? std::make_pair(static_cast<size_t>(0), A)
@@ -234,34 +232,61 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
             {
                 const auto oldCost = weights(a, paths[a][i - 1], paths[a][i]);
                 const auto newCost = weights(a, paths[a][i - 1], n) + weights(a, n, paths[a][i]);
-                const auto deltaCost
-                    = std::max(newCost - oldCost + pathLengths[a] - pathLengths[longestA], 0.0);
+                const auto newNewPathLength = newCost - oldCost + pathLengths[a];
 
-                if (deltaCost < minDeltaCost)
+                if (a == longestA && newNewPathLength < pathLengths[a])
                 {
-                    minDeltaCost = deltaCost;
-                    minA = a;
-                    minI = i;
-                    if (minDeltaCost == 0)
-                        break;
+                    auto newObjective = newNewPathLength;
+                    auto newNewLongestA = longestA;
+                    for (size_t aa = 0; aa < A; ++aa)
+                    {
+                        if (aa == longestA)
+                            continue;
+
+                        if (pathLengths[aa] > newObjective)
+                        {
+                            newObjective = pathLengths[aa];
+                            newNewLongestA = aa;
+                        }
+                    }
+
+                    const auto costIncrease = newObjective - pathLengths[longestA];
+                    if (costIncrease < minCostIncrease)
+                    {
+                        minCostIncrease = costIncrease;
+                        newMaxPathLength = newNewPathLength;
+                        minA = a;
+                        minI = i;
+                        newLongestA = newNewLongestA;
+                    }
+                }
+                else
+                {
+                    const auto costIncrease
+                        = std::max(newNewPathLength - pathLengths[longestA], 0.0);
+                    if (costIncrease < minCostIncrease)
+                    {
+                        minCostIncrease = costIncrease;
+                        newMaxPathLength = newNewPathLength;
+                        minA = a;
+                        minI = i;
+                        newLongestA = costIncrease > 0 ? a : longestA;
+                    }
                 }
             }
-
-            if (minDeltaCost == 0)
-                break;
         }
 
         using DiffT = decltype(paths[minA].begin())::difference_type;
         paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), n);
-        cost += minDeltaCost;
-        if (minDeltaCost > 0)
-            longestA = minA;
+        assert(newLongestA < A);
+        pathLengths[minA] = newMaxPathLength;
+        longestA = newLongestA;
 
         component2AgentMap[comp] = minA;
         lastInsertPositionOfComponent[comp] = minI;
     }
 
-    return { paths, cost };
+    return { paths, pathLengths[longestA] };
 }
 
 std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertion(

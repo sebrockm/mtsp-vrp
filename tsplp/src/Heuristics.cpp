@@ -71,13 +71,13 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionSum(
     const auto numberOfComponents
         = boost::connected_components(dependencyGraphUndirected, componentIds.data());
 
-    std::vector<size_t> order;
-    boost::topological_sort(dependencyGraph, std::back_inserter(order));
+    std::vector<size_t> reverseOrder;
+    boost::topological_sort(dependencyGraph, std::back_inserter(reverseOrder));
 
     std::vector<size_t> component2AgentMap(numberOfComponents, A);
 
     auto paths = std::vector<std::vector<size_t>>(A);
-    double cost = 0;
+    double objective = 0;
     for (size_t a = 0; a < A; ++a)
     {
         assert(componentIds[startPositions[a]] == componentIds[endPositions[a]]);
@@ -85,7 +85,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionSum(
         paths[a].push_back(startPositions[a]);
         paths[a].push_back(endPositions[a]);
 
-        cost += weights(a, startPositions[a], endPositions[a]);
+        objective += weights(a, startPositions[a], endPositions[a]);
 
         if (component2AgentMap[componentIds[startPositions[a]]] != A)
             throw IncompatibleDependenciesException();
@@ -95,7 +95,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionSum(
 
     std::vector<size_t> lastInsertPositionOfComponent(numberOfComponents, 0);
 
-    for (const auto n : boost::adaptors::reverse(order))
+    for (const auto n : boost::adaptors::reverse(reverseOrder))
     {
         if (std::chrono::steady_clock::now() >= endTime)
             return { std::vector<std::vector<size_t>> {}, 0 };
@@ -132,13 +132,13 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionSum(
 
         using DiffT = decltype(paths[minA].begin())::difference_type;
         paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), n);
-        cost += minDeltaCost;
+        objective += minDeltaCost;
 
         component2AgentMap[comp] = minA;
         lastInsertPositionOfComponent[comp] = minI;
     }
 
-    return { paths, cost };
+    return { paths, objective };
 }
 
 std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
@@ -178,8 +178,9 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
     const auto numberOfComponents
         = boost::connected_components(dependencyGraphUndirected, componentIds.data());
 
-    std::vector<size_t> order;
-    boost::topological_sort(dependencyGraph, std::back_inserter(order));
+    std::vector<size_t> reverseOrder;
+    reverseOrder.reserve(N);
+    boost::topological_sort(dependencyGraph, std::back_inserter(reverseOrder));
 
     std::vector<size_t> component2AgentMap(numberOfComponents, A);
 
@@ -205,7 +206,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
 
     std::vector<size_t> lastInsertPositionOfComponent(numberOfComponents, 0);
 
-    for (const auto n : boost::adaptors::reverse(order))
+    for (const auto n : boost::adaptors::reverse(reverseOrder))
     {
         if (std::chrono::steady_clock::now() >= endTime)
             return { std::vector<std::vector<size_t>> {}, 0 };
@@ -217,7 +218,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
         const auto comp = componentIds[n];
 
         auto minCostIncrease = std::numeric_limits<double>::max();
-        auto newMaxPathLength = std::numeric_limits<double>::max();
+        auto minAPathLength = std::numeric_limits<double>::max();
         auto minA = std::numeric_limits<size_t>::max();
         auto minI = std::numeric_limits<size_t>::max();
         auto newLongestA = A;
@@ -232,42 +233,44 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
             {
                 const auto oldCost = weights(a, paths[a][i - 1], paths[a][i]);
                 const auto newCost = weights(a, paths[a][i - 1], n) + weights(a, n, paths[a][i]);
-                const auto newNewPathLength = newCost - oldCost + pathLengths[a];
+                const auto potentialPathLength = newCost - oldCost + pathLengths[a];
 
-                if (a == longestA && newNewPathLength < pathLengths[a])
+                // This is a special case where the objective value becomes smaller by inserting a
+                // node. We need to figure out which path is now the longest.
+                if (a == longestA && newCost < oldCost)
                 {
-                    auto newObjective = newNewPathLength;
-                    auto newNewLongestA = longestA;
+                    auto potentialObjective = potentialPathLength;
+                    auto potentiallyLongestA = longestA;
                     for (size_t aa = 0; aa < A; ++aa)
                     {
                         if (aa == longestA)
                             continue;
 
-                        if (pathLengths[aa] > newObjective)
+                        if (pathLengths[aa] > potentialObjective)
                         {
-                            newObjective = pathLengths[aa];
-                            newNewLongestA = aa;
+                            potentialObjective = pathLengths[aa];
+                            potentiallyLongestA = aa;
                         }
                     }
 
-                    const auto costIncrease = newObjective - pathLengths[longestA];
+                    const auto costIncrease = potentialObjective - pathLengths[longestA];
                     if (costIncrease < minCostIncrease)
                     {
                         minCostIncrease = costIncrease;
-                        newMaxPathLength = newNewPathLength;
+                        minAPathLength = potentialPathLength;
                         minA = a;
                         minI = i;
-                        newLongestA = newNewLongestA;
+                        newLongestA = potentiallyLongestA;
                     }
                 }
                 else
                 {
                     const auto costIncrease
-                        = std::max(newNewPathLength - pathLengths[longestA], 0.0);
+                        = std::max(potentialPathLength - pathLengths[longestA], 0.0);
                     if (costIncrease < minCostIncrease)
                     {
                         minCostIncrease = costIncrease;
-                        newMaxPathLength = newNewPathLength;
+                        minAPathLength = potentialPathLength;
                         minA = a;
                         minI = i;
                         newLongestA = costIncrease > 0 ? a : longestA;
@@ -279,7 +282,7 @@ std::tuple<std::vector<std::vector<size_t>>, double> NearestInsertionMax(
         using DiffT = decltype(paths[minA].begin())::difference_type;
         paths[minA].insert(paths[minA].begin() + static_cast<DiffT>(minI), n);
         assert(newLongestA < A);
-        pathLengths[minA] = newMaxPathLength;
+        pathLengths[minA] = minAPathLength;
         longestA = newLongestA;
 
         component2AgentMap[comp] = minA;

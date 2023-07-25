@@ -33,7 +33,7 @@ def draw_fractional_solution(fractional_values, weights, start_positions, end_po
     plt.switch_backend('Agg')
     plt.figure(figsize=(20, 20))
 
-    plt.annotate(f'objective: {np.max(np.sum(weights * fractional_values, axis=(1,2)))}', (90, 90))
+    plt.annotate(f'objective: {np.sum(weights * fractional_values)}', (90, 90))
 
     plt.plot(X, Y, '.')
     for s, e, c in zip(start_positions, end_positions, colors):
@@ -66,16 +66,12 @@ N = P.dimension
 weights = np.load(file + '.weights.npy')
 
 fractionals = []
-i = 0
 def callback(fractional):
-    global i
-    if i % 100 == 0:
-        fractionals.append(fractional)
-    i += 1
+    fractionals.append(fractional)
 
-sp = [0, 1]
-ep = [1, 0]
-solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, optimization_mode='max', timeout=60000, fractional_callback=callback)
+sp = [0, 0]
+ep = [0, 0]
+solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, timeout=600000, fractional_callback=callback, number_of_threads=1)
 
 for i, fractional in enumerate(tqdm(fractionals)):
-    draw_fractional_solution(fractional, weights, sp, ep, P.node_coords, f'{instance}_{i*100}.png')
+    draw_fractional_solution(fractional, weights, sp, ep, P.node_coords, f'{instance}_{i}.png')

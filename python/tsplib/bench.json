@@ -38,7 +38,7 @@
         "name": "ESC25.sop",
         "N": 27,
         "A": 2,
-        "mode": "sum",
+        "mode": "max",
         "error": [
             "Incompatible dependencies"
         ]
@@ -56,7 +56,7 @@
         "name": "ESC25.sop",
         "N": 27,
         "A": 4,
-        "mode": "sum",
+        "mode": "max",
         "error": [
             "Incompatible dependencies"
         ]
@@ -74,7 +74,7 @@
         "name": "ESC25.sop",
         "N": 27,
         "A": 8,
-        "mode": "sum",
+        "mode": "max",
         "error": [
             "Incompatible dependencies"
         ]

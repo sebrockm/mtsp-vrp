@@ -17,6 +17,7 @@ tsplp::Model::Model() = default;
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel { std::make_unique<ClpSimplex>() }
     , m_spModelMutex { std::make_unique<std::mutex>() }
+    , m_numberOfBinaryVariables(numberOfBinaryVariables)
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
         throw std::runtime_error("Too many variables");
@@ -28,13 +29,8 @@ tsplp::Model::Model(size_t numberOfBinaryVariables)
         static_cast<int>(numberOfBinaryVariables), nullptr, nullptr, nullptr, nullptr, nullptr,
         nullptr);
 
-    m_variables.reserve(numberOfBinaryVariables);
     for (size_t i = 0; i < numberOfBinaryVariables; ++i)
-    {
-        m_variables.emplace_back(i);
-        m_variables.back().SetLowerBound(0.0, *this);
-        m_variables.back().SetUpperBound(1.0, *this);
-    }
+        AddVariable(0.0, 1.0);
 }
 
 tsplp::Model::~Model() noexcept = default;
@@ -43,6 +39,7 @@ tsplp::Model::Model(const Model& other)
     : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
     , m_spModelMutex { std::make_unique<std::mutex>() }
     , m_variables(other.m_variables)
+    , m_numberOfBinaryVariables(other.m_numberOfBinaryVariables)
 {
 }
 
@@ -50,6 +47,7 @@ tsplp::Model::Model(Model&& other) noexcept
     : m_spSimplexModel(std::move(other.m_spSimplexModel))
     , m_spModelMutex(std::move(other.m_spModelMutex))
     , m_variables(std::move(other.m_variables))
+    , m_numberOfBinaryVariables(other.m_numberOfBinaryVariables)
 {
 }
 
@@ -57,6 +55,12 @@ tsplp::Model& tsplp::Model::operator=(Model other)
 {
     swap(*this, other);
     return *this;
+}
+
+std::span<const tsplp::Variable> tsplp::Model::GetBinaryVariables() const
+{
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return { m_variables.data(), m_variables.data() + m_numberOfBinaryVariables };
 }
 
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
@@ -117,6 +121,17 @@ template void tsplp::Model::AddConstraints(
     std::vector<tsplp::LinearConstraint>::const_iterator first,
     std::vector<tsplp::LinearConstraint>::const_iterator last);
 
+tsplp::Variable tsplp::Model::AddVariable(double lowerBound, double upperBound)
+{
+    m_variables.emplace_back(m_variables.size());
+    if (m_variables.size() >= static_cast<size_t>(m_spSimplexModel->getNumCols()))
+        m_spSimplexModel->addColumn(m_spSimplexModel->getNumCols(), nullptr, nullptr);
+
+    m_variables.back().SetLowerBound(lowerBound, *this);
+    m_variables.back().SetUpperBound(upperBound, *this);
+    return m_variables.back();
+}
+
 tsplp::Status tsplp::Model::Solve(std::chrono::steady_clock::time_point endTime)
 {
     const std::chrono::duration<double> remainingTime = endTime - std::chrono::steady_clock::now();
@@ -150,4 +165,5 @@ void tsplp::swap(tsplp::Model& m1, tsplp::Model& m2) noexcept
     swap(m1.m_spSimplexModel, m2.m_spSimplexModel);
     swap(m1.m_spModelMutex, m2.m_spModelMutex);
     swap(m1.m_variables, m2.m_variables);
+    swap(m1.m_numberOfBinaryVariables, m2.m_numberOfBinaryVariables);
 }

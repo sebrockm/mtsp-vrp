@@ -12,7 +12,7 @@ namespace tsplp
 class WeightManager
 {
 private:
-    xt::xtensor<int, 2> m_weights;
+    xt::xtensor<double, 2> m_weights;
     xt::xtensor<size_t, 1> m_startPositions;
     xt::xtensor<size_t, 1> m_endPositions;
     std::vector<size_t> m_toOriginal;
@@ -23,7 +23,7 @@ private:
 
 public:
     WeightManager(
-        xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> startPositions,
+        xt::xtensor<double, 2> weights, xt::xtensor<size_t, 1> startPositions,
         xt::xtensor<size_t, 1> endPositions);
 
     [[nodiscard]] const auto& W() const { return m_weights; }

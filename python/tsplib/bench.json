@@ -4,7 +4,20 @@
         "N": 27,
         "A": 1,
         "mode": "sum",
-        "seconds": 0.20810604095458984,
+        "seconds": 0.19248151779174805,
+        "lower_bound": 1681.0,
+        "upper_bound": 1681.0,
+        "gap": 0.0,
+        "path_lengths": [
+            1681.0
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 1,
+        "mode": "max",
+        "seconds": 0.1993272304534912,
         "lower_bound": 1681.0,
         "upper_bound": 1681.0,
         "gap": 0.0,
@@ -24,7 +37,34 @@
     {
         "name": "ESC25.sop",
         "N": 27,
+        "A": 2,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
         "A": 4,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 4,
+        "mode": "sum",
+        "error": [
+            "Incompatible dependencies"
+        ]
+    },
+    {
+        "name": "ESC25.sop",
+        "N": 27,
+        "A": 8,
         "mode": "sum",
         "error": [
             "Incompatible dependencies"
@@ -44,12 +84,25 @@
         "N": 171,
         "A": 1,
         "mode": "sum",
-        "seconds": 300.4592924118042,
-        "lower_bound": 2736.0,
-        "upper_bound": 3156.0,
-        "gap": 0.15350877192982448,
+        "seconds": 300.46531915664673,
+        "lower_bound": 2737.0,
+        "upper_bound": 3159.0,
+        "gap": 0.15418341249543288,
         "path_lengths": [
-            3156.0
+            3159.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 1,
+        "mode": "max",
+        "seconds": 300.29185962677,
+        "lower_bound": 2728.0,
+        "upper_bound": 3132.0,
+        "gap": 0.14809384164222883,
+        "path_lengths": [
+            3132.0
         ]
     },
     {
@@ -57,13 +110,27 @@
         "N": 171,
         "A": 2,
         "mode": "sum",
-        "seconds": 300.56544280052185,
-        "lower_bound": 2725.0,
-        "upper_bound": 3152.0,
-        "gap": 0.15669724770642213,
+        "seconds": 305.4667618274689,
+        "lower_bound": 2727.0,
+        "upper_bound": 3133.0,
+        "gap": 0.14888155482214893,
         "path_lengths": [
-            3152.0,
+            3133.0,
             0.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 2,
+        "mode": "max",
+        "seconds": 301.48997235298157,
+        "lower_bound": 1363.0,
+        "upper_bound": 3107.0,
+        "gap": 1.2795304475421863,
+        "path_lengths": [
+            3107.0,
+            174.0
         ]
     },
     {
@@ -71,15 +138,31 @@
         "N": 171,
         "A": 4,
         "mode": "sum",
-        "seconds": 305.27325105667114,
+        "seconds": 308.52175736427307,
         "lower_bound": 2703.0,
-        "upper_bound": 3251.0,
-        "gap": 0.2027376988531262,
+        "upper_bound": 3259.0,
+        "gap": 0.20569737328893822,
         "path_lengths": [
-            3020.0,
+            3028.0,
             0.0,
-            153.0,
-            78.0
+            231.0,
+            0.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 4,
+        "mode": "max",
+        "seconds": 300.3053653240204,
+        "lower_bound": 676.0,
+        "upper_bound": 3263.0,
+        "gap": 3.8269230769230766,
+        "path_lengths": [
+            3056.0,
+            0.0,
+            207.0,
+            0.0
         ]
     },
     {
@@ -87,17 +170,37 @@
         "N": 171,
         "A": 8,
         "mode": "sum",
-        "seconds": 300.125363111496,
-        "lower_bound": 2654.0,
-        "upper_bound": 3321.0,
-        "gap": 0.25131876412961573,
+        "seconds": 314.0546271800995,
+        "lower_bound": 2660.0,
+        "upper_bound": 3342.0,
+        "gap": 0.25639097744360906,
         "path_lengths": [
-            1714.0,
+            1667.0,
             0.0,
             132.0,
             0.0,
             0.0,
-            1475.0,
+            1543.0,
+            0.0,
+            0.0
+        ]
+    },
+    {
+        "name": "ftv170.atsp",
+        "N": 171,
+        "A": 8,
+        "mode": "max",
+        "seconds": 300.04283475875854,
+        "lower_bound": 331.0,
+        "upper_bound": 3446.0,
+        "gap": 9.410876132930513,
+        "path_lengths": [
+            1823.0,
+            0.0,
+            132.0,
+            0.0,
+            0.0,
+            1712.0,
             0.0,
             0.0
         ]
@@ -107,7 +210,20 @@
         "N": 42,
         "A": 1,
         "mode": "sum",
-        "seconds": 0.09301972389221191,
+        "seconds": 0.09401321411132812,
+        "lower_bound": 699.0,
+        "upper_bound": 699.0,
+        "gap": 0.0,
+        "path_lengths": [
+            699.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 1,
+        "mode": "max",
+        "seconds": 0.09287643432617188,
         "lower_bound": 699.0,
         "upper_bound": 699.0,
         "gap": 0.0,
@@ -120,7 +236,7 @@
         "N": 42,
         "A": 2,
         "mode": "sum",
-        "seconds": 2.202951669692993,
+        "seconds": 2.2821004390716553,
         "lower_bound": 661.0,
         "upper_bound": 661.0,
         "gap": 0.0,
@@ -132,9 +248,23 @@
     {
         "name": "dantzig42.tsp",
         "N": 42,
+        "A": 2,
+        "mode": "max",
+        "seconds": 300.0404894351959,
+        "lower_bound": 337.0,
+        "upper_bound": 652.0,
+        "gap": 0.9347181008902077,
+        "path_lengths": [
+            29.0,
+            652.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
         "A": 4,
         "mode": "sum",
-        "seconds": 14.342987775802612,
+        "seconds": 12.981061935424805,
         "lower_bound": 633.0,
         "upper_bound": 633.0,
         "gap": 0.0,
@@ -148,17 +278,53 @@
     {
         "name": "dantzig42.tsp",
         "N": 42,
-        "A": 8,
-        "mode": "sum",
-        "seconds": 301.1904900074005,
-        "lower_bound": 615.0,
-        "upper_bound": 639.0,
-        "gap": 0.039024390243902474,
+        "A": 4,
+        "mode": "max",
+        "seconds": 300.232031583786,
+        "lower_bound": 159.0,
+        "upper_bound": 720.0,
+        "gap": 3.5283018867924527,
         "path_lengths": [
             29.0,
             0.0,
-            610.0,
             0.0,
+            688.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 8,
+        "mode": "sum",
+        "seconds": 301.1010322570801,
+        "lower_bound": 615.0,
+        "upper_bound": 646.0,
+        "gap": 0.05040650406504055,
+        "path_lengths": [
+            29.0,
+            0.0,
+            0.0,
+            617.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dantzig42.tsp",
+        "N": 42,
+        "A": 8,
+        "mode": "max",
+        "seconds": 300.0317542552948,
+        "lower_bound": 77.0,
+        "upper_bound": 682.0,
+        "gap": 7.857142857142858,
+        "path_lengths": [
+            29.0,
+            0.0,
+            0.0,
+            650.0,
             0.0,
             0.0,
             0.0,
@@ -170,12 +336,25 @@
         "N": 1000,
         "A": 1,
         "mode": "sum",
-        "seconds": 307.5144376754761,
-        "lower_bound": 17462526.0,
-        "upper_bound": 20991939.0,
-        "gap": 0.20211354302350082,
+        "seconds": 316.42789673805237,
+        "lower_bound": 17497004.0,
+        "upper_bound": 20940947.0,
+        "gap": 0.19683044022850993,
         "path_lengths": [
-            20991939.0
+            20940947.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 1,
+        "mode": "max",
+        "seconds": 317.5267279148102,
+        "lower_bound": 17488897.0,
+        "upper_bound": 21021620.0,
+        "gap": 0.20199804481666273,
+        "path_lengths": [
+            21021620.0
         ]
     },
     {
@@ -183,12 +362,26 @@
         "N": 1000,
         "A": 2,
         "mode": "sum",
-        "seconds": 300.3509557247162,
-        "lower_bound": 17338253.0,
-        "upper_bound": 20929847.0,
-        "gap": 0.20714855181776382,
+        "seconds": 300.83848309516907,
+        "lower_bound": 17347724.0,
+        "upper_bound": 20981041.0,
+        "gap": 0.20944055831185704,
         "path_lengths": [
-            20929847.0,
+            20981041.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 2,
+        "mode": "max",
+        "seconds": 300.37194061279297,
+        "lower_bound": 8633315.0,
+        "upper_bound": 21002202.0,
+        "gap": 1.4326926562971467,
+        "path_lengths": [
+            21002202.0,
             0.0
         ]
     },
@@ -197,7 +390,7 @@
         "N": 1000,
         "A": 4,
         "mode": "sum",
-        "seconds": 300.8042542934418,
+        "seconds": 300.6933526992798,
         "lower_bound": 17233900.0,
         "upper_bound": 20841703.0,
         "gap": 0.2093433871613506,
@@ -211,9 +404,25 @@
     {
         "name": "dsj1000.tsp",
         "N": 1000,
+        "A": 4,
+        "mode": "max",
+        "seconds": 301.0122354030609,
+        "lower_bound": -1.7976931348623157e+308,
+        "upper_bound": -460039595.0,
+        "gap": Infinity,
+        "path_lengths": [
+            97350449.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    {
+        "name": "dsj1000.tsp",
+        "N": 1000,
         "A": 8,
         "mode": "sum",
-        "seconds": 303.02847719192505,
+        "seconds": 302.9490706920624,
         "lower_bound": -1.7976931348623157e+308,
         "upper_bound": 20167637.0,
         "gap": Infinity,
@@ -229,16 +438,49 @@
         ]
     },
     {
+        "name": "dsj1000.tsp",
+        "N": 1000,
+        "A": 8,
+        "mode": "max",
+        "seconds": 302.77819085121155,
+        "lower_bound": -1.7976931348623157e+308,
+        "upper_bound": 20250552.0,
+        "gap": Infinity,
+        "path_lengths": [
+            12619125.0,
+            0.0,
+            0.0,
+            840356.0,
+            473734.0,
+            3767127.0,
+            1897808.0,
+            652402.0
+        ]
+    },
+    {
         "name": "u574.tsp",
         "N": 574,
         "A": 1,
         "mode": "sum",
-        "seconds": 303.1807062625885,
-        "lower_bound": 36772.0,
-        "upper_bound": 42579.0,
-        "gap": 0.1579190688567389,
+        "seconds": 306.7664256095886,
+        "lower_bound": 36806.0,
+        "upper_bound": 42364.0,
+        "gap": 0.15100798782807145,
         "path_lengths": [
-            42579.0
+            42364.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 1,
+        "mode": "max",
+        "seconds": 300.1194829940796,
+        "lower_bound": 36373.0,
+        "upper_bound": 42593.0,
+        "gap": 0.17100596596376438,
+        "path_lengths": [
+            42593.0
         ]
     },
     {
@@ -246,12 +488,26 @@
         "N": 574,
         "A": 2,
         "mode": "sum",
-        "seconds": 301.32095527648926,
-        "lower_bound": 36536.0,
-        "upper_bound": 43253.0,
-        "gap": 0.18384606962995398,
+        "seconds": 303.14639925956726,
+        "lower_bound": 36636.0,
+        "upper_bound": 43302.0,
+        "gap": 0.18195217818539144,
         "path_lengths": [
-            43253.0,
+            43302.0,
+            0.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 2,
+        "mode": "max",
+        "seconds": 300.1141006946564,
+        "lower_bound": 17931.0,
+        "upper_bound": 45504.0,
+        "gap": 1.5377279571691482,
+        "path_lengths": [
+            45502.0,
             0.0
         ]
     },
@@ -260,15 +516,31 @@
         "N": 574,
         "A": 4,
         "mode": "sum",
-        "seconds": 300.2504289150238,
-        "lower_bound": 35193.0,
-        "upper_bound": 44993.0,
-        "gap": 0.2784644673656693,
+        "seconds": 300.22469997406006,
+        "lower_bound": 34418.0,
+        "upper_bound": 44903.0,
+        "gap": 0.3046371084897437,
         "path_lengths": [
-            1223.0,
+            1034.0,
             0.0,
             0.0,
-            43770.0
+            43869.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 4,
+        "mode": "max",
+        "seconds": 300.2249176502228,
+        "lower_bound": 8524.0,
+        "upper_bound": 45232.0,
+        "gap": 4.3064289066166115,
+        "path_lengths": [
+            1036.0,
+            0.0,
+            0.0,
+            44194.0
         ]
     },
     {
@@ -276,12 +548,32 @@
         "N": 574,
         "A": 8,
         "mode": "sum",
-        "seconds": 300.54103207588196,
-        "lower_bound": 33923.0,
+        "seconds": 300.4870021343231,
+        "lower_bound": 34091.0,
         "upper_bound": 45050.0,
-        "gap": 0.32800754650237307,
+        "gap": 0.3214631427649526,
         "path_lengths": [
             1034.0,
+            0.0,
+            0.0,
+            0.0,
+            43972.0,
+            0.0,
+            0.0,
+            44.0
+        ]
+    },
+    {
+        "name": "u574.tsp",
+        "N": 574,
+        "A": 8,
+        "mode": "max",
+        "seconds": 300.5588734149933,
+        "lower_bound": -1.7976931348623157e+308,
+        "upper_bound": 45054.0,
+        "gap": Infinity,
+        "path_lengths": [
+            1036.0,
             0.0,
             0.0,
             0.0,

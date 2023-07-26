@@ -14,7 +14,7 @@ size_t tsplp::WeightManager::ToOriginal(size_t i) const
 }
 
 tsplp::WeightManager::WeightManager(
-    xt::xtensor<int, 2> weights, xt::xtensor<size_t, 1> originalStartPositions,
+    xt::xtensor<double, 2> weights, xt::xtensor<size_t, 1> originalStartPositions,
     xt::xtensor<size_t, 1> originalEndPositions)
     : m_weights(std::move(weights))
     , m_startPositions(originalStartPositions)

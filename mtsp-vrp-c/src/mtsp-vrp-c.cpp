@@ -11,9 +11,9 @@
 
 int solve_mtsp_vrp(
     size_t numberOfAgents, size_t numberOfNodes, const size_t* start_positions,
-    const size_t* end_positions, const int* weights, int timeout_ms, size_t numberOfThreads,
-    double* lowerBound, double* upperBound, size_t* paths, size_t* pathOffsets,
-    int (*fractional_callback)(const double*))
+    const size_t* end_positions, const int* weights, int optimizationMode, int timeout_ms,
+    size_t numberOfThreads, double* lowerBound, double* upperBound, size_t* paths,
+    size_t* pathOffsets, int (*fractional_callback)(const double*))
 {
     const auto startTime = std::chrono::steady_clock::now();
 
@@ -24,6 +24,10 @@ int solve_mtsp_vrp(
         || lowerBound == nullptr || upperBound == nullptr || paths == nullptr
         || pathOffsets == nullptr)
         return MTSP_VRP_C_NO_RESULT_INVALID_INPUT_POINTER;
+
+    if (optimizationMode != MTSP_VRP_C_OPTIMIZATION_MODE_SUM
+        && optimizationMode != MTSP_VRP_C_OPTIMIZATION_MODE_MAX)
+        return MTSP_VRP_C_INVALID_OPTIMIZATION_MODE;
 
     const std::array positionsShape = { numberOfAgents };
     const auto startPositions
@@ -41,7 +45,16 @@ int solve_mtsp_vrp(
             - std::chrono::duration_cast<std::chrono::milliseconds>(
                                  std::chrono::steady_clock::now() - startTime);
 
-        tsplp::MtspModel model(startPositions, endPositions, weights_, timeout);
+        static_assert(
+            tsplp::OptimizationMode::Sum
+            == static_cast<tsplp::OptimizationMode>(MTSP_VRP_C_OPTIMIZATION_MODE_SUM));
+        static_assert(
+            tsplp::OptimizationMode::Max
+            == static_cast<tsplp::OptimizationMode>(MTSP_VRP_C_OPTIMIZATION_MODE_MAX));
+
+        tsplp::MtspModel model(
+            startPositions, endPositions, weights_,
+            static_cast<tsplp::OptimizationMode>(optimizationMode), timeout);
 
         const std::function<void(const xt::xtensor<double, 3>&)> callback = fractional_callback != nullptr
             ? [=](const xt::xtensor<double, 3>& tensor) {

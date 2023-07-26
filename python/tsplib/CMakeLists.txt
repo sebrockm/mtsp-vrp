@@ -18,7 +18,7 @@ add_custom_target(tsplib-bench
 	COMMAND "${bench_script}"
 	VERBATIM
 	USES_TERMINAL
-	SOURCES best-known-solutions.json readme.md requirements.txt tsplib.py
+	SOURCES best-known-solutions.json readme.md requirements.txt tsplib.py bench.json
 )
 
 add_dependencies(tsplib-bench mtsp-vrp-python-package)

@@ -14,6 +14,7 @@ _solve_mtsp_vrp.argtypes = [
     ndpointer(c_size_t, flags='C_CONTIGUOUS'), # start_positions
     ndpointer(c_size_t, flags='C_CONTIGUOUS'), # end_positions
     ndpointer(c_int, flags='C_CONTIGUOUS'), # weights
+    c_int, # optimizationMode
     c_int, # timeout
     c_size_t, # numberOfThreads
     POINTER(c_double), # lowerBound
@@ -32,12 +33,13 @@ error_code_map = {
     -6: 'Incompatible dependencies'
 }
 
-def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_threads=0, fractional_callback=None):
+def solve_mtsp_vrp(start_positions, end_positions, weights, optimization_mode, timeout, number_of_threads=0, fractional_callback=None):
     A = len(start_positions)
     N = len(weights)
     start_positions = np.array(start_positions, dtype=np.uint64)
     end_positions = np.array(end_positions, dtype=np.uint64)
     weights = np.array(weights, dtype=np.int32)
+    optimization_mode = 1 if str(optimization_mode).upper() in ['MAX', '1'] else 0
     number_of_threads = int(number_of_threads)
     lb = c_double(0)
     ub = c_double(0)
@@ -53,8 +55,8 @@ def solve_mtsp_vrp(start_positions, end_positions, weights, timeout, number_of_t
     else:
         fractional_callback_c = None
 
-    result = _solve_mtsp_vrp(A, N, start_positions, end_positions, weights, timeout, number_of_threads,
-                             byref(lb), byref(ub), pathsBuffer, offsets, fractional_callback_c)
+    result = _solve_mtsp_vrp(A, N, start_positions, end_positions, weights, optimization_mode, timeout,
+                             number_of_threads, byref(lb), byref(ub), pathsBuffer, offsets, fractional_callback_c)
     if result < 0:
         error = error_code_map.get(result, f'Unknown error code: {result}')
         raise Exception(error)

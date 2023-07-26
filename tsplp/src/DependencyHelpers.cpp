@@ -9,7 +9,7 @@
 
 namespace tsplp
 {
-xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights)
+xt::xtensor<double, 2> CreateTransitiveDependencies(xt::xtensor<double, 2> weights)
 {
     boost::adjacency_list<> dependencyGraph;
     for (const auto [v, u] : xt::argwhere(equal(weights, -1)))
@@ -27,7 +27,7 @@ xt::xtensor<int, 2> CreateTransitiveDependencies(xt::xtensor<int, 2> weights)
     return weights;
 }
 
-DependencyGraph::DependencyGraph(const xt::xtensor<int, 2>& weights)
+DependencyGraph::DependencyGraph(const xt::xtensor<double, 2>& weights)
     : m_weights(weights)
 {
     const auto N = weights.shape(0);

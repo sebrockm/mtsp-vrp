@@ -71,7 +71,7 @@ def callback(fractional):
 
 sp = [0, 0]
 ep = [0, 0]
-solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, timeout=600000, fractional_callback=callback, number_of_threads=1)
+solve_mtsp_vrp(start_positions=sp, end_positions=ep, weights=weights, optimization_mode='sum', timeout=60000, fractional_callback=callback, number_of_threads=1)
 
 for i, fractional in enumerate(tqdm(fractionals)):
     draw_fractional_solution(fractional, weights, sp, ep, P.node_coords, f'{instance}_{i}.png')

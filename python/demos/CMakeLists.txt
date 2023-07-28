@@ -8,7 +8,8 @@ file(GENERATE
 \"${Python3_EXECUTABLE}\" -m venv \"${testenv}\"\n\
 ${activate_command}\n\
 pip install -r \"${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt\"\n\
-python \"${CMAKE_CURRENT_SOURCE_DIR}/progress_visualization.py\"\n\
+python \"${CMAKE_CURRENT_SOURCE_DIR}/progress_visualization.py\" sum\n\
+python \"${CMAKE_CURRENT_SOURCE_DIR}/progress_visualization.py\" max\n\
 "
 	FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )

@@ -82,7 +82,7 @@ def main():
                         error = e.args
                     seconds = time.time() - star_time
                     if error is not None:
-                        results.append({'name': base_name, 'N': N, 'A': A, 'mode': 'sum', 'error': error})
+                        results.append({'name': base_name, 'N': N, 'A': A, 'mode': mode, 'error': error})
                     else:
                         if best_lb is not None and best_ub is not None:
                             if lb > best_lb or ub < best_ub:

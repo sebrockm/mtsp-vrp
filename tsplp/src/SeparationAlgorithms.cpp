@@ -203,8 +203,9 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
     const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
     const auto values = vf(m_variables);
 
-    graph_algos::UndirectedGraph graph(N);
+    // graph_algos::UndirectedGraph graph(N);
     std::vector<double> edge2WeightMap(N * (N - 1) / 2);
+    std::vector<double> edge2CapacityMap(N * (N - 1) / 2);
     for (size_t u = 0; u < N; ++u)
     {
         for (size_t v = 0; v < u; ++v)
@@ -215,34 +216,35 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             weight = std::max(0.0, std::min(1.0, weight));
 
             const auto capacity = std::min(weight, 1 - weight);
-            boost::add_edge(u, v, capacity, graph);
+            // boost::add_edge(u, v, capacity, graph);
+            edge2CapacityMap[u * (u - 1) / 2 + v] = capacity;
             edge2WeightMap[u * (u - 1) / 2 + v] = weight;
         }
     }
-    const auto edge2WeightFunction = [&](const graph_algos::EdgeType& e)
+    /*const auto edge2WeightFunction = [&](size_t u, size_t v)
     {
         const auto s = source(e, graph);
         const auto t = target(e, graph);
         const auto u = std::max(s, t);
         const auto v = std::min(s, t);
         return edge2WeightMap[u * (u - 1) / 2 + v];
-    };
+    };*/
 
     std::vector<bool> odd(N);
-    for (const auto v : boost::make_iterator_range(vertices(graph)))
+    for (size_t u = 0; u < N; ++u)
     {
-        const auto [eBegin, eEnd] = out_edges(v, graph);
-        odd[v] = std::count_if(
-                     eBegin, eEnd,
-                     [&](const graph_algos::EdgeType& e) { return edge2WeightFunction(e) > 0.5; })
-                % 2
-            == 1;
+        bool isUOdd = false;
+        for (size_t v = 0; v < u; ++v)
+            isUOdd = isUOdd ^ (edge2WeightMap[u * (u - 1) / 2 + v] > 0.5);
+        for (size_t v = u + 1; v < N; ++v)
+            isUOdd = isUOdd ^ (edge2WeightMap[v * (v - 1) / 2 + u] > 0.5);
+        odd[u] = isUOdd;
     }
 
     std::vector<LinearConstraint> results {};
 
     graph_algos::CreateGomoryHuTree(
-        graph,
+        N, edge2CapacityMap,
         [&](graph_algos::VertexType, graph_algos::VertexType, const double cutSize,
             std::span<const size_t> compU, std::span<const size_t> compV)
         {

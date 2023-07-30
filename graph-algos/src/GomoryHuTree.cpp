@@ -2,19 +2,21 @@
 
 #include "PartiallyContractedGraph.hpp"
 
+#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/boykov_kolmogorov_max_flow.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/filtered_graph.hpp>
 #include <boost/graph/undirected_dfs.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include <numeric>
 #include <unordered_map>
 #include <vector>
-#include <numeric>
 
 namespace graph_algos
 {
 
+using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
 using IntermediateTree = boost::adjacency_list<
     boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
 using TreeVertexType = typename boost::graph_traits<IntermediateTree>::vertex_descriptor;
@@ -24,28 +26,26 @@ using PartiallyContractedGraphEdgeType = PartiallyContractedGraph::edge_descript
 using PartiallyContractedGraphVertexType = PartiallyContractedGraph::vertex_descriptor;
 
 void CreateGomoryHuTree(
-    size_t N, std::vector<double> const& edge2CapacityMap,
+    const size_t N, const std::span<const double> weights,
     const std::function<bool(
-        VertexType u, VertexType v, double cutSize, std::span<const VertexType> compU,
-        std::span<const VertexType> compV)>& newEdgeCallback)
+        size_t u, size_t v, double cutSize, std::span<const size_t> compU,
+        std::span<const size_t> compV)>& newEdgeCallback)
 {
-    //const auto N = num_vertices(inputGraph);
     if (N <= 1)
         return;
 
     std::vector<PartiallyContractedGraphVertexType> inputVertex2partiallyContractedMap(N);
     std::vector<size_t> gomoryHuForestVertex2ComponentIdMap(N);
 
-    std::vector<std::span<VertexType>> gomoryHuTreeContractedVertices(N);
+    std::vector<std::span<size_t>> gomoryHuTreeContractedVertices(N);
 
     PartiallyContractedGraph partiallyContractedGraph(N);
     IntermediateTree gomoryHuTree;
     const auto firstTreeVertex = add_vertex(gomoryHuTree);
 
-    //const auto [graphVerticesBegin, graphVerticesEnd] = vertices(inputGraph);
-    std::vector<VertexType> inputGraphVertexStorage(N);
+    std::vector<size_t> inputGraphVertexStorage(N);
     std::iota(begin(inputGraphVertexStorage), end(inputGraphVertexStorage), 0);
-    std::vector<VertexType> gomoryHuTreeContractedVerticesStorage = inputGraphVertexStorage;
+    std::vector<size_t> gomoryHuTreeContractedVerticesStorage = inputGraphVertexStorage;
 
     gomoryHuTreeContractedVertices[firstTreeVertex]
         = { gomoryHuTreeContractedVerticesStorage.data(),
@@ -97,7 +97,7 @@ void CreateGomoryHuTree(
 
         // Fill in edges between contracted nodes by summing up original edges. We need forward and
         // backward edges because boost::boykov_kolmogorov_max_flow needs a directed input graph.
-        for (size_t inputU = 0; inputU < N; ++inputU)
+        for (size_t inputU = 1; inputU < N; ++inputU)
         {
             for (size_t inputV = 0; inputV < inputU; ++inputV)
             {
@@ -107,7 +107,7 @@ void CreateGomoryHuTree(
                 if (u == v)
                     continue;
 
-                const auto weight = edge2CapacityMap[inputU * (inputU - 1) / 2 + inputV];
+                const auto weight = weights[inputU * (inputU - 1) / 2 + inputV];
                 partiallyContractedGraph.EdgeCapacities[u * n + v] += weight;
                 partiallyContractedGraph.EdgeCapacities[v * n + u] += weight;
             }
@@ -130,7 +130,7 @@ void CreateGomoryHuTree(
         const auto middle = std::partition(
             gomoryHuTreeContractedVertices[splitNode].begin(),
             gomoryHuTreeContractedVertices[splitNode].end(),
-            [&](VertexType v)
+            [&](size_t v)
             {
                 const auto nonContractedNode = inputVertex2partiallyContractedMap.at(v);
                 return partiallyContractedGraph.VertexColors[nonContractedNode]
@@ -175,7 +175,7 @@ void CreateGomoryHuTree(
 
         const auto endBlack = std::partition(
             begin(inputGraphVertexStorage), end(inputGraphVertexStorage),
-            [&](VertexType v)
+            [&](size_t v)
             {
                 const auto pv = inputVertex2partiallyContractedMap.at(v);
                 return partiallyContractedGraph.VertexColors[pv] != boost::white_color;
@@ -196,64 +196,6 @@ void CreateGomoryHuTree(
         if (gomoryHuTreeContractedVertices[newGomoryHuVertex].size() > 1)
             treeNodesToBeSplit.push_back(newGomoryHuVertex);
     }
-}
-
-double GetMinCutFromGomoryHuTree(
-    [[maybe_unused]] const UndirectedGraph& gomoryHuTree, [[maybe_unused]] VertexType source,
-    [[maybe_unused]] VertexType sink)
-{
-    return 0;
-    //class Visitor : public boost::default_dfs_visitor
-    //{
-    //    std::vector<VertexType>& m_predecessorMap;
-    //    VertexType m_sink;
-
-    //public:
-    //    Visitor(std::vector<VertexType>& predecessorMap, VertexType sink)
-    //        : m_predecessorMap(predecessorMap)
-    //        , m_sink(sink)
-    //    {
-    //    }
-
-    //    void tree_edge(EdgeType e, const UndirectedGraph& g) const
-    //    {
-    //        const auto s = boost::source(e, g);
-    //        const auto t = boost::target(e, g);
-    //        m_predecessorMap[t] = s;
-    //        if (t == m_sink)
-    //            throw 0;
-    //    }
-    //};
-
-    //std::vector<VertexType> predecessorMap(num_vertices(gomoryHuTree));
-    //try
-    //{
-    //    static_assert(std::is_same_v<
-    //                  typename boost::graph_traits<UndirectedGraph>::directed_category,
-    //                  boost::undirected_tag>);
-    //    std::unordered_map<EdgeType, boost::default_color_type, boost::hash<EdgeType>> colorMap;
-    //    boost::undirected_dfs(
-    //        gomoryHuTree,
-    //        boost::root_vertex(source)
-    //            .visitor(Visitor { predecessorMap, sink })
-    //            .edge_color_map(boost::make_assoc_property_map(colorMap)));
-    //}
-    //catch (int)
-    //{
-    //}
-
-    //double minWeight = std::numeric_limits<double>::max();
-    //do
-    //{
-    //    const auto [e, exists] = edge(predecessorMap[sink], sink, gomoryHuTree);
-    //    if (!exists) // should not happen because predecessorMap was created from existing edges
-    //        break;
-    //    const auto weight = get(boost::edge_weight, gomoryHuTree, e);
-    //    minWeight = std::min(minWeight, weight);
-    //    sink = predecessorMap[sink];
-    //} while (sink != source);
-
-    //return minWeight;
 }
 
 }

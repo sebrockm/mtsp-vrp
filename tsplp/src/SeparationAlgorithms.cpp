@@ -245,8 +245,8 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
 
     graph_algos::CreateGomoryHuTree(
         N, edge2CapacityMap,
-        [&](graph_algos::VertexType, graph_algos::VertexType, const double cutSize,
-            std::span<const size_t> compU, std::span<const size_t> compV)
+        [&](size_t, size_t, const double cutSize, std::span<const size_t> compU,
+            std::span<const size_t> compV)
         {
             assert(cutSize >= 0);
 

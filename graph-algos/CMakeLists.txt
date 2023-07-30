@@ -11,7 +11,6 @@ target_link_libraries(graph-algos PUBLIC Boost::Boost PRIVATE coverage_config)
 
 target_precompile_headers(graph-algos
 	PUBLIC
-	<boost/graph/adjacency_list.hpp>
 	<boost/graph/depth_first_search.hpp>
 	<boost/graph/graph_traits.hpp>
 	<boost/graph/undirected_dfs.hpp>
@@ -22,6 +21,7 @@ target_precompile_headers(graph-algos
 	<unordered_map>
 
 	PRIVATE
+	<boost/graph/adjacency_list.hpp>
 	<boost/graph/boykov_kolmogorov_max_flow.hpp>
 	<boost/graph/connected_components.hpp>
 	<boost/graph/filtered_graph.hpp>

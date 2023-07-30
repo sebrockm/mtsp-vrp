@@ -203,7 +203,6 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
     const auto vf = xt::vectorize([this](Variable v) { return v.GetObjectiveValue(m_model); });
     const auto values = vf(m_variables);
 
-    // graph_algos::UndirectedGraph graph(N);
     std::vector<double> edge2WeightMap(N * (N - 1) / 2);
     std::vector<double> edge2CapacityMap(N * (N - 1) / 2);
     for (size_t u = 0; u < N; ++u)
@@ -216,19 +215,10 @@ std::vector<LinearConstraint> Separator::TwoMatching() const
             weight = std::max(0.0, std::min(1.0, weight));
 
             const auto capacity = std::min(weight, 1 - weight);
-            // boost::add_edge(u, v, capacity, graph);
             edge2CapacityMap[u * (u - 1) / 2 + v] = capacity;
             edge2WeightMap[u * (u - 1) / 2 + v] = weight;
         }
     }
-    /*const auto edge2WeightFunction = [&](size_t u, size_t v)
-    {
-        const auto s = source(e, graph);
-        const auto t = target(e, graph);
-        const auto u = std::max(s, t);
-        const auto v = std::min(s, t);
-        return edge2WeightMap[u * (u - 1) / 2 + v];
-    };*/
 
     std::vector<bool> odd(N);
     for (size_t u = 0; u < N; ++u)

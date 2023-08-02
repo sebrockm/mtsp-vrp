@@ -2,6 +2,7 @@
 
 #include "HasCycle.hpp"
 
+#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <catch2/catch.hpp>
 
@@ -11,17 +12,79 @@
 #include <unordered_map>
 #include <utility>
 
+using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
+using UndirectedGraph = boost::adjacency_list<
+    boost::vecS, boost::vecS, boost::undirectedS, boost::no_property, EdgeWeightProperty>;
+using VertexType = typename boost::graph_traits<UndirectedGraph>::vertex_descriptor;
+using EdgeType = typename boost::graph_traits<UndirectedGraph>::edge_descriptor;
+
+double GetMinCutFromGomoryHuTree(
+    const UndirectedGraph& gomoryHuTree, VertexType source, VertexType sink)
+{
+    class Visitor : public boost::default_dfs_visitor
+    {
+        std::vector<VertexType>& m_predecessorMap;
+        VertexType m_sink;
+
+    public:
+        Visitor(std::vector<VertexType>& predecessorMap, VertexType sink)
+            : m_predecessorMap(predecessorMap)
+            , m_sink(sink)
+        {
+        }
+
+        void tree_edge(EdgeType e, const UndirectedGraph& g) const
+        {
+            const auto s = boost::source(e, g);
+            const auto t = boost::target(e, g);
+            m_predecessorMap[t] = s;
+            if (t == m_sink)
+                throw 0;
+        }
+    };
+
+    std::vector<VertexType> predecessorMap(num_vertices(gomoryHuTree));
+    try
+    {
+        static_assert(std::is_same_v<
+                      typename boost::graph_traits<UndirectedGraph>::directed_category,
+                      boost::undirected_tag>);
+        std::unordered_map<EdgeType, boost::default_color_type, boost::hash<EdgeType>> colorMap;
+        boost::undirected_dfs(
+            gomoryHuTree,
+            boost::root_vertex(source)
+                .visitor(Visitor { predecessorMap, sink })
+                .edge_color_map(boost::make_assoc_property_map(colorMap)));
+    }
+    catch (int)
+    {
+    }
+
+    double minWeight = std::numeric_limits<double>::max();
+    do
+    {
+        const auto [e, exists] = edge(predecessorMap[sink], sink, gomoryHuTree);
+        if (!exists) // should not happen because predecessorMap was created from existing edges
+            break;
+        const auto weight = get(boost::edge_weight, gomoryHuTree, e);
+        minWeight = std::min(minWeight, weight);
+        sink = predecessorMap[sink];
+    } while (sink != source);
+
+    return minWeight;
+}
+
 namespace g = graph_algos;
 
 template <size_t N>
 class GomoryHuTreeCallback
 {
-    g::UndirectedGraph& m_gomoryHuTree;
+    UndirectedGraph& m_gomoryHuTree;
     const std::array<std::array<int, N>, N>& m_expectedMinCuts;
 
 public:
     GomoryHuTreeCallback(
-        g::UndirectedGraph& gomoryHuTree, const std::array<std::array<int, N>, N>& expectedMinCuts)
+        UndirectedGraph& gomoryHuTree, const std::array<std::array<int, N>, N>& expectedMinCuts)
         : m_gomoryHuTree(gomoryHuTree)
         , m_expectedMinCuts(expectedMinCuts)
     {
@@ -29,8 +92,8 @@ public:
     }
 
     bool operator()(
-        g::VertexType u, g::VertexType v, double cutSize, std::span<const g::VertexType> compU,
-        std::span<const g::VertexType> compV)
+        VertexType u, VertexType v, double cutSize, std::span<const VertexType> compU,
+        std::span<const VertexType> compV)
     {
         REQUIRE(N > 1); // the callback must not be called otherwise
 
@@ -76,43 +139,60 @@ private:
                 if (u == v)
                     continue;
 
-                const auto minCut = g::GetMinCutFromGomoryHuTree(m_gomoryHuTree, u, v);
+                const auto minCut = GetMinCutFromGomoryHuTree(m_gomoryHuTree, u, v);
                 REQUIRE(minCut == m_expectedMinCuts.at(u).at(v));
             }
         }
     }
 };
 
+auto GetLowerTriangularWeights(const UndirectedGraph& graph)
+{
+    const auto N = std::max(num_vertices(graph), static_cast<size_t>(1));
+    std::vector<double> weights(N * (N - 1) / 2);
+    for (const auto e : boost::make_iterator_range(edges(graph)))
+    {
+        const auto s = source(e, graph);
+        const auto t = target(e, graph);
+        const auto u = std::max(s, t);
+        const auto v = std::min(s, t);
+
+        weights[u * (u - 1) / 2 + v] = get(boost::edge_weight, graph, e);
+    }
+
+    return weights;
+}
+
 TEST_CASE("Empty Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 0;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
     std::array<std::array<int, N>, N> expectedMinCuts {};
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("Single Node Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 1;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
     constexpr std::array<std::array<int, N>, N> expectedMinCuts { { { 0 } } };
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("Two Nodes Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 2;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 17, graph);
 
@@ -123,17 +203,17 @@ TEST_CASE("Two Nodes Graph", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("Two Nodes Disjoint Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 2;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     // clang-format off
     constexpr std::array<std::array<int, N>, N> expectedMinCuts {{
@@ -142,17 +222,17 @@ TEST_CASE("Two Nodes Disjoint Graph", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("Four Nodes Disjoint Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     // clang-format off
     constexpr std::array<std::array<int, N>, N> expectedMinCuts {{
@@ -163,17 +243,17 @@ TEST_CASE("Four Nodes Disjoint Graph", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("K3", "[Gomory Hu Tree]")
 {
     constexpr int N = 3;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 2, graph);
@@ -187,17 +267,17 @@ TEST_CASE("K3", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("K4", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 2, graph);
@@ -215,10 +295,10 @@ TEST_CASE("K4", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
@@ -228,7 +308,7 @@ TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
     // https://en.wikipedia.org/w/index.php?title=Gomory%E2%80%93Hu_tree&oldid=1097322015
 
     constexpr int N = 6;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(0, 2, 7, graph);
@@ -251,10 +331,10 @@ TEST_CASE("Wikipedia example", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
@@ -263,7 +343,7 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
     // graph taken from http://www14.in.tum.de/lehre/2016WS/ea/split/sec-Gomory-Hu-Trees.pdf
 
     constexpr int N = 9;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 2, graph);
     add_edge(0, 2, 4, graph);
@@ -302,17 +382,17 @@ TEST_CASE("Lecture example", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
 TEST_CASE("Two connected components Graph", "[Gomory Hu Tree]")
 {
     constexpr int N = 4;
-    g::UndirectedGraph graph(N);
+    UndirectedGraph graph(N);
 
     add_edge(0, 1, 1, graph);
     add_edge(2, 3, 1, graph);
@@ -326,10 +406,10 @@ TEST_CASE("Two connected components Graph", "[Gomory Hu Tree]")
     }};
     // clang-format on
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     GomoryHuTreeCallback callback { gomoryHuTree, expectedMinCuts };
 
-    g::CreateGomoryHuTree(graph, callback);
+    g::CreateGomoryHuTree(N, GetLowerTriangularWeights(graph), callback);
     callback.DoPostCheck();
 }
 
@@ -354,12 +434,12 @@ TEST_CASE("Stoer-Wagner Regression Test", "[Gomory Hu Tree]")
                                                         { 6, 7 },
                                                         { 0, 4 } } };
     const std::array<int, 13> ws = { 3, 3, 3, 2, 2, 2, 3, 3, 3, 2, 2, 2, 6 };
-    g::UndirectedGraph graph(edges.begin(), edges.end(), ws.begin(), N, edges.size());
+    UndirectedGraph graph(edges.begin(), edges.end(), ws.begin(), N, edges.size());
 
-    g::UndirectedGraph gomoryHuTree(N);
+    UndirectedGraph gomoryHuTree(N);
     g::CreateGomoryHuTree(
-        graph,
-        [&](g::VertexType u, g::VertexType v, double cutSize, auto, auto)
+        N, GetLowerTriangularWeights(graph),
+        [&](VertexType u, VertexType v, double cutSize, auto, auto)
         {
             add_edge(u, v, cutSize, gomoryHuTree);
             return false;
@@ -367,7 +447,7 @@ TEST_CASE("Stoer-Wagner Regression Test", "[Gomory Hu Tree]")
     REQUIRE(num_vertices(gomoryHuTree) == N);
     REQUIRE(num_edges(gomoryHuTree) == N - 1);
 
-    const auto minCutByTree = g::GetMinCutFromGomoryHuTree(gomoryHuTree, 0, 4);
+    const auto minCutByTree = GetMinCutFromGomoryHuTree(gomoryHuTree, 0, 4);
 
     REQUIRE(minCutByTree == 6); // the bug caused this to be 7
 }

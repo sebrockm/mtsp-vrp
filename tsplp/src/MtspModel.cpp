@@ -154,18 +154,18 @@ tsplp::MtspModel::MtspModel(
     // special inequalities for start and end nodes
     for (size_t a = 0; a < A; ++a)
     {
-        // We write X + 0 instead of X to turn summed up type from Variable to
-        // LinearVariableComposition. That is necessary because xtensor initializes the sum with a
-        // conversion from 0 to ResultType and we don't provide a conversion from int to Variable,
-        // but we do provide one from int to LinearVariableCompositon.
+        const auto s = m_weightManager.StartPositions()[a];
+        const auto e = m_weightManager.EndPositions()[a];
 
-        // arcs out of start nodes
-        constraints.emplace_back(
-            xt::sum(xt::view(X + 0, a, m_weightManager.StartPositions()[a], xt::all()))() == 1);
+        LinearVariableComposition outOfStart;
+        for (size_t v = 0; v < N; ++v)
+            outOfStart += X(a, s, v);
+        constraints.push_back(std::move(outOfStart) == 1);
 
-        // arcs into end nodes
-        constraints.emplace_back(
-            xt::sum(xt::view(X + 0, a, xt::all(), m_weightManager.EndPositions()[a]))() == 1);
+        LinearVariableComposition intoEnd;
+        for (size_t u = 0; u < N; ++u)
+            intoEnd += X(a, u, e);
+        constraints.push_back(std::move(intoEnd) == 1);
 
         // artificial connections from end to next start
         constraints.emplace_back(
@@ -199,7 +199,10 @@ tsplp::MtspModel::MtspModel(
         if (A > 1 || u != m_weightManager.StartPositions()[0]
             || v != m_weightManager.EndPositions()[0])
         {
-            constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), v, u))() == 0);
+            LinearVariableComposition reverseEdge;
+            for (size_t a = 0; a < A; ++a)
+                reverseEdge += X(a, v, u);
+            constraints.push_back(std::move(reverseEdge) == 0);
         }
 
         // require the same agent to visit dependent nodes
@@ -207,9 +210,15 @@ tsplp::MtspModel::MtspModel(
         {
             for (size_t a = 0; a < A; ++a)
             {
-                constraints.emplace_back(
-                    xt::sum(xt::view(X + 0, a, u, xt::all()))()
-                    == xt::sum(xt::view(X + 0, a, xt::all(), v))());
+                LinearVariableComposition outgoing;
+                for (size_t n = 0; n < N; ++n)
+                    outgoing += X(a, u, n);
+
+                LinearVariableComposition incoming;
+                for (size_t n = 0; n < N; ++n)
+                    incoming += X(a, n, v);
+
+                constraints.push_back(std::move(outgoing) == std::move(incoming));
             }
         }
 
@@ -217,14 +226,24 @@ tsplp::MtspModel::MtspModel(
         {
             // u->v, so startPosition->v is not possible
             if (s != u)
-                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), s, v))() == 0);
+            {
+                LinearVariableComposition startToV;
+                for (size_t a = 0; a < A; ++a)
+                    startToV += X(a, s, v);
+                constraints.push_back(std::move(startToV) == 0);
+            }
         }
 
         for (const auto e : m_weightManager.EndPositions())
         {
             // u->v, so u->endPosition is not possible
             if (e != v)
-                constraints.emplace_back(xt::sum(xt::view(X + 0, xt::all(), u, e))() == 0);
+            {
+                LinearVariableComposition uToEnd;
+                for (size_t a = 0; a < A; ++a)
+                    uToEnd += X(a, u, e);
+                constraints.push_back(std::move(uToEnd) == 0);
+            }
         }
 
         if (std::chrono::steady_clock::now() >= m_endTime)
@@ -239,10 +258,13 @@ tsplp::MtspModel::MtspModel(
     {
         for (size_t v = u + 1; v < N; ++v)
         {
-            constraints.emplace_back(
-                (xt::sum(xt::view(X + 0, xt::all(), u, v))
-                 + xt::sum(xt::view(X + 0, xt::all(), v, u)))()
-                <= 1);
+            LinearVariableComposition cycle;
+            for (size_t a = 0; a < A; ++a)
+            {
+                cycle += X(a, u, v);
+                cycle += X(a, v, u);
+            }
+            constraints.push_back(std::move(cycle) <= 1);
         }
 
         if (std::chrono::steady_clock::now() >= m_endTime)

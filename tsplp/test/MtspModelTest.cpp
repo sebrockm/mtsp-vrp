@@ -30,12 +30,13 @@ TEST_CASE("circular start and end", "[MtspModel]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    const auto result = model.BranchAndCutSolve(1);
+    model.BranchAndCutSolve(1);
+    const auto& result = model.GetResult();
 
     REQUIRE(!result.IsTimeoutHit);
-    REQUIRE(result.LowerBound == 3);
-    REQUIRE(result.UpperBound == 3);
+    REQUIRE(result.GetLowerBound() == 3);
+    REQUIRE(result.GetUpperBound() == 3);
     REQUIRE(
-        result.Paths
+        result.GetPaths()
         == std::vector { std::vector<size_t> { 0, 1 }, std::vector<size_t> { 1, 2, 0 } });
 }

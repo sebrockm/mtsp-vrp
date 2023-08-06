@@ -67,7 +67,7 @@ tsplp::MtspModel::MtspModel(
     if (m_optimizationMode != OptimizationMode::Sum && m_optimizationMode != OptimizationMode::Max)
         return;
 
-    m_bestResult = CreateInitialResult();
+    CreateInitialResult();
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
@@ -277,7 +277,7 @@ tsplp::MtspModel::MtspModel(
     m_model.AddConstraints(cbegin(constraints), cend(constraints));
 }
 
-tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
+void tsplp::MtspModel::BranchAndCutSolve(
     std::optional<size_t> noOfThreads,
     std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback)
 {
@@ -289,7 +289,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
         m_bestResult.IsTimeoutHit = true;
-        return m_bestResult;
+        return;
     }
 
     auto callbackMutex = [&]() -> std::optional<std::mutex>
@@ -312,7 +312,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
-            if (std::chrono::steady_clock::now() >= m_endTime)
+            if (std::chrono::steady_clock::now() >= m_endTime || m_bestResult.HaveBoundsCrossed())
             {
                 queue.ClearAll();
                 break;
@@ -344,11 +344,7 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
                 = std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10);
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            const auto currentUpperBound = [this]
-            {
-                std::unique_lock lock { m_bestResultMutex };
-                return m_bestResult.UpperBound;
-            }();
+            const auto currentUpperBound = m_bestResult.GetUpperBound();
 
             if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
             {
@@ -363,35 +359,16 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
-                {
-                    auto exploitedResult = ExploitFractionalSolution(fractionalValues);
-
-                    std::unique_lock lock { m_bestResultMutex };
-
-                    if (exploitedResult.UpperBound < m_bestResult.UpperBound)
-                        m_bestResult = std::move(exploitedResult);
-                }
+                    ExploitFractionalSolution(fractionalValues);
             }
 
+            m_bestResult.UpdateLowerBound(
+                std::min(currentLowerBound, queue.GetLowerBound().value_or(currentLowerBound)));
+
+            if (currentLowerBound >= m_bestResult.GetUpperBound())
             {
-                std::unique_lock lock { m_bestResultMutex };
-
-                const auto threadLowerBound = std::min(m_bestResult.UpperBound, currentLowerBound);
-
-                m_bestResult.LowerBound
-                    = std::min(threadLowerBound, queue.GetLowerBound().value_or(threadLowerBound));
-
-                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
-                {
-                    queue.ClearAll();
-                    break;
-                }
-
-                if (currentLowerBound >= m_bestResult.UpperBound)
-                {
-                    queue.NotifyNodeDone(threadId);
-                    continue;
-                }
+                queue.NotifyNodeDone(threadId);
+                continue;
             }
 
             // fix variables according to reduced costs
@@ -465,22 +442,11 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
 
             if (!fractionalVar.has_value())
             {
-                std::unique_lock lock { m_bestResultMutex };
-
-                if (currentLowerBound >= m_bestResult.UpperBound) // another thread may have updated
-                                                                  // UpperBound since the last check
+                // another thread may have updated the upper bound since the last check
+                if (currentLowerBound < m_bestResult.GetUpperBound())
                 {
-                    queue.NotifyNodeDone(threadId);
-                    continue;
-                }
-
-                m_bestResult.UpperBound = currentLowerBound;
-                m_bestResult.Paths = CreatePathsFromVariables(model);
-
-                if (m_bestResult.LowerBound >= m_bestResult.UpperBound)
-                {
-                    queue.ClearAll();
-                    break;
+                    m_bestResult.UpdateUpperBound(
+                        currentLowerBound, CreatePathsFromVariables(model));
                 }
 
                 queue.NotifyNodeDone(threadId);
@@ -504,13 +470,10 @@ tsplp::MtspResult tsplp::MtspModel::BranchAndCutSolve(
     for (auto& thread : threads)
         thread.join();
 
-    if (m_bestResult.LowerBound < m_bestResult.UpperBound
-        && std::chrono::steady_clock::now() >= m_endTime)
+    if (!m_bestResult.HaveBoundsCrossed() && std::chrono::steady_clock::now() >= m_endTime)
         m_bestResult.IsTimeoutHit = true;
 
-    m_bestResult.LowerBound = std::min(m_bestResult.LowerBound, m_bestResult.UpperBound);
-
-    return m_bestResult;
+    assert(m_bestResult.GetLowerBound() <= m_bestResult.GetUpperBound());
 }
 
 std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(
@@ -643,7 +606,7 @@ std::vector<tsplp::Variable> tsplp::MtspModel::CalculateRecursivelyFixableVariab
     return result;
 }
 
-tsplp::MtspResult tsplp::MtspModel::CreateInitialResult() const
+void tsplp::MtspModel::CreateInitialResult()
 {
     auto [nearestInsertionPaths, nearestInsertionObjective] = NearestInsertion(
         m_optimizationMode, m_weightManager.W(), m_weightManager.StartPositions(),
@@ -653,19 +616,19 @@ tsplp::MtspResult tsplp::MtspModel::CreateInitialResult() const
         m_optimizationMode, std::move(nearestInsertionPaths), m_weightManager.W(),
         m_weightManager.Dependencies(), m_endTime);
 
-    return MtspResult { .Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths)),
-                        .UpperBound = nearestInsertionObjective - twoOptImprovement };
+    m_bestResult.UpdateUpperBound(
+        nearestInsertionObjective - twoOptImprovement,
+        m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
 }
 
-tsplp::MtspResult tsplp::MtspModel::ExploitFractionalSolution(
-    const xt::xtensor<double, 3>& fractionalValues) const
+void tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues)
 {
     auto exploitedPaths = tsplp::ExploitFractionalSolution(
         m_optimizationMode, fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
         m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
 
     if (exploitedPaths.empty())
-        return {};
+        return;
 
     auto [twoOptedPaths, _] = TwoOptPaths(
         m_optimizationMode, std::move(exploitedPaths), m_weightManager.W(),
@@ -674,8 +637,8 @@ tsplp::MtspResult tsplp::MtspModel::ExploitFractionalSolution(
     const auto exploitedObjective
         = CalculateObjective(m_optimizationMode, twoOptedPaths, m_weightManager.W());
 
-    return MtspResult { .Paths = m_weightManager.TransformPathsBack(std::move(twoOptedPaths)),
-                        .UpperBound = exploitedObjective };
+    m_bestResult.UpdateUpperBound(
+        exploitedObjective, m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
 }
 
 tsplp::LinearObjective tsplp::CreateObjective(

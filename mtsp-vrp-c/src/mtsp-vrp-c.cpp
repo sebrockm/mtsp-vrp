@@ -61,30 +61,31 @@ int solve_mtsp_vrp(
                 assert(tensor.shape() == (std::array{numberOfAgents, numberOfNodes, numberOfNodes}));
                 fractional_callback(tensor.data()); }
             : std::function<void(const xt::xtensor<double, 3>&)> {};
-        const auto result = model.BranchAndCutSolve(numberOfThreads, callback);
+        model.BranchAndCutSolve(numberOfThreads, callback);
 
-        *lowerBound = result.LowerBound;
-        *upperBound = result.UpperBound;
+        const auto& result = model.GetResult();
+        *lowerBound = result.GetLowerBound();
+        *upperBound = result.GetUpperBound();
 
-        if (!result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
+        if (!result.IsTimeoutHit && result.GetUpperBound() == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_INFEASIBLE;
 
-        if (result.IsTimeoutHit && result.UpperBound == std::numeric_limits<double>::max())
+        if (result.IsTimeoutHit && result.GetUpperBound() == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_TIMEOUT;
 
         size_t offset = 0;
         for (size_t a = 0; a < numberOfAgents; ++a)
         {
             pathOffsets[a] = offset; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            auto length = result.Paths[a].size();
+            auto length = result.GetPaths()[a].size();
             if (startPositions[a] == endPositions[a])
                 --length; // don't copy unneeded (duplicate) last entry
             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-            std::copy_n(result.Paths[a].begin(), length, paths + offset);
+            std::copy_n(result.GetPaths()[a].begin(), length, paths + offset);
             offset += length;
         }
 
-        if (result.LowerBound >= result.UpperBound)
+        if (result.HaveBoundsCrossed())
             return MTSP_VRP_C_RESULT_SOLVED;
 
         assert(result.IsTimeoutHit);

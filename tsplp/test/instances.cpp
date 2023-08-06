@@ -43,10 +43,11 @@ TEST_CASE("br17.atsp", "[instances]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    auto result = model.BranchAndCutSolve();
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(39));
-    REQUIRE(result.UpperBound == Approx(39));
+    REQUIRE(result.GetLowerBound() == Approx(39));
+    REQUIRE(result.GetUpperBound() == Approx(39));
 }
 
 TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
@@ -79,10 +80,11 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    auto result = model.BranchAndCutSolve();
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(39));
-    REQUIRE(result.UpperBound == Approx(39));
+    REQUIRE(result.GetLowerBound() == Approx(39));
+    REQUIRE(result.GetUpperBound() == Approx(39));
 }
 
 TEST_CASE("ESC07.sop", "[instances]")
@@ -107,10 +109,11 @@ TEST_CASE("ESC07.sop", "[instances]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    auto result = model.BranchAndCutSolve();
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(2125));
-    REQUIRE(result.UpperBound == Approx(2125));
+    REQUIRE(result.GetLowerBound() == Approx(2125));
+    REQUIRE(result.GetUpperBound() == Approx(2125));
 }
 
 TEST_CASE("ESC07.sop start end same", "[instances]")
@@ -135,10 +138,11 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    auto result = model.BranchAndCutSolve();
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(2125));
-    REQUIRE(result.UpperBound == Approx(2125));
+    REQUIRE(result.GetLowerBound() == Approx(2125));
+    REQUIRE(result.GetUpperBound() == Approx(2125));
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
@@ -189,8 +193,9 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
 
     tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
                              timeLimit };
-    auto result = model.BranchAndCutSolve();
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(1200));
-    REQUIRE(result.UpperBound == Approx(1200));
+    REQUIRE(result.GetLowerBound() == Approx(1200));
+    REQUIRE(result.GetUpperBound() == Approx(1200));
 }

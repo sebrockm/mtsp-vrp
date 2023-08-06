@@ -67,10 +67,10 @@ int solve_mtsp_vrp(
         *lowerBound = result.GetLowerBound();
         *upperBound = result.GetUpperBound();
 
-        if (!result.IsTimeoutHit && result.GetUpperBound() == std::numeric_limits<double>::max())
+        if (!result.IsTimeoutHit() && result.GetUpperBound() == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_INFEASIBLE;
 
-        if (result.IsTimeoutHit && result.GetUpperBound() == std::numeric_limits<double>::max())
+        if (result.IsTimeoutHit() && result.GetUpperBound() == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_TIMEOUT;
 
         size_t offset = 0;
@@ -88,7 +88,7 @@ int solve_mtsp_vrp(
         if (result.HaveBoundsCrossed())
             return MTSP_VRP_C_RESULT_SOLVED;
 
-        assert(result.IsTimeoutHit);
+        assert(result.IsTimeoutHit());
         return MTSP_VRP_C_RESULT_TIMEOUT;
     }
     catch (const tsplp::CyclicDependenciesException&)

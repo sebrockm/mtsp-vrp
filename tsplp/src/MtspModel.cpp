@@ -71,7 +71,7 @@ tsplp::MtspModel::MtspModel(
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
-        m_bestResult.IsTimeoutHit = true;
+        m_bestResult.SetTimeoutHit();
         return;
     }
 
@@ -101,7 +101,7 @@ tsplp::MtspModel::MtspModel(
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
-        m_bestResult.IsTimeoutHit = true;
+        m_bestResult.SetTimeoutHit();
         return;
     }
 
@@ -147,7 +147,7 @@ tsplp::MtspModel::MtspModel(
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
-        m_bestResult.IsTimeoutHit = true;
+        m_bestResult.SetTimeoutHit();
         return;
     }
 
@@ -248,7 +248,7 @@ tsplp::MtspModel::MtspModel(
 
         if (std::chrono::steady_clock::now() >= m_endTime)
         {
-            m_bestResult.IsTimeoutHit = true;
+            m_bestResult.SetTimeoutHit();
             return;
         }
     }
@@ -269,7 +269,7 @@ tsplp::MtspModel::MtspModel(
 
         if (std::chrono::steady_clock::now() >= m_endTime)
         {
-            m_bestResult.IsTimeoutHit = true;
+            m_bestResult.SetTimeoutHit();
             return;
         }
     }
@@ -288,7 +288,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
     if (std::chrono::steady_clock::now() >= m_endTime)
     {
-        m_bestResult.IsTimeoutHit = true;
+        m_bestResult.SetTimeoutHit();
         return;
     }
 
@@ -471,7 +471,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
         thread.join();
 
     if (!m_bestResult.HaveBoundsCrossed() && std::chrono::steady_clock::now() >= m_endTime)
-        m_bestResult.IsTimeoutHit = true;
+        m_bestResult.SetTimeoutHit();
 
     assert(m_bestResult.GetLowerBound() <= m_bestResult.GetUpperBound());
 }

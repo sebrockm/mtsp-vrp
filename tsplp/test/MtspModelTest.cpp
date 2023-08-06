@@ -33,7 +33,7 @@ TEST_CASE("circular start and end", "[MtspModel]")
     model.BranchAndCutSolve(1);
     const auto& result = model.GetResult();
 
-    REQUIRE(!result.IsTimeoutHit);
+    REQUIRE(!result.IsTimeoutHit());
     REQUIRE(result.GetLowerBound() == 3);
     REQUIRE(result.GetUpperBound() == 3);
     REQUIRE(

@@ -49,7 +49,10 @@ std::optional<tsplp::Variable> FindFractionalVariable(
             }
         }
     }
-
+    if (closest)
+        std::cout << "Found fractional var: " << closest->GetObjectiveValue(model) << std::endl;
+    else
+        std::cout << "No fractional found" << std::endl;
     return closest;
 }
 }
@@ -312,6 +315,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
+            m_bestResult.UpdateLowerBound(
+                queue.GetLowerBound().value_or(-std::numeric_limits<double>::max()));
+
             if (std::chrono::steady_clock::now() >= m_endTime || m_bestResult.HaveBoundsCrossed())
             {
                 queue.ClearAll();
@@ -324,7 +330,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             auto top = queue.Pop(threadId);
             if (!top.has_value())
+            {
+                std::cout << "Q empty " << threadId << std::endl;
                 break;
+            }
+            std::cout << "Q popped " << threadId << std::endl;
 
             fixedVariables0 = std::move(top->FixedVariables0);
             fixedVariables1 = std::move(top->FixedVariables1);
@@ -362,8 +372,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     ExploitFractionalSolution(fractionalValues);
             }
 
-            m_bestResult.UpdateLowerBound(
-                std::min(currentLowerBound, queue.GetLowerBound().value_or(currentLowerBound)));
+            m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
 
             if (currentLowerBound >= m_bestResult.GetUpperBound())
             {
@@ -459,6 +468,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 std::move(recursivelyFixed0));
             queue.NotifyNodeDone(threadId);
         }
+
+        std::cout << threadId << " Done" << std::endl;
     };
 
     std::vector<std::thread> threads;
@@ -474,6 +485,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
         m_bestResult.SetTimeoutHit();
 
     assert(m_bestResult.GetLowerBound() <= m_bestResult.GetUpperBound());
+    assert(m_bestResult.GetLowerBound() == 39);
+    assert(m_bestResult.GetUpperBound() == 39);
 }
 
 std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(

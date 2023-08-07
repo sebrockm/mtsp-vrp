@@ -40,12 +40,15 @@ void MtspResult::UpdateUpperBound(double newUpperBound, std::vector<std::vector<
     {
         m_paths = std::move(newPaths);
         m_upperBound = newUpperBound;
+        std::cout << "UB: " << m_upperBound << std::endl;
     }
 }
 
 void MtspResult::UpdateLowerBound(double newLowerBound)
 {
     std::unique_lock lock { m_mutex };
-    m_lowerBound = std::min(newLowerBound, m_upperBound);
+    if (newLowerBound >= m_lowerBound)
+        m_lowerBound = std::min(newLowerBound, m_upperBound);
+    std::cout << "LB: " << m_lowerBound << std::endl;
 }
 }

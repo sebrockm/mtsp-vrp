@@ -97,8 +97,6 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
 
     m_currentlyWorkedOnLowerBounds.emplace(threadId, result->LowerBound);
 
-    std::cout << "Pop: " << m_heap.size() << std::endl;
-
     return result;
 }
 
@@ -117,7 +115,6 @@ void tsplp::BranchAndCutQueue::Push(
 
         m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
-        std::cout << "Redo: " << m_heap.size() << std::endl;
     }
 
     if (needsNotify)
@@ -153,7 +150,6 @@ void tsplp::BranchAndCutQueue::PushBranch(
         m_heap.push_back(
             { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1) });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
-        std::cout << "Branch: " << m_heap.size() << std::endl;
     }
 
     if (needsNotify)

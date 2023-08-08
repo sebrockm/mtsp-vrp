@@ -43,7 +43,12 @@ foreach(SANI ${SANITIZERS})
     endif()
 
     add_compile_options(-fsanitize=${SANI})
-    add_link_options(-fsanitize=${SANI})
+
+    if(MSVC)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+    else()
+        add_link_options(-fsanitize=${SANI})
+    endif()
 endforeach()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})

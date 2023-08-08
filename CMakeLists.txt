@@ -37,6 +37,15 @@ endif()
 
 add_compile_options(${warning_flags} ${warnings_as_erros_flag})
 
+foreach(SANI ${SANITIZERS})
+    if(${SANI} STREQUAL address AND NOT MSVC)
+        add_compile_options(-fno-omit-frame-pointer)
+    endif()
+
+    add_compile_options(-fsanitize=${SANI})
+    add_link_options(-fsanitize=${SANI})
+endforeach()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
 

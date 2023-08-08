@@ -32,7 +32,7 @@ jobs:
         conan profile new default --detect
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }} -DSANITIZERS="${{ matrix.sanitizers }}"
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov && matrix.sanitizers == '' }} -DSANITIZERS="${{ matrix.sanitizers }}"
 
     - name: Check compile commands
       run: cat ${{ github.workspace }}/build/compile_commands.json
@@ -45,7 +45,7 @@ jobs:
       run: ctest -C ${{ matrix.build-type }} --output-on-failure
 
     - name: Prepare Codecov
-      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
+      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov && matrix.sanitizers == '' }}
       run: |
         sudo apt-get install -y lcov
         lcov --directory . --capture --output-file coverage.info --rc lcov_branch_coverage=1 # capture coverage info
@@ -54,7 +54,7 @@ jobs:
         lcov --list coverage.info --rc lcov_branch_coverage=1 # debug info
 
     - name: Codecov
-      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
+      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov && matrix.sanitizers == '' }}
       uses: codecov/codecov-action@v3.1.1
       with:
         files: coverage.info

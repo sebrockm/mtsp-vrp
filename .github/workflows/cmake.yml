@@ -13,7 +13,8 @@ jobs:
       matrix:
         build-type: [Debug, RelWithDebInfo, Release]
         compiler: [{c: gcc-10, cpp: g++-10}, {c: gcc-11, cpp: g++-11, code-cov: true}, {c: clang-12, cpp: clang++-12}, {c: clang-13, cpp: clang++-13}, {c: clang-14, cpp: clang++-14}]
-          
+        sanitizers: ['', 'address;undefined', 'thread']
+
     runs-on: ubuntu-latest
 
     steps:
@@ -31,7 +32,7 @@ jobs:
         conan profile new default --detect
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }} -DSANITIZERS="${{ matrix.sanitizers }}"
 
     - name: Check compile commands
       run: cat ${{ github.workspace }}/build/compile_commands.json
@@ -109,6 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, RelWithDebInfo, Release]
+        sanitizers: ['', 'address']
         os: [windows-latest, windows-2019]
 
     runs-on: ${{ matrix.os }}
@@ -128,7 +130,7 @@ jobs:
         conan profile new default --detect
 
     - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build
+      run: cmake -B ${{ github.workspace }}/build -DSANITIZERS="${{ matrix.sanitizers }}"
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3

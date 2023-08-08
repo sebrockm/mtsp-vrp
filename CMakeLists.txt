@@ -11,9 +11,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON) # -fPIC
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-if (CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Default multi config types" FORCE)
-endif()
 
 if(MSVC)
     set(warning_flags
@@ -52,7 +49,7 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-if (CMAKE_CONFIGURATION_TYPES)
+if(CMAKE_CONFIGURATION_TYPES)
     set(CONFIGS ${CMAKE_CONFIGURATION_TYPES})
     set(CONAN_GENERATOR cmake_find_package_multi)
 else()
@@ -60,27 +57,35 @@ else()
     set(CONAN_GENERATOR cmake_find_package)
 endif()
 
-foreach (CONFIG ${CONFIGS})
-    conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})
+foreach(CONFIG ${CONFIGS})
+    if(NOT Debug STREQUAL ${CONFIG} AND NOT Release STREQUAL ${CONFIG})
+        # Get Release packages from conan for all other configs than Debug and Release
+        # See https://github.com/conan-io/conan/issues/4221#issuecomment-1619271930
+        conan_cmake_autodetect(settings BUILD_TYPE Release)
+        list(APPEND settings "&:build_type=${CONFIG}")
+    else()
+        conan_cmake_autodetect(settings BUILD_TYPE ${CONFIG})
+    endif()
 
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
             # some conan packages do not exist and cannot be built with latest clang version
             list(FILTER settings EXCLUDE REGEX "compiler.version=")
             list(APPEND settings "compiler.version=13")
         endif()
-        if (APPLE)
+
+        if(APPLE)
             # some conan packages do not exist and cannot be built with normal clang on apple
             list(FILTER settings EXCLUDE REGEX "compiler=")
             list(PREPEND settings "compiler=apple-clang")
-        elseif ("compiler.libcxx=libstdc++11" IN_LIST settings)
+        elseif("compiler.libcxx=libstdc++11" IN_LIST settings)
             # system doesn't have libc++ installed and some conan packages do not exist and cannot be built with clang + libstdc++, so try gcc packages
             list(FILTER settings EXCLUDE REGEX "compiler=")
             list(PREPEND settings "compiler=gcc")
             list(FILTER settings EXCLUDE REGEX "compiler.version=")
             list(APPEND settings "compiler.version=11")
         endif()
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17)
         # some conan packages do not exist and cannot be built with latest msvc version
         list(FILTER settings EXCLUDE REGEX "compiler.version=")
         list(APPEND settings "compiler.version=16")

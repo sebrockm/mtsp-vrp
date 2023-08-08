@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: [Debug, Release]
+        build-type: [Debug, RelWithDebInfo, Release]
         compiler: [{c: gcc-10, cpp: g++-10}, {c: gcc-11, cpp: g++-11, code-cov: true}, {c: clang-12, cpp: clang++-12}, {c: clang-13, cpp: clang++-13}, {c: clang-14, cpp: clang++-14}]
           
     runs-on: ubuntu-latest
@@ -30,13 +30,8 @@ jobs:
       run: |
         conan profile new default --detect
 
-    - name: Configure CMake with Codecov
-      if: ${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=ON
-
     - name: Configure CMake
-      if: ${{ matrix.build-type == 'Release' || !matrix.compiler.code-cov }}
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp }} -DCMAKE_C_COMPILER=${{ matrix.compiler.c }} -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} -DUSE_CLANG_TIDY=ON -DCODE_COVERAGE=${{ matrix.build-type == 'Debug' && matrix.compiler.code-cov }}
 
     - name: Check compile commands
       run: cat ${{ github.workspace }}/build/compile_commands.json
@@ -69,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: [Debug, Release]
+        build-type: [Debug, RelWithDebInfo, Release]
           
     runs-on: macos-latest
 
@@ -113,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: [Debug, Release]
+        build-type: [Debug, RelWithDebInfo, Release]
         os: [windows-latest, windows-2019]
 
     runs-on: ${{ matrix.os }}

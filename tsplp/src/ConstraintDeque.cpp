@@ -18,17 +18,12 @@ void tsplp::ConstraintDeque::Push(LinearConstraint constraint)
 
 void tsplp::ConstraintDeque::PopToModel(size_t threadId, Model& model)
 {
-    const auto constraints = [this, threadId]() -> std::vector<LinearConstraint>
     {
         std::unique_lock lock { m_mutex };
 
-        const auto prevReadPos = m_readPositions[threadId];
+        model.AddConstraints(m_deque.cbegin() + m_readPositions[threadId], m_deque.cend());
         m_readPositions[threadId] = std::ssize(m_deque);
-
-        return { m_deque.cbegin() + prevReadPos, m_deque.cend() };
-    }();
-
-    model.AddConstraints(constraints.cbegin(), constraints.cend());
+    }
 
     // this step doesn't need to be performed often, so let only one thread do it
     if (threadId == 0)

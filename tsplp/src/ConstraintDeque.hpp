@@ -1,7 +1,6 @@
 #pragma once
 
 #include "LinearConstraint.hpp"
-#include "TimedMutex.hpp"
 
 #include <deque>
 #include <mutex>
@@ -16,7 +15,7 @@ class ConstraintDeque
 private:
     std::deque<LinearConstraint> m_deque;
     std::vector<ptrdiff_t> m_readPositions;
-    TimedMutex m_mutex { "ConstraintDeque mutex" };
+    std::mutex m_mutex;
 
 public:
     explicit ConstraintDeque(size_t numberOfThreads);

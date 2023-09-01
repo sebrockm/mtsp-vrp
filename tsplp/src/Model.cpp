@@ -12,13 +12,11 @@
 #include <stdexcept>
 #include <vector>
 
-static int copies = 0;
-
 tsplp::Model::Model() = default;
 
 tsplp::Model::Model(size_t numberOfBinaryVariables)
     : m_spSimplexModel { std::make_unique<ClpSimplex>() }
-    , m_spModelMutex { std::make_unique<TimedMutex>("Model's mutex") }
+    , m_spModelMutex { std::make_unique<std::mutex>() }
     , m_numberOfBinaryVariables(numberOfBinaryVariables)
 {
     if (numberOfBinaryVariables > std::numeric_limits<int>::max())
@@ -39,8 +37,7 @@ tsplp::Model::~Model() noexcept = default;
 
 tsplp::Model::Model(const Model& other)
     : m_spSimplexModel(std::make_unique<ClpSimplex>(*other.m_spSimplexModel))
-    , m_spModelMutex { std::make_unique<TimedMutex>(
-          "Model's mutex copy " + std::to_string(++copies)) }
+    , m_spModelMutex { std::make_unique<std::mutex>() }
     , m_variables(other.m_variables)
     , m_numberOfBinaryVariables(other.m_numberOfBinaryVariables)
 {

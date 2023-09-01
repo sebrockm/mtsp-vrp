@@ -46,7 +46,7 @@ private:
 
     LinearObjective m_objective;
 
-    MtspResult m_bestResult { "MtspModel's best result mutex" };
+    MtspResult m_bestResult {};
 
 public:
     MtspModel(

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "TimedMutex.hpp"
-
 #include <limits>
 #include <mutex>
 #include <vector>
@@ -16,13 +14,9 @@ private:
     double m_lowerBound = -std::numeric_limits<double>::max();
     double m_upperBound = std::numeric_limits<double>::max();
     bool m_isTimeoutHit = false;
-    mutable TimedMutex m_mutex;
+    mutable std::mutex m_mutex;
 
 public:
-    MtspResult(std::string name)
-        : m_mutex(std::move(name))
-    {
-    }
     [[nodiscard]] double GetLowerBound() const;
     [[nodiscard]] double GetUpperBound() const;
     [[nodiscard]] bool HaveBoundsCrossed() const;

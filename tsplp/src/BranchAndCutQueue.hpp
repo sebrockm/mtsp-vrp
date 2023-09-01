@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Variable.hpp"
-#include "TimedMutex.hpp"
 
 #include <condition_variable>
 #include <mutex>
@@ -26,8 +25,8 @@ private:
     std::greater<> m_comparer {};
     std::unordered_map<size_t, double> m_currentlyWorkedOnLowerBounds;
     bool m_isCleared = false;
-    mutable TimedMutex m_mutex {"BnCq mutex"};
-    TimedCV m_cv {"BnCq cv"};
+    mutable std::mutex m_mutex;
+    std::condition_variable m_cv;
 
 public:
     BranchAndCutQueue();

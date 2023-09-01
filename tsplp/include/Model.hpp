@@ -2,7 +2,6 @@
 
 #include "Status.hpp"
 #include "Variable.hpp"
-#include "TimedMutex.hpp"
 
 #include <chrono>
 #include <memory>
@@ -23,7 +22,7 @@ class Model // NOLINT(cppcoreguidelines-special-member-functions,hicpp-special-m
 
 private:
     std::unique_ptr<ClpSimplex> m_spSimplexModel;
-    std::unique_ptr<TimedMutex> m_spModelMutex;
+    std::unique_ptr<std::mutex> m_spModelMutex;
     std::vector<Variable> m_variables;
     size_t m_numberOfBinaryVariables = 0;
 

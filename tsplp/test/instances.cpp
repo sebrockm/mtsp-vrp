@@ -52,8 +52,8 @@ TEST_CASE("br17.atsp", "[instances]")
     CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
     CAPTURE(result.GetPaths());
     CHECK(!result.IsTimeoutHit());
-    CHECK(result.GetLowerBound() == Approx(39));
-    CHECK(result.GetUpperBound() == Approx(39));
+    CHECK(result.GetBounds().Lower == Approx(39));
+    CHECK(result.GetBounds().Upper == Approx(39));
 }
 
 TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
@@ -95,8 +95,8 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
     CAPTURE(result.GetPaths());
     CHECK(!result.IsTimeoutHit());
-    CHECK(result.GetLowerBound() == Approx(39));
-    CHECK(result.GetUpperBound() == Approx(39));
+    CHECK(result.GetBounds().Lower == Approx(39));
+    CHECK(result.GetBounds().Upper == Approx(39));
 }
 
 TEST_CASE("ESC07.sop", "[instances]")
@@ -129,8 +129,8 @@ TEST_CASE("ESC07.sop", "[instances]")
     const auto endTime = std::chrono::steady_clock::now();
     CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
     CAPTURE(result.GetPaths());
-    CHECK(result.GetLowerBound() == Approx(2125));
-    CHECK(result.GetUpperBound() == Approx(2125));
+    CHECK(result.GetBounds().Lower == Approx(2125));
+    CHECK(result.GetBounds().Upper == Approx(2125));
 }
 
 TEST_CASE("ESC07.sop start end same", "[instances]")
@@ -163,8 +163,8 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
     const auto endTime = std::chrono::steady_clock::now();
     CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
     CAPTURE(result.GetPaths());
-    CHECK(result.GetLowerBound() == Approx(2125));
-    CHECK(result.GetUpperBound() == Approx(2125));
+    CHECK(result.GetBounds().Lower == Approx(2125));
+    CHECK(result.GetBounds().Upper == Approx(2125));
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
@@ -224,6 +224,6 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
     CAPTURE(result.GetPaths());
     CHECK(!result.IsTimeoutHit());
-    CHECK(result.GetLowerBound() == Approx(1200));
-    CHECK(result.GetUpperBound() == Approx(1200));
+    CHECK(result.GetBounds().Lower == Approx(1200));
+    CHECK(result.GetBounds().Upper == Approx(1200));
 }

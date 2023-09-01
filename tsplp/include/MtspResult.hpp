@@ -9,6 +9,12 @@ namespace tsplp
 
 class MtspResult
 {
+    struct Bounds
+    {
+        double Lower;
+        double Upper;
+    };
+
 private:
     std::vector<std::vector<size_t>> m_paths {};
     double m_lowerBound = -std::numeric_limits<double>::max();
@@ -17,14 +23,12 @@ private:
     mutable std::mutex m_mutex;
 
 public:
-    [[nodiscard]] double GetLowerBound() const;
-    [[nodiscard]] double GetUpperBound() const;
-    [[nodiscard]] bool HaveBoundsCrossed() const;
+    [[nodiscard]] Bounds GetBounds() const;
     [[nodiscard]] bool IsTimeoutHit() const;
     [[nodiscard]] const auto& GetPaths() const { return m_paths; }
 
     void SetTimeoutHit();
-    void UpdateUpperBound(double newUpperBound, std::vector<std::vector<size_t>>&& newPaths);
-    void UpdateLowerBound(double newLowerBound);
+    Bounds UpdateUpperBound(double newUpperBound, std::vector<std::vector<size_t>>&& newPaths);
+    Bounds UpdateLowerBound(double newLowerBound);
 };
 }

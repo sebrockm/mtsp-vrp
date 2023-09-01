@@ -64,13 +64,14 @@ int solve_mtsp_vrp(
         model.BranchAndCutSolve(numberOfThreads, callback);
 
         const auto& result = model.GetResult();
-        *lowerBound = result.GetLowerBound();
-        *upperBound = result.GetUpperBound();
+        const auto [lb, ub] = result.GetBounds();
+        *lowerBound = lb;
+        *upperBound = ub;
 
-        if (!result.IsTimeoutHit() && result.GetUpperBound() == std::numeric_limits<double>::max())
+        if (!result.IsTimeoutHit() && ub == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_INFEASIBLE;
 
-        if (result.IsTimeoutHit() && result.GetUpperBound() == std::numeric_limits<double>::max())
+        if (result.IsTimeoutHit() && ub == std::numeric_limits<double>::max())
             return MTSP_VRP_C_NO_RESULT_TIMEOUT;
 
         size_t offset = 0;
@@ -85,7 +86,7 @@ int solve_mtsp_vrp(
             offset += length;
         }
 
-        if (result.HaveBoundsCrossed())
+        if (lb >= ub)
             return MTSP_VRP_C_RESULT_SOLVED;
 
         assert(result.IsTimeoutHit());

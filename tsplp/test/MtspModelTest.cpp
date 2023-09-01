@@ -34,8 +34,8 @@ TEST_CASE("circular start and end", "[MtspModel]")
     const auto& result = model.GetResult();
 
     REQUIRE(!result.IsTimeoutHit());
-    REQUIRE(result.GetLowerBound() == 3);
-    REQUIRE(result.GetUpperBound() == 3);
+    REQUIRE(result.GetBounds().Lower == 3);
+    REQUIRE(result.GetBounds().Upper == 3);
     REQUIRE(
         result.GetPaths()
         == std::vector { std::vector<size_t> { 0, 1 }, std::vector<size_t> { 1, 2, 0 } });

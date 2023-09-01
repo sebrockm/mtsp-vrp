@@ -312,10 +312,10 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
-            m_bestResult.UpdateLowerBound(
+            const auto initialBounds = m_bestResult.UpdateLowerBound(
                 queue.GetLowerBound().value_or(-std::numeric_limits<double>::max()));
 
-            if (std::chrono::steady_clock::now() >= m_endTime || m_bestResult.HaveBoundsCrossed())
+            if (std::chrono::steady_clock::now() >= m_endTime || initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
                 break;
@@ -347,7 +347,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 = std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10);
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            const auto currentUpperBound = m_bestResult.GetUpperBound();
+            const auto currentUpperBound = m_bestResult.GetBounds().Upper;
 
             if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
             {
@@ -365,9 +365,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     ExploitFractionalSolution(fractionalValues);
             }
 
-            m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
+            const auto bestUpper = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
 
-            if (currentLowerBound >= m_bestResult.GetUpperBound())
+            if (currentLowerBound >= bestUpper)
             {
                 queue.NotifyNodeDone(threadId);
                 continue;
@@ -445,7 +445,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             if (!fractionalVar.has_value())
             {
                 // another thread may have updated the upper bound since the last check
-                if (currentLowerBound < m_bestResult.GetUpperBound())
+                if (currentLowerBound < m_bestResult.GetBounds().Upper)
                 {
                     m_bestResult.UpdateUpperBound(
                         currentLowerBound, CreatePathsFromVariables(model));
@@ -472,10 +472,15 @@ void tsplp::MtspModel::BranchAndCutSolve(
     for (auto& thread : threads)
         thread.join();
 
-    if (!m_bestResult.HaveBoundsCrossed() && std::chrono::steady_clock::now() >= m_endTime)
-        m_bestResult.SetTimeoutHit();
+    const auto [lowerBound, upperBound] = m_bestResult.GetBounds();
+    assert(lowerBound <= upperBound);
 
-    assert(m_bestResult.GetLowerBound() <= m_bestResult.GetUpperBound());
+    if (lowerBound < upperBound)
+    {
+        if (std::chrono::steady_clock::now() < m_endTime)
+            throw std::logic_error("Logic Error: Timeout not reached, but no optimal solution found.");
+        m_bestResult.SetTimeoutHit();
+    }
 }
 
 std::vector<std::vector<size_t>> tsplp::MtspModel::CreatePathsFromVariables(

@@ -48,11 +48,13 @@ private:
 
     MtspResult m_bestResult {};
 
+    std::string m_name;
+
 public:
     MtspModel(
         xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
         xt::xtensor<double, 2> weights, OptimizationMode optimizationMode,
-        std::chrono::milliseconds timeout);
+        std::chrono::milliseconds timeout, std::string name = "Model");
 
 public:
     void BranchAndCutSolve(

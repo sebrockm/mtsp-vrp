@@ -43,8 +43,9 @@ TEST_CASE("br17.atsp", "[instances]")
 
     const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
     model.BranchAndCutSolve();
     const auto& result = model.GetResult();
 
@@ -86,8 +87,9 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
 
     const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
     model.BranchAndCutSolve();
     const auto& result = model.GetResult();
 
@@ -121,8 +123,9 @@ TEST_CASE("ESC07.sop", "[instances]")
 
     const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
     model.BranchAndCutSolve();
     const auto& result = model.GetResult();
 
@@ -155,8 +158,9 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
 
     const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
     model.BranchAndCutSolve();
     const auto& result = model.GetResult();
 
@@ -215,8 +219,9 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
 
     const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
     model.BranchAndCutSolve();
     const auto& result = model.GetResult();
 

@@ -57,12 +57,13 @@ std::optional<tsplp::Variable> FindFractionalVariable(
 tsplp::MtspModel::MtspModel(
     xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
     xt::xtensor<double, 2> weights, OptimizationMode optimizationMode,
-    std::chrono::milliseconds timeout)
+    std::chrono::milliseconds timeout, std::string name)
     : m_endTime(m_startTime + timeout)
     , m_weightManager(std::move(weights), std::move(startPositions), std::move(endPositions))
     , m_optimizationMode(optimizationMode)
     , A(m_weightManager.A())
     , N(m_weightManager.N())
+    , m_name(std::move(name))
 {
     if (m_optimizationMode != OptimizationMode::Sum && m_optimizationMode != OptimizationMode::Max)
         return;
@@ -321,7 +322,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 {
                     std::unique_lock lock { printmutex };
-                    std::cout << "Thread " << threadId << " ends because of timeout" << std::endl;
+                    std::cout << m_name << ": Thread " << threadId << " ends because of timeout"
+                              << std::endl;
                 }
                 queue.ClearAll();
                 break;
@@ -330,7 +332,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 {
                     std::unique_lock lock { printmutex };
-                    std::cout << "Thread " << threadId << " ends because bounds crossed"
+                    std::cout << m_name << ": Thread " << threadId << " ends because bounds crossed"
                               << std::endl;
                 }
                 queue.ClearAll();
@@ -504,7 +506,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
         if (std::chrono::steady_clock::now() < m_endTime)
         {
             throw std::logic_error(
-                "Logic Error: Timeout not reached, but no optimal solution found.");
+                m_name + ": Logic Error: Timeout not reached, but no optimal solution found.");
         }
         m_bestResult.SetTimeoutHit();
     }

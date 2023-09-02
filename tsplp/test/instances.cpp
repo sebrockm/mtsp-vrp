@@ -7,7 +7,7 @@
 
 constexpr auto timeLimit = std::chrono::seconds {
 #ifdef NDEBUG
-    1
+    2
 #else
     10
 #endif

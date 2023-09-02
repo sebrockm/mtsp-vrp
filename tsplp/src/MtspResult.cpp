@@ -21,7 +21,8 @@ void MtspResult::SetTimeoutHit()
     m_isTimeoutHit = true;
 }
 
-MtspResult::Bounds MtspResult::UpdateUpperBound(double newUpperBound, std::vector<std::vector<size_t>>&& newPaths)
+MtspResult::Bounds MtspResult::UpdateUpperBound(
+    double newUpperBound, std::vector<std::vector<size_t>>&& newPaths)
 {
     std::unique_lock lock { m_mutex };
     if (newUpperBound < m_upperBound)
@@ -31,7 +32,7 @@ MtspResult::Bounds MtspResult::UpdateUpperBound(double newUpperBound, std::vecto
         m_lowerBound = std::min(m_lowerBound, m_upperBound);
     }
 
-     return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
+    return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
 }
 
 MtspResult::Bounds MtspResult::UpdateLowerBound(double newLowerBound)
@@ -40,6 +41,6 @@ MtspResult::Bounds MtspResult::UpdateLowerBound(double newLowerBound)
     if (newLowerBound >= m_lowerBound)
         m_lowerBound = std::min(newLowerBound, m_upperBound);
 
-     return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
+    return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
 }
 }

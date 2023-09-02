@@ -315,7 +315,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
             const auto initialBounds = m_bestResult.UpdateLowerBound(
                 queue.GetLowerBound().value_or(-std::numeric_limits<double>::max()));
 
-            if (std::chrono::steady_clock::now() >= m_endTime || initialBounds.Lower >= initialBounds.Upper)
+            if (std::chrono::steady_clock::now() >= m_endTime
+                || initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
                 break;
@@ -365,7 +366,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     ExploitFractionalSolution(fractionalValues);
             }
 
-            const auto bestUpper = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
+            const auto bestUpper
+                = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
 
             if (currentLowerBound >= bestUpper)
             {
@@ -478,7 +480,10 @@ void tsplp::MtspModel::BranchAndCutSolve(
     if (lowerBound < upperBound)
     {
         if (std::chrono::steady_clock::now() < m_endTime)
-            throw std::logic_error("Logic Error: Timeout not reached, but no optimal solution found.");
+        {
+            throw std::logic_error(
+                "Logic Error: Timeout not reached, but no optimal solution found.");
+        }
         m_bestResult.SetTimeoutHit();
     }
 }

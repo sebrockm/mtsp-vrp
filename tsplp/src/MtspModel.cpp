@@ -302,6 +302,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
     BranchAndCutQueue queue;
     ConstraintDeque constraints(threadCount);
 
+    std::mutex printmutex;
+
     const auto threadLoop = [&](const size_t threadId)
     {
         auto model = m_model;
@@ -315,9 +317,22 @@ void tsplp::MtspModel::BranchAndCutSolve(
             const auto initialBounds = m_bestResult.UpdateLowerBound(
                 queue.GetLowerBound().value_or(-std::numeric_limits<double>::max()));
 
-            if (std::chrono::steady_clock::now() >= m_endTime
-                || initialBounds.Lower >= initialBounds.Upper)
+            if (std::chrono::steady_clock::now() >= m_endTime)
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << "Thread " << threadId << " ends because of timeout" << std::endl;
+                }
+                queue.ClearAll();
+                break;
+            }
+            if (initialBounds.Lower >= initialBounds.Upper)
+            {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << "Thread " << threadId << " ends because bounds crossed"
+                              << std::endl;
+                }
                 queue.ClearAll();
                 break;
             }
@@ -328,7 +343,14 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             auto top = queue.Pop(threadId);
             if (!top.has_value())
+            {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << "Thread " << threadId << " ends because queue is empty"
+                              << std::endl;
+                }
                 break;
+            }
 
             fixedVariables0 = std::move(top->FixedVariables0);
             fixedVariables1 = std::move(top->FixedVariables1);

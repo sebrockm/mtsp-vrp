@@ -353,11 +353,17 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 {
                     std::unique_lock lock { printmutex };
                     const auto [lb, ub] = m_bestResult.GetBounds();
-                    std::cout << m_name << "Thread " << threadId
+                    std::cout << m_name << " Thread " << threadId
                               << " ends because queue is empty\n LB=" << lb << ", UB=" << ub
                               << std::endl;
                 }
                 break;
+            }
+
+            {
+                std::unique_lock lock { printmutex };
+                std::cout << m_name << " Thread " << threadId
+                          << " starts solving LP with prev LB=" << top->LowerBound << std::endl;
             }
 
             fixedVariables0 = std::move(top->FixedVariables0);
@@ -370,6 +376,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (model.Solve(m_endTime) != Status::Optimal)
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " solved LP not optimally, continue" << std::endl;
+                }
                 queue.NotifyNodeDone(threadId);
                 continue;
             }
@@ -401,6 +412,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (currentLowerBound >= bestUpper)
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " solved LP with objective value=" << currentLowerBound
+                              << ", but current UB=" << bestUpper << std::endl;
+                }
                 queue.NotifyNodeDone(threadId);
                 continue;
             }
@@ -433,6 +450,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto ucut = separator.Ucut(); ucut.has_value())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " found UCut, prev LB=" << currentLowerBound << std::endl;
+                }
                 constraints.Push(std::move(*ucut));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone(threadId);
@@ -441,6 +463,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto pisigma = separator.PiSigma(); pisigma.has_value())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " found PiSigma, prev LB=" << currentLowerBound << std::endl;
+                }
                 constraints.Push(std::move(*pisigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone(threadId);
@@ -449,6 +476,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto pi = separator.Pi(); pi.has_value())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " found Pi, prev LB=" << currentLowerBound << std::endl;
+                }
                 constraints.Push(std::move(*pi));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone(threadId);
@@ -457,6 +489,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto sigma = separator.Sigma(); sigma.has_value())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " found Sigma, prev LB=" << currentLowerBound << std::endl;
+                }
                 constraints.Push(std::move(*sigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 queue.NotifyNodeDone(threadId);
@@ -465,6 +502,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto combs = separator.TwoMatching(); !combs.empty())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId << " found " << combs.size()
+                              << " Combs, prev LB = " << currentLowerBound << std::endl;
+                }
                 constraints.Push(
                     std::make_move_iterator(combs.begin()), std::make_move_iterator(combs.end()));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
@@ -476,6 +518,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (!fractionalVar.has_value())
             {
+                {
+                    std::unique_lock lock { printmutex };
+                    std::cout << m_name << " Thread " << threadId
+                              << " is not fractional: LB/UB=" << currentLowerBound << std::endl;
+                }
                 // another thread may have updated the upper bound since the last check
                 if (currentLowerBound < m_bestResult.GetBounds().Upper)
                 {
@@ -485,6 +532,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
                 queue.NotifyNodeDone(threadId);
                 continue;
+            }
+
+            {
+                std::unique_lock lock { printmutex };
+                std::cout << m_name << " Thread " << threadId
+                          << " branches into subproblems, LB=" << currentLowerBound << std::endl;
             }
 
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());

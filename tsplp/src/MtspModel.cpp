@@ -322,7 +322,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 {
                     std::unique_lock lock { printmutex };
-                    std::cout << m_name << ": Thread " << threadId << " ends because of timeout"
+                    const auto [lb, ub] = m_bestResult.GetBounds();
+                    std::cout << m_name << ": Thread " << threadId
+                              << " ends because of timeout\n LB=" << lb << ", UB=" << ub
                               << std::endl;
                 }
                 queue.ClearAll();
@@ -332,7 +334,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 {
                     std::unique_lock lock { printmutex };
-                    std::cout << m_name << ": Thread " << threadId << " ends because bounds crossed"
+                    const auto [lb, ub] = m_bestResult.GetBounds();
+                    std::cout << m_name << ": Thread " << threadId
+                              << " ends because bounds crossed\n LB=" << lb << ", UB=" << ub
                               << std::endl;
                 }
                 queue.ClearAll();
@@ -348,7 +352,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 {
                     std::unique_lock lock { printmutex };
-                    std::cout << "Thread " << threadId << " ends because queue is empty"
+                    const auto [lb, ub] = m_bestResult.GetBounds();
+                    std::cout << m_name << "Thread " << threadId
+                              << " ends because queue is empty\n LB=" << lb << ", UB=" << ub
                               << std::endl;
                 }
                 break;

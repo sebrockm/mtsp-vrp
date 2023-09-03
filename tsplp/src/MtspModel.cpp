@@ -374,13 +374,25 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             constraints.PopToModel(threadId, model);
 
-            if (model.Solve(m_endTime) != Status::Optimal)
+            const auto solutionStatus = model.Solve(m_endTime);
+            switch (solutionStatus)
             {
-                {
-                    std::unique_lock lock { printmutex };
-                    std::cout << m_name << " Thread " << threadId
-                              << " solved LP not optimally, continue" << std::endl;
-                }
+            case Status::Unbounded:
+                throw std::logic_error("LP solution is unbounded. This must not happen. Maybe some constraints are missing.");
+            case Status::Optimal:
+                break;
+            case Status::Infeasible:
+                queue.UpdateCurrentLowerBound(threadId, std::numeric_limits<double>::max());
+                m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
+                break;
+            case Status::Timeout:
+            case Status::Error:
+            {
+                std::unique_lock lock { printmutex };
+                std::cout << m_name << " Thread " << threadId
+                          << " solved LP not optimally with Status=" << static_cast<int>(solutionStatus)
+                          << ", continue " << std::endl;
+            }
                 queue.NotifyNodeDone(threadId);
                 continue;
             }

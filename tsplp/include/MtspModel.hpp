@@ -65,7 +65,7 @@ public:
 
 private:
     void CreateInitialResult();
-    void ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues);
+    double ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues);
 
     [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(
         const Model& model) const;

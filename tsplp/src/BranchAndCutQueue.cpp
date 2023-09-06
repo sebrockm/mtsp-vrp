@@ -66,20 +66,6 @@ void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double c
     m_currentlyWorkedOnLowerBounds[threadId] = currentLowerBound;
 }
 
-size_t tsplp::BranchAndCutQueue::GetSize() const
-{
-    std::unique_lock lock { m_mutex };
-
-    return m_heap.size();
-}
-
-size_t tsplp::BranchAndCutQueue::GetWorkedOnSize() const
-{
-    std::unique_lock lock { m_mutex };
-
-    return m_currentlyWorkedOnLowerBounds.size();
-}
-
 std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
 {
     std::unique_lock lock { m_mutex };

@@ -378,30 +378,37 @@ void tsplp::MtspModel::BranchAndCutSolve(
             switch (solutionStatus)
             {
             case Status::Unbounded:
-                throw std::logic_error("LP solution is unbounded. This must not happen. Maybe some constraints are missing.");
+                throw std::logic_error("LP solution is unbounded. This must not happen. Maybe some "
+                                       "constraints are missing.");
             case Status::Optimal:
-                break;
             case Status::Infeasible:
-                queue.UpdateCurrentLowerBound(threadId, std::numeric_limits<double>::max());
-                m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
                 break;
             case Status::Timeout:
             case Status::Error:
             {
                 std::unique_lock lock { printmutex };
                 std::cout << m_name << " Thread " << threadId
-                          << " solved LP not optimally with Status=" << static_cast<int>(solutionStatus)
-                          << ", continue " << std::endl;
+                          << " solved LP not optimally with Status="
+                          << static_cast<int>(solutionStatus) << ", continue " << std::endl;
             }
                 queue.NotifyNodeDone(threadId);
                 continue;
             }
 
-            const auto currentLowerBound
-                = std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10);
+            const auto currentLowerBound = solutionStatus == Status::Optimal
+                ? std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10)
+                : std::numeric_limits<double>::max();
+
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            const auto currentUpperBound = m_bestResult.GetBounds().Upper;
+            auto currentUpperBound
+                = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
+
+            if (solutionStatus != Status::Optimal)
+            {
+                queue.NotifyNodeDone(threadId);
+                continue;
+            }
 
             if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
             {
@@ -416,19 +423,16 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > currentUpperBound)
-                    ExploitFractionalSolution(fractionalValues);
+                    currentUpperBound = ExploitFractionalSolution(fractionalValues);
             }
 
-            const auto bestUpper
-                = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
-
-            if (currentLowerBound >= bestUpper)
+            if (currentLowerBound >= currentUpperBound)
             {
                 {
                     std::unique_lock lock { printmutex };
                     std::cout << m_name << " Thread " << threadId
                               << " solved LP with objective value=" << currentLowerBound
-                              << ", but current UB=" << bestUpper << std::endl;
+                              << ", but current UB=" << currentUpperBound << std::endl;
                 }
                 queue.NotifyNodeDone(threadId);
                 continue;
@@ -542,6 +546,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
+                m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
                 queue.NotifyNodeDone(threadId);
                 continue;
             }
@@ -728,7 +733,7 @@ void tsplp::MtspModel::CreateInitialResult()
         m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
 }
 
-void tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues)
+double tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues)
 {
     auto exploitedPaths = tsplp::ExploitFractionalSolution(
         m_optimizationMode, fractionalValues, m_weightManager.W(), m_weightManager.StartPositions(),
@@ -744,8 +749,10 @@ void tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>& f
     const auto exploitedObjective
         = CalculateObjective(m_optimizationMode, twoOptedPaths, m_weightManager.W());
 
-    m_bestResult.UpdateUpperBound(
-        exploitedObjective, m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
+    return m_bestResult
+        .UpdateUpperBound(
+            exploitedObjective, m_weightManager.TransformPathsBack(std::move(twoOptedPaths)))
+        .Upper;
 }
 
 tsplp::LinearObjective tsplp::CreateObjective(

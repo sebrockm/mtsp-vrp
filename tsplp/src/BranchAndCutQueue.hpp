@@ -32,13 +32,12 @@ public:
     BranchAndCutQueue();
 
 public:
+    [[nodiscard]] std::optional<double> GetLowerBound() const;
+    [[nodiscard]] std::optional<SData> Pop(size_t threadId);
+
     void ClearAll();
     void NotifyNodeDone(size_t threadId);
-    [[nodiscard]] std::optional<double> GetLowerBound() const;
     void UpdateCurrentLowerBound(size_t threadId, double currentLowerBound);
-    [[nodiscard]] size_t GetSize() const;
-    [[nodiscard]] size_t GetWorkedOnSize() const;
-    std::optional<SData> Pop(size_t threadId);
     void Push(
         double lowerBound, std::vector<Variable> fixedVariables0,
         std::vector<Variable> fixedVariables1);

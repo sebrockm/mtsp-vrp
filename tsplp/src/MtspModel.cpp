@@ -740,7 +740,7 @@ double tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>&
         m_weightManager.EndPositions(), m_weightManager.Dependencies(), m_endTime);
 
     if (exploitedPaths.empty())
-        return;
+        return m_bestResult.GetBounds().Upper;
 
     auto [twoOptedPaths, _] = TwoOptPaths(
         m_optimizationMode, std::move(exploitedPaths), m_weightManager.W(),

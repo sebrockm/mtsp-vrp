@@ -3,8 +3,10 @@
 #include "Variable.hpp"
 
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -16,6 +18,28 @@ struct SData
     std::vector<Variable> FixedVariables0 {};
     std::vector<Variable> FixedVariables1 {};
     bool operator>(SData const& sd) const { return LowerBound > sd.LowerBound; }
+};
+
+class NodeDoneNotifier
+{
+private:
+    std::function<void()> m_notifyNodeDone;
+
+public:
+    explicit NodeDoneNotifier(std::function<void()> notifyNodeDone)
+        : m_notifyNodeDone(std::move(notifyNodeDone))
+    {
+    }
+    NodeDoneNotifier(const NodeDoneNotifier&) = delete;
+    NodeDoneNotifier(NodeDoneNotifier&&) = default;
+    NodeDoneNotifier& operator=(const NodeDoneNotifier&) = default;
+    NodeDoneNotifier& operator=(NodeDoneNotifier&&) = default;
+
+    ~NodeDoneNotifier()
+    {
+        if (m_notifyNodeDone != nullptr)
+            m_notifyNodeDone();
+    }
 };
 
 class BranchAndCutQueue
@@ -33,10 +57,9 @@ public:
 
 public:
     [[nodiscard]] std::optional<double> GetLowerBound() const;
-    [[nodiscard]] std::optional<SData> Pop(size_t threadId);
+    [[nodiscard]] std::optional<std::tuple<SData, NodeDoneNotifier>> Pop(size_t threadId);
 
     void ClearAll();
-    void NotifyNodeDone(size_t threadId);
     void UpdateCurrentLowerBound(size_t threadId, double currentLowerBound);
     void Push(
         double lowerBound, std::vector<Variable> fixedVariables0,
@@ -45,5 +68,8 @@ public:
         double lowerBound, std::vector<Variable> fixedVariables0,
         std::vector<Variable> fixedVariables1, Variable branchingVariable,
         std::vector<Variable> recursivelyFixed0);
+
+private:
+    void NotifyNodeDone(size_t threadId);
 };
 }

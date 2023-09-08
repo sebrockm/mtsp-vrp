@@ -66,7 +66,8 @@ void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double c
     m_currentlyWorkedOnLowerBounds[threadId] = currentLowerBound;
 }
 
-std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
+std::optional<std::tuple<tsplp::SData, tsplp::NodeDoneNotifier>> tsplp::BranchAndCutQueue::Pop(
+    size_t threadId)
 {
     std::unique_lock lock { m_mutex };
 
@@ -78,10 +79,12 @@ std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
 
     std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
 
-    std::optional result = std::move(m_heap.back());
-    m_heap.pop_back();
+    m_currentlyWorkedOnLowerBounds.emplace(threadId, m_heap.back().LowerBound);
 
-    m_currentlyWorkedOnLowerBounds.emplace(threadId, result->LowerBound);
+    std::optional result = std::make_tuple(
+        std::move(m_heap.back()),
+        NodeDoneNotifier { [this, threadId] { NotifyNodeDone(threadId); } });
+    m_heap.pop_back();
 
     return result;
 }

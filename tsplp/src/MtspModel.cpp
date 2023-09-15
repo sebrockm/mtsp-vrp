@@ -300,7 +300,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
         return std::nullopt;
     }();
 
-    BranchAndCutQueue queue;
+    BranchAndCutQueue queue(threadCount);
     ConstraintDeque constraints(threadCount);
 
     std::mutex printmutex;
@@ -315,8 +315,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
         while (true)
         {
-            const auto initialBounds = m_bestResult.UpdateLowerBound(
-                queue.GetLowerBound().value_or(-std::numeric_limits<double>::max()));
+            const auto initialBounds = m_bestResult.UpdateLowerBound(queue.GetLowerBound());
 
             if (std::chrono::steady_clock::now() >= m_endTime)
             {
@@ -360,7 +359,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 break;
             }
 
-            auto [sdata, nodeDoneNotifier] = std::move(*top);
+            auto& [sdata, nodeDoneNotifier] = *top;
 
             {
                 std::unique_lock lock { printmutex };
@@ -402,8 +401,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            auto currentUpperBound
-                = m_bestResult.UpdateLowerBound(queue.GetLowerBound().value()).Upper;
+            auto currentUpperBound = m_bestResult.UpdateLowerBound(queue.GetLowerBound()).Upper;
 
             if (solutionStatus != Status::Optimal)
                 continue;
@@ -538,7 +536,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
-                m_bestResult.UpdateLowerBound(queue.GetLowerBound().value());
+                m_bestResult.UpdateLowerBound(queue.GetLowerBound());
                 continue;
             }
 

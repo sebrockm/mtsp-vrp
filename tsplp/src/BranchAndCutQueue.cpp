@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cassert>
 
-tsplp::BranchAndCutQueue::BranchAndCutQueue() { m_heap.emplace_back(); }
+tsplp::BranchAndCutQueue::BranchAndCutQueue(size_t) { m_heap.emplace_back(); }
 
 void tsplp::BranchAndCutQueue::ClearAll()
 {
@@ -32,7 +32,7 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
         m_cv.notify_all();
 }
 
-std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
+double tsplp::BranchAndCutQueue::GetLowerBound() const
 {
     std::unique_lock lock { m_mutex };
 
@@ -47,15 +47,15 @@ std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
         : std::make_optional(minIter->second);
 
     if (lbHeap.has_value() && lbUsed.has_value())
-        return std::min(lbHeap, lbUsed);
+        return *std::min(lbHeap, lbUsed);
 
     if (lbHeap.has_value() && !lbUsed.has_value())
-        return lbHeap;
+        return *lbHeap;
 
     if (!lbHeap.has_value() && lbUsed.has_value())
-        return lbUsed;
+        return *lbUsed;
 
-    return std::nullopt;
+    return 0;
 }
 
 void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double currentLowerBound)
@@ -78,15 +78,13 @@ std::optional<std::tuple<tsplp::SData, tsplp::NodeDoneNotifier>> tsplp::BranchAn
         return std::nullopt;
 
     std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
-
-    m_currentlyWorkedOnLowerBounds.emplace(threadId, m_heap.back().LowerBound);
-
-    std::optional result = std::make_tuple(
-        std::move(m_heap.back()),
-        NodeDoneNotifier { [this, threadId] { NotifyNodeDone(threadId); } });
+    auto popped = m_heap.back();
     m_heap.pop_back();
 
-    return result;
+    m_currentlyWorkedOnLowerBounds.emplace(threadId, popped.LowerBound);
+
+    return std::make_optional(std::make_tuple(
+        std::move(popped), NodeDoneNotifier { [this, threadId] { NotifyNodeDone(threadId); } }));
 }
 
 void tsplp::BranchAndCutQueue::Push(

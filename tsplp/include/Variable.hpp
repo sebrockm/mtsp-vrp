@@ -29,6 +29,8 @@ public:
     void Unfix(Model& model) const;
 };
 
+inline bool operator==(Variable lhs, Variable rhs) { return lhs.GetId() == rhs.GetId(); }
+
 struct VariableLess
 {
     bool operator()(const Variable& lhs, const Variable& rhs) const;

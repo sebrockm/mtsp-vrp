@@ -31,13 +31,17 @@ public:
     {
     }
     NodeDoneNotifier(const NodeDoneNotifier&) = delete;
-    NodeDoneNotifier(NodeDoneNotifier&&) = default;
-    NodeDoneNotifier& operator=(const NodeDoneNotifier&) = default;
-    NodeDoneNotifier& operator=(NodeDoneNotifier&&) = default;
+    NodeDoneNotifier(NodeDoneNotifier&& other) noexcept
+        : m_notifyNodeDone(std::move(other.m_notifyNodeDone))
+    {
+        other.m_notifyNodeDone = nullptr;
+    }
+    NodeDoneNotifier& operator=(const NodeDoneNotifier&) = delete;
+    NodeDoneNotifier& operator=(NodeDoneNotifier&& other) = delete;
 
     ~NodeDoneNotifier()
     {
-        if (m_notifyNodeDone != nullptr)
+        if (m_notifyNodeDone)
             m_notifyNodeDone();
     }
 };
@@ -53,10 +57,10 @@ private:
     std::condition_variable m_cv;
 
 public:
-    BranchAndCutQueue();
+    BranchAndCutQueue(size_t threadCount);
 
 public:
-    [[nodiscard]] std::optional<double> GetLowerBound() const;
+    [[nodiscard]] double GetLowerBound() const;
     [[nodiscard]] std::optional<std::tuple<SData, NodeDoneNotifier>> Pop(size_t threadId);
 
     void ClearAll();

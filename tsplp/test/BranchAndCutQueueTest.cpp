@@ -2,8 +2,11 @@
 
 #include <catch2/catch.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <thread>
+
+using namespace std::chrono_literals;
 
 TEST_CASE("NodeDoneNotifier calls function on destruction", "[NodeDoneNotifier]")
 {
@@ -47,6 +50,11 @@ TEST_CASE("NodeDoneNotifier can be moved inside of an optional tuple", "[NodeDon
     CHECK(counter == 1);
 }
 
+TEST_CASE("BranchAndCutQueue constructor", "[BranchAndCutQueue]")
+{
+    CHECK_THROWS(tsplp::BranchAndCutQueue(0));
+}
+
 SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
 {
     GIVEN("a BranchAndCutQueue with 1 thread")
@@ -80,6 +88,12 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             q.Push(lb, fixed0, fixed1);
 
             THEN("lower bound updates accordingly") { CHECK(q.GetLowerBound() == lb); }
+
+            THEN("pushing a worse lower bound than the current is an error")
+            {
+                CHECK_THROWS(q.Push(lb - 1, {}, {}));
+                CHECK_THROWS(q.PushBranch(lb - 1, {}, {}, tsplp::Variable { 0 }, {}));
+            }
 
             AND_WHEN("SData is popped")
             {
@@ -118,9 +132,9 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
 
                 THEN("lower bound stays") { CHECK(q.GetLowerBound() == lb); }
 
-                THEN("UpdateCurrentLowerBound with worse lb has no effect")
+                THEN("UpdateCurrentLowerBound with worse lb throws")
                 {
-                    q.UpdateCurrentLowerBound(0, lb - 1);
+                    CHECK_THROWS(q.UpdateCurrentLowerBound(0, lb - 1));
                     CHECK(q.GetLowerBound() == lb);
                 }
 
@@ -205,9 +219,9 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     CHECK(top.FixedVariables0 == top2ExpectedFixed0);
                     CHECK(top.FixedVariables1 == top2ExpectedFixed1);
                 }
-            }
 
-            CHECK_FALSE(q.Pop(0).has_value());
+                CHECK_FALSE(q.Pop(0).has_value());
+            }
         }
 
         WHEN("ClearAll is called")
@@ -320,18 +334,25 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             {
                 auto data = q.Pop(0);
 
+                std::atomic_bool t2_pop_should_succeed = false;
                 std::atomic_bool has_t2_popped = false;
+                std::atomic_bool t2_may_finish = false;
                 std::thread t2(
                     [&]
                     {
                         auto data2 = q.Pop(1);
                         has_t2_popped = true;
 
+                        CHECK(data2.has_value() == t2_pop_should_succeed);
+
                         if (data2.has_value())
                         {
                             // lb + 1 is pushed below
                             CHECK(std::get<0>(*data2).LowerBound == lb + 1);
                         }
+
+                        while (!t2_may_finish)
+                            ;
                     });
 
                 THEN("thread 2 needs to wait") { CHECK_FALSE(has_t2_popped); }
@@ -351,14 +372,60 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
 
                 AND_WHEN("another push is done")
                 {
+                    t2_pop_should_succeed = true;
                     q.Push(lb + 1, {}, {});
-                    using namespace std::chrono_literals;
+                    std::cout << "push" << std::endl;
                     std::this_thread::sleep_for(100ms);
 
                     THEN("thread 2 stops waiting on pop") { CHECK(has_t2_popped); }
-                    THEN("lower bound from second push is active")
+
+                    THEN("lower bound stays") { CHECK(q.GetLowerBound() == lb); }
+
+                    AND_WHEN("first notifier goes out of scope first")
                     {
-                        CHECK(q.GetLowerBound() == lb + 1);
+                        {
+                            const auto notifier = std::move(std::get<1>(*data));
+                        }
+                        std::cout << "notifier ^^" << std::endl;
+                        THEN("lower bound from second push is active")
+                        {
+                            CHECK(q.GetLowerBound() == lb + 1);
+                            std::cout << "GetLB ^^" << std::endl;
+                        }
+
+                        AND_WHEN("second notifier goes out of scope")
+                        {
+                            t2_may_finish = true;
+                            std::this_thread::sleep_for(100ms);
+
+                            THEN("lower bound is infinite")
+                            {
+                                CHECK(q.GetLowerBound() == std::numeric_limits<double>::infinity());
+                            }
+                        }
+                    }
+
+                    AND_WHEN("second notifier goes out of scope first")
+                    {
+                        t2_may_finish = true;
+                        std::this_thread::sleep_for(100ms);
+
+                        THEN("lower bound from first push is active")
+                        {
+                            CHECK(q.GetLowerBound() == lb);
+                        }
+
+                        AND_WHEN("first notifier goes out of scope")
+                        {
+                            {
+                                const auto notifier = std::move(std::get<1>(*data));
+                            }
+
+                            THEN("lower bound is infinite")
+                            {
+                                CHECK(q.GetLowerBound() == std::numeric_limits<double>::infinity());
+                            }
+                        }
                     }
                 }
 
@@ -373,6 +440,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                 }
 
                 {
+                    t2_may_finish = true;
                     // notifier needs to go out of scope before thread can join
                     const auto notifier = std::move(std::get<1>(*data));
                 }

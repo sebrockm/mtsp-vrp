@@ -301,6 +301,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
     }();
 
     BranchAndCutQueue queue(threadCount);
+    queue.Push(0, {}, {});
     ConstraintDeque constraints(threadCount);
 
     std::mutex printmutex;

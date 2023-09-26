@@ -52,9 +52,7 @@ private:
     std::vector<SData> m_heap {};
     std::greater<> m_comparer {};
     std::vector<std::optional<double>> m_currentlyWorkedOnLowerBounds;
-    std::map<double, size_t> m_finishedLowerBounds;
     size_t m_workedOnCount = 0;
-    double m_lastFinishedLowerBound = -std::numeric_limits<double>::max();
     bool m_isCleared = false;
     mutable std::mutex m_mutex;
     std::condition_variable m_cv;
@@ -79,6 +77,5 @@ public:
 private:
     void NotifyNodeDone(size_t threadId);
     double CalculateLowerBound() const;
-    void DecreaseWorkedOn(double lb);
 };
 }

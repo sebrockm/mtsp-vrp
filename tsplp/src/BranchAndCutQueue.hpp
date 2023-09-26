@@ -58,7 +58,7 @@ private:
     std::condition_variable m_cv;
 
 public:
-    BranchAndCutQueue(size_t threadCount);
+    explicit BranchAndCutQueue(size_t threadCount);
 
 public:
     [[nodiscard]] double GetLowerBound() const;

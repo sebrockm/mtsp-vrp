@@ -185,10 +185,10 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             std::vector<tsplp::Variable> fixed0 = { tsplp::Variable { 1 }, tsplp::Variable { 2 } };
             tsplp::Variable branchingVar { 3 };
             std::vector<tsplp::Variable> fixed1 = { tsplp::Variable { 4 } };
-            std::vector<tsplp::Variable> recFixed0 = { tsplp::Variable { 5 } };
+            std::vector<tsplp::Variable> recursivelyFixed0 = { tsplp::Variable { 5 } };
             const double lb = 12;
 
-            q.PushBranch(lb, fixed0, fixed1, branchingVar, recFixed0);
+            q.PushBranch(lb, fixed0, fixed1, branchingVar, recursivelyFixed0);
 
             THEN("lower bound updates accordingly") { CHECK(q.GetLowerBound() == lb); }
 

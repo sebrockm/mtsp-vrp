@@ -374,7 +374,6 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                 {
                     t2_pop_should_succeed = true;
                     q.Push(lb + 1, {}, {});
-                    std::cout << "push" << std::endl;
                     std::this_thread::sleep_for(100ms);
 
                     THEN("thread 2 stops waiting on pop") { CHECK(has_t2_popped); }
@@ -386,11 +385,9 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                         {
                             const auto notifier = std::move(std::get<1>(*data));
                         }
-                        std::cout << "notifier ^^" << std::endl;
                         THEN("lower bound from second push is active")
                         {
                             CHECK(q.GetLowerBound() == lb + 1);
-                            std::cout << "GetLB ^^" << std::endl;
                         }
 
                         AND_WHEN("second notifier goes out of scope")

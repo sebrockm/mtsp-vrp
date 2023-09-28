@@ -316,12 +316,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
         {
             const auto initialBounds = m_bestResult.UpdateLowerBound(queue.GetLowerBound());
 
-            if (std::chrono::steady_clock::now() >= m_endTime)
-            {
-                queue.ClearAll();
-                break;
-            }
-            if (initialBounds.Lower >= initialBounds.Upper)
+            if (std::chrono::steady_clock::now() >= m_endTime
+                || initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
                 break;
@@ -353,24 +349,21 @@ void tsplp::MtspModel::BranchAndCutSolve(
             case Status::Unbounded:
                 throw std::logic_error("LP solution is unbounded. This must not happen. Maybe some "
                                        "constraints are missing.");
-            case Status::Optimal:
-            case Status::Infeasible:
-                break;
-            case Status::Timeout:
             case Status::Error:
+                throw std::logic_error("Unexpected error happened while solving LP.");
+            case Status::Timeout: // timeout will be handled at the beginning of the next iteration
+            case Status::Infeasible: // fixation of some variable makes this infeasible, skip it
                 continue;
+            case Status::Optimal:
+                break;
             }
 
-            const auto currentLowerBound = solutionStatus == Status::Optimal
-                ? std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10)
-                : std::numeric_limits<double>::max();
+            const auto currentLowerBound
+                = std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10);
 
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
             auto currentUpperBound = m_bestResult.UpdateLowerBound(queue.GetLowerBound()).Upper;
-
-            if (solutionStatus != Status::Optimal)
-                continue;
 
             if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
             {
@@ -388,10 +381,10 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     currentUpperBound = ExploitFractionalSolution(fractionalValues);
             }
 
+            // currentLowerBound is not necessarily the global UB, but either way there is no need
+            // trying to improve it further
             if (currentLowerBound >= currentUpperBound)
-            {
                 continue;
-            }
 
             // fix variables according to reduced costs
             for (auto v : model.GetBinaryVariables())
@@ -457,6 +450,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             const auto fractionalVar = FindFractionalVariable(model);
 
+            // The fractional solution happens to be all integer and no constraint violations have
+            // been found above, so this is a solution for the MTSP problem.
             if (!fractionalVar.has_value())
             {
                 // another thread may have updated the upper bound since the last check
@@ -470,6 +465,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 continue;
             }
 
+            // As a last resort, split the problem on a fractional variable
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());
             queue.PushBranch(
                 currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value(),

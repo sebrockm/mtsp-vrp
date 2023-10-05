@@ -381,7 +381,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     currentUpperBound = ExploitFractionalSolution(fractionalValues);
             }
 
-            // currentLowerBound is not necessarily the global UB, but either way there is no need
+            // currentLowerBound is not necessarily the global LB, but either way there is no need
             // trying to improve it further
             if (currentLowerBound >= currentUpperBound)
                 continue;
@@ -451,7 +451,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             const auto fractionalVar = FindFractionalVariable(model);
 
             // The fractional solution happens to be all integer and no constraint violations have
-            // been found above, so this is a solution for the MTSP problem.
+            // been found above, so this is a solution for the actual problem.
             if (!fractionalVar.has_value())
             {
                 // another thread may have updated the upper bound since the last check
@@ -461,7 +461,6 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
-                m_bestResult.UpdateLowerBound(queue.GetLowerBound());
                 continue;
             }
 

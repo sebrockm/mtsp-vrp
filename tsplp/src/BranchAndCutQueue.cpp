@@ -5,7 +5,7 @@
 #include <algorithm>
 
 tsplp::BranchAndCutQueue::BranchAndCutQueue(size_t threadCount)
-    : m_currentlyWorkedOnLowerBounds(threadCount)
+    : m_workedOnLowerBounds(threadCount)
 {
     if (threadCount == 0)
         throw std::logic_error("Cannot have zero threads");
@@ -20,7 +20,7 @@ double tsplp::BranchAndCutQueue::GetLowerBound() const
 std::optional<std::tuple<tsplp::SData, tsplp::NodeDoneNotifier>> tsplp::BranchAndCutQueue::Pop(
     size_t threadId)
 {
-    if (threadId >= m_currentlyWorkedOnLowerBounds.size())
+    if (threadId >= m_workedOnLowerBounds.size())
         throw std::logic_error("Wrong threadId");
 
     std::unique_lock lock { m_mutex };
@@ -35,7 +35,7 @@ std::optional<std::tuple<tsplp::SData, tsplp::NodeDoneNotifier>> tsplp::BranchAn
     auto popped = std::move(m_heap.back());
     m_heap.pop_back();
 
-    m_currentlyWorkedOnLowerBounds.at(threadId) = popped.LowerBound;
+    m_workedOnLowerBounds.at(threadId) = popped.LowerBound;
     ++m_workedOnCount;
 
     return std::make_optional(std::make_tuple(
@@ -56,16 +56,13 @@ void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double c
 {
     std::unique_lock lock { m_mutex };
 
-    if (m_isCleared)
-        return;
-
-    if (!m_currentlyWorkedOnLowerBounds.at(threadId).has_value())
+    if (!m_workedOnLowerBounds.at(threadId).has_value())
         throw std::logic_error("Thread does not have a node popped");
 
-    if (currentLowerBound < *m_currentlyWorkedOnLowerBounds.at(threadId))
+    if (currentLowerBound < *m_workedOnLowerBounds.at(threadId))
         throw std::logic_error("Lower bound must not be decreased");
 
-    m_currentlyWorkedOnLowerBounds.at(threadId) = currentLowerBound;
+    m_workedOnLowerBounds.at(threadId) = currentLowerBound;
 }
 
 void tsplp::BranchAndCutQueue::Push(
@@ -139,10 +136,10 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
 
     {
         std::unique_lock lock { m_mutex };
-        if (!m_currentlyWorkedOnLowerBounds.at(threadId).has_value())
+        if (!m_workedOnLowerBounds.at(threadId).has_value())
             throw std::logic_error("Thread does not have a node popped");
 
-        m_currentlyWorkedOnLowerBounds.at(threadId) = std::nullopt;
+        m_workedOnLowerBounds.at(threadId) = std::nullopt;
         --m_workedOnCount;
         needsNotify = m_workedOnCount == 0 && !m_isCleared && m_heap.empty();
     }
@@ -153,22 +150,18 @@ void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
 
 double tsplp::BranchAndCutQueue::CalculateLowerBound() const
 {
-    if (m_isCleared || (m_heap.empty() && m_workedOnCount == 0))
-        return -std::numeric_limits<double>::max();
+    static constexpr auto max = std::numeric_limits<double>::max();
 
-    const auto cmp = [](auto opt1, auto opt2)
-    {
-        return opt1.value_or(std::numeric_limits<double>::max())
-            < opt2.value_or(std::numeric_limits<double>::max());
-    };
+    if (m_heap.empty() && m_workedOnCount == 0)
+        return -max;
 
-    const auto lbHeap
-        = m_heap.empty() ? std::numeric_limits<double>::max() : m_heap.front().LowerBound;
+    const auto cmp = [](auto opt1, auto opt2) { return opt1.value_or(max) < opt2.value_or(max); };
+
+    const auto lbHeap = m_heap.empty() ? max : m_heap.front().LowerBound;
 
     const auto lbWorkedOn = m_workedOnCount == 0
-        ? std::numeric_limits<double>::max()
-        : std::min_element(
-              m_currentlyWorkedOnLowerBounds.begin(), m_currentlyWorkedOnLowerBounds.end(), cmp)
+        ? max
+        : std::min_element(m_workedOnLowerBounds.begin(), m_workedOnLowerBounds.end(), cmp)
               ->value();
 
     return std::min(lbHeap, lbWorkedOn);

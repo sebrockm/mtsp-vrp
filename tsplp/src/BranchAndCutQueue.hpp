@@ -4,6 +4,7 @@
 
 #include <condition_variable>
 #include <functional>
+#include <limits>
 #include <mutex>
 #include <optional>
 #include <tuple>
@@ -51,7 +52,7 @@ class BranchAndCutQueue
 private:
     std::vector<SData> m_heap {};
     std::greater<> m_comparer {};
-    std::vector<std::optional<double>> m_currentlyWorkedOnLowerBounds;
+    std::vector<std::optional<double>> m_workedOnLowerBounds;
     size_t m_workedOnCount = 0;
     bool m_isCleared = false;
     mutable std::mutex m_mutex;

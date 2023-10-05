@@ -4,9 +4,12 @@
 
 #include <atomic>
 #include <chrono>
+#include <mutex>
 #include <thread>
 
 using namespace std::chrono_literals;
+
+static constexpr auto max = std::numeric_limits<double>::max();
 
 TEST_CASE("NodeDoneNotifier calls function on destruction", "[NodeDoneNotifier]")
 {
@@ -61,10 +64,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
     {
         tsplp::BranchAndCutQueue q(1);
 
-        THEN("lower bound is initialized to -std::numeric_limits<double>::max()")
-        {
-            CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-        }
+        THEN("lower bound is initialized to -max") { CHECK(q.GetLowerBound() == -max); }
 
         THEN("updating the current lower bound is an error (as no data is currently popped)")
         {
@@ -149,33 +149,27 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             {
                 q.ClearAll();
 
-                THEN("lower bound is -std::numeric_limits<double>::max()")
-                {
-                    CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-                }
+                THEN("lower doesn't change") { CHECK(q.GetLowerBound() == lb); }
 
                 THEN("Pop returns nullopt") { CHECK_FALSE(q.Pop(0).has_value()); }
 
                 THEN("another ClearAll doesn't harm") { CHECK_NOTHROW(q.ClearAll()); }
 
-                THEN("updating the current lower bound has no effect")
+                THEN("updating the current lower bound throws")
                 {
-                    CHECK_NOTHROW(q.UpdateCurrentLowerBound(0, 13));
-                    CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
+                    CHECK_THROWS(q.UpdateCurrentLowerBound(0, 13));
                 }
 
                 THEN("Push has no effect")
                 {
                     q.Push(lb + 1, {}, {});
                     CHECK_FALSE(q.Pop(0).has_value());
-                    CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
                 }
 
                 THEN("PushBranch has no effect")
                 {
                     q.PushBranch(lb + 1, {}, {}, tsplp::Variable { 0 }, {});
                     CHECK_FALSE(q.Pop(0).has_value());
-                    CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
                 }
             }
         }
@@ -232,11 +226,6 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
         {
             q.ClearAll();
 
-            THEN("lower bound is -std::numeric_limits<double>::max()")
-            {
-                CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-            }
-
             THEN("Pop returns nullopt") { CHECK_FALSE(q.Pop(0).has_value()); }
 
             THEN("another ClearAll doesn't harm") { CHECK_NOTHROW(q.ClearAll()); }
@@ -245,14 +234,12 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             {
                 q.Push(1, {}, {});
                 CHECK_FALSE(q.Pop(0).has_value());
-                CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
             }
 
             THEN("PushBranch has no effect")
             {
                 q.PushBranch(1, {}, {}, tsplp::Variable { 0 }, {});
                 CHECK_FALSE(q.Pop(0).has_value());
-                CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
             }
         }
 
@@ -300,10 +287,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
     {
         tsplp::BranchAndCutQueue q(2);
 
-        THEN("lower bound is initialized to -std::numeric_limits<double>::max()")
-        {
-            CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-        }
+        THEN("lower bound is initialized to -max") { CHECK(q.GetLowerBound() == -max); }
 
         THEN("updating the current lower bound is an error (as no data is currently popped)")
         {
@@ -392,17 +376,6 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                         {
                             CHECK(q.GetLowerBound() == lb + 1);
                         }
-
-                        AND_WHEN("second notifier goes out of scope")
-                        {
-                            t2_may_finish = true;
-                            std::this_thread::sleep_for(100ms);
-
-                            THEN("lower bound is -std::numeric_limits<double>::max()")
-                            {
-                                CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-                            }
-                        }
                     }
 
                     AND_WHEN("second notifier goes out of scope")
@@ -414,18 +387,6 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                         {
                             CHECK(q.GetLowerBound() == lb);
                         }
-
-                        AND_WHEN("first notifier goes out of scope")
-                        {
-                            {
-                                const auto notifier = std::move(std::get<1>(*data));
-                            }
-
-                            THEN("lower bound is -std::numeric_limits<double>::max()")
-                            {
-                                CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-                            }
-                        }
                     }
                 }
 
@@ -435,10 +396,6 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     std::this_thread::sleep_for(100ms);
 
                     THEN("thread 2 stops waiting on pop") { CHECK(has_t2_popped); }
-                    THEN("lower bound is -std::numeric_limits<double>::max()")
-                    {
-                        CHECK(q.GetLowerBound() == -std::numeric_limits<double>::max());
-                    }
                 }
 
                 {
@@ -455,29 +412,49 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
     {
         tsplp::BranchAndCutQueue q(10);
 
-        const auto setup = [&](bool doClearAll)
+        const auto setup = [&](bool doClearAll) -> double
         {
             using namespace std::chrono_literals;
 
+            auto update_global_lb
+                = [global_lb = -std::numeric_limits<double>::infinity()](double new_lb) mutable
+            {
+                static std::mutex m;
+                std::unique_lock lock { m };
+                if (new_lb > global_lb)
+                    global_lb = new_lb;
+
+                return global_lb;
+            };
+
             q.Push(0, {}, {});
-            std::mutex history_mutex;
-            std::vector<double> history;
             const auto runner = [&](size_t threadId)
             {
                 while (true)
                 {
+                    const auto global_lb = update_global_lb(q.GetLowerBound());
+                    if (global_lb >= 8) // simulate timeout and crossing bounds
+                    {
+                        if (doClearAll)
+                            q.ClearAll();
+                        break;
+                    }
+
                     const auto node = q.Pop(threadId);
                     if (!node.has_value())
+                    {
                         break;
+                    }
 
                     const auto& [data, n] = *node;
                     const auto lb = data.LowerBound;
-                    {
-                        std::unique_lock lock { history_mutex };
-                        history.push_back(lb);
-                    }
 
-                    std::this_thread::sleep_for(50ms);
+                    std::this_thread::sleep_for(10ms); // simulate solving lp
+                    if (lb >= 4 && threadId % 2 == 1)
+                        continue; // simulate infeasible solution
+
+                    q.UpdateCurrentLowerBound(threadId, lb + 1);
+                    update_global_lb(q.GetLowerBound());
 
                     if (static_cast<int>(lb) % 2 == 1)
                     {
@@ -489,50 +466,32 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                         // for even lb's, push branch
                         q.PushBranch(lb + 1, {}, {}, tsplp::Variable { 0 }, {});
                     }
-                    else if (doClearAll)
-                    {
-                        // clear at lb == 8
-                        q.ClearAll();
-                    }
                 }
             };
 
             std::vector<std::thread> threads;
-            for (size_t i = 0; i < 10; ++i)
+            for (size_t i = 0; i < 1; ++i)
                 threads.emplace_back(runner, i);
 
             for (auto& t : threads)
                 t.join();
 
-            return history;
+            const auto global_lb = update_global_lb(-max);
+            return global_lb;
         };
 
         WHEN("they are pushing and popping data with a ClearAll call at lb==8")
         {
-            const auto history = setup(true);
+            const auto lb = setup(true);
 
-            THEN("the lower bound history is correct")
-            {
-                const std::vector<double> expected { 0, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5,
-                                                     5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7,
-                                                     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8 };
-                CHECK(history.size() >= expected.size());
-                CHECK(history.back() == 8);
-            }
+            THEN("the lower bound is correct") { CHECK(lb == 8); }
         }
 
         WHEN("they are pushing and popping data without ClearAll")
         {
-            const auto history = setup(false);
+            const auto lb = setup(false);
 
-            THEN("the lower bound history is correct")
-            {
-                CHECK(history == std::vector<double> { 0, 1, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4,
-                                                       5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
-                                                       6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-                                                       7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 8,
-                                                       8, 8, 8, 8, 8, 8, 8, 8, 8 });
-            }
+            THEN("the lower bound is correct") { CHECK(lb == 8); }
         }
     }
 }

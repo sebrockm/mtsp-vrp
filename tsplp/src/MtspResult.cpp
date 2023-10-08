@@ -1,5 +1,7 @@
 #include "MtspResult.hpp"
 
+#include <iostream>
+
 namespace tsplp
 {
 
@@ -42,5 +44,13 @@ MtspResult::Bounds MtspResult::UpdateLowerBound(double newLowerBound)
         m_lowerBound = std::min(newLowerBound, m_upperBound);
 
     return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
+}
+
+void MtspResult::Print() const
+{
+    std::unique_lock lock { m_mutex };
+    std::cout << "MtspResult:\nLB:" << m_lowerBound << " UB:" << m_upperBound
+              << " is timeout hit: " << m_isTimeoutHit << std::endl
+              << std::endl;
 }
 }

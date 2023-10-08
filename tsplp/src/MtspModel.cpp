@@ -488,6 +488,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
     {
         if (std::chrono::steady_clock::now() < m_endTime)
         {
+            queue.Print();
+            m_bestResult.Print();
             throw std::logic_error(
                 m_name + ": Logic Error: Timeout not reached, but no optimal solution found.");
         }

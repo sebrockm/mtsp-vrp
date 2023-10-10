@@ -316,10 +316,17 @@ void tsplp::MtspModel::BranchAndCutSolve(
         {
             const auto initialBounds = m_bestResult.UpdateLowerBound(queue.GetLowerBound());
 
-            if (std::chrono::steady_clock::now() >= m_endTime
-                || initialBounds.Lower >= initialBounds.Upper)
+            if (initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
+                std::cout << "thread " << threadId << " exited because bounds crossed" << std::endl;
+                break;
+            }
+
+            if (std::chrono::steady_clock::now() >= m_endTime)
+            {
+                queue.ClearAll();
+                std::cout << "thread " << threadId << " exited because timeout" << std::endl;
                 break;
             }
 
@@ -330,6 +337,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
             {
+                std::cout << "thread " << threadId << " exited because Pop returned nothing"
+                          << std::endl;
                 break;
             }
 

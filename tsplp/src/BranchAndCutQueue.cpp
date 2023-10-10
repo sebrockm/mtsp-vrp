@@ -184,7 +184,7 @@ void tsplp::BranchAndCutQueue::Print() const
         std::cout << std::endl;
     }
 
-    std::cout << "worked on LBs: ";
+    std::cout << "\nworked on LBs: ";
     for (size_t i = 0; i < m_workedOnLowerBounds.size(); ++i)
     {
         if (m_workedOnLowerBounds[i])
@@ -195,9 +195,8 @@ void tsplp::BranchAndCutQueue::Print() const
         {
             std::cout << i << ":<>";
         }
-
-        std::cout << std::endl;
+        std::cout << " ";
     }
 
-    std::cout << "is cleared: " << m_isCleared << std::endl << std::endl;
+    std::cout << "\nis cleared: " << m_isCleared << std::endl << std::endl;
 }

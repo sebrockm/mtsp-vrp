@@ -121,19 +121,23 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 8 };
 
-    const auto startTime = std::chrono::steady_clock::now();
+    for (size_t iteration = 0; iteration < 10000; ++iteration)
+    {
+        const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions,
-                             weights,        tsplp::OptimizationMode::Sum,
-                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
-    model.BranchAndCutSolve();
-    const auto& result = model.GetResult();
+        tsplp::MtspModel model { startPositions, endPositions,
+                                 weights,        tsplp::OptimizationMode::Sum,
+                                 timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+        model.BranchAndCutSolve();
+        const auto& result = model.GetResult();
 
-    const auto endTime = std::chrono::steady_clock::now();
-    CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
-    CAPTURE(result.GetPaths());
-    CHECK(result.GetBounds().Lower == Approx(2125));
-    CHECK(result.GetBounds().Upper == Approx(2125));
+        const auto endTime = std::chrono::steady_clock::now();
+        CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+        CAPTURE(result.GetPaths());
+        CAPTURE(iteration);
+        CHECK(result.GetBounds().Lower == Approx(2125));
+        CHECK(result.GetBounds().Upper == Approx(2125));
+    }
 }
 
 TEST_CASE("ESC07.sop start end same", "[instances]")
@@ -155,20 +159,23 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
 
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
+    for (size_t iteration = 0; iteration < 10000; ++iteration)
+    {
+        const auto startTime = std::chrono::steady_clock::now();
 
-    const auto startTime = std::chrono::steady_clock::now();
+        tsplp::MtspModel model { startPositions, endPositions,
+                                 weights,        tsplp::OptimizationMode::Sum,
+                                 timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+        model.BranchAndCutSolve();
+        const auto& result = model.GetResult();
 
-    tsplp::MtspModel model { startPositions, endPositions,
-                             weights,        tsplp::OptimizationMode::Sum,
-                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
-    model.BranchAndCutSolve();
-    const auto& result = model.GetResult();
-
-    const auto endTime = std::chrono::steady_clock::now();
-    CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
-    CAPTURE(result.GetPaths());
-    CHECK(result.GetBounds().Lower == Approx(2125));
-    CHECK(result.GetBounds().Upper == Approx(2125));
+        const auto endTime = std::chrono::steady_clock::now();
+        CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+        CAPTURE(result.GetPaths());
+        CAPTURE(iteration);
+        CHECK(result.GetBounds().Lower == Approx(2125));
+        CHECK(result.GetBounds().Upper == Approx(2125));
+    }
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")

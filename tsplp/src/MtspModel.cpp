@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <mutex>
 #include <stdexcept>
 #include <thread>
 
@@ -304,6 +305,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
     queue.Push(0, {}, {});
     ConstraintDeque constraints(threadCount);
 
+    std::mutex print_mutex;
+
     const auto threadLoop = [&](const size_t threadId)
     {
         auto model = m_model;
@@ -319,14 +322,18 @@ void tsplp::MtspModel::BranchAndCutSolve(
             if (initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
-                std::cout << "thread " << threadId << " exited because bounds crossed" << std::endl;
+                std::unique_lock lock { print_mutex };
+                std::cout << m_name << ": thread " << threadId << " exited because bounds crossed"
+                          << std::endl;
                 break;
             }
 
             if (std::chrono::steady_clock::now() >= m_endTime)
             {
                 queue.ClearAll();
-                std::cout << "thread " << threadId << " exited because timeout" << std::endl;
+                std::unique_lock lock { print_mutex };
+                std::cout << m_name << ": thread " << threadId << " exited because timeout"
+                          << std::endl;
                 break;
             }
 
@@ -337,8 +344,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
             {
-                std::cout << "thread " << threadId << " exited because Pop returned nothing"
-                          << std::endl;
+                std::unique_lock lock { print_mutex };
+                std::cout << m_name << ": thread " << threadId
+                          << " exited because Pop returned nothing" << std::endl;
                 break;
             }
 
@@ -497,6 +505,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
     {
         if (std::chrono::steady_clock::now() < m_endTime)
         {
+            std::unique_lock lock { print_mutex };
             queue.Print();
             m_bestResult.Print();
             throw std::logic_error(

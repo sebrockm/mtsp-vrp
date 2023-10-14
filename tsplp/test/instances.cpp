@@ -125,9 +125,14 @@ TEST_CASE("ESC07.sop", "[instances]")
     {
         const auto startTime = std::chrono::steady_clock::now();
 
-        tsplp::MtspModel model { startPositions, endPositions,
-                                 weights,        tsplp::OptimizationMode::Sum,
-                                 timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+        tsplp::MtspModel model {
+            startPositions,
+            endPositions,
+            weights,
+            tsplp::OptimizationMode::Sum,
+            timeLimit,
+            Catch::getResultCapture().getCurrentTestName() + std::to_string(iteration)
+        };
         model.BranchAndCutSolve();
         const auto& result = model.GetResult();
 
@@ -163,9 +168,14 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
     {
         const auto startTime = std::chrono::steady_clock::now();
 
-        tsplp::MtspModel model { startPositions, endPositions,
-                                 weights,        tsplp::OptimizationMode::Sum,
-                                 timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+        tsplp::MtspModel model {
+            startPositions,
+            endPositions,
+            weights,
+            tsplp::OptimizationMode::Sum,
+            timeLimit,
+            Catch::getResultCapture().getCurrentTestName() + std::to_string(iteration)
+        };
         model.BranchAndCutSolve();
         const auto& result = model.GetResult();
 

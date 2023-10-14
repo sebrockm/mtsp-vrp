@@ -411,7 +411,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             {
                 std::unique_lock lock { print_mutex };
                 std::cout << m_name << ", thread " << threadId
-                          << ": currentLowerBound >= currentUpperBound, skipping" << std::endl;
+                          << ": currentLowerBound=" << currentLowerBound
+                          << " >= currentUpperBound=" << currentUpperBound << " skipping"
+                          << std::endl;
                 continue;
             }
 
@@ -490,10 +492,14 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
+                // make sure the this lower bound is set if it is the global one
+                m_bestResult.UpdateLowerBound(queue.GetLowerBound());
+
                 {
                     std::unique_lock lock { print_mutex };
                     std::cout << m_name << ", thread " << threadId
-                              << ": non-fractional solution found" << std::endl;
+                              << ": non-fractional solution found: " << currentLowerBound
+                              << std::endl;
                     continue;
                 }
             }

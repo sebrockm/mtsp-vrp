@@ -66,6 +66,29 @@ void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double c
     m_workedOnLowerBounds.at(threadId) = currentLowerBound;
 }
 
+void tsplp::BranchAndCutQueue::PushResult(double lowerBound)
+{
+    bool needsNotify = false;
+
+    {
+        std::unique_lock lock { m_mutex };
+
+        if (m_isCleared)
+            return;
+
+        if (lowerBound < CalculateLowerBound())
+            throw std::logic_error("cannot push smaller lower bound");
+
+        needsNotify = m_heap.empty() && m_workedOnCount > 0;
+
+        m_heap.push_back({ lowerBound, {}, {}, true });
+        std::push_heap(begin(m_heap), end(m_heap), m_comparer);
+    }
+
+    if (needsNotify)
+        m_cv.notify_one();
+}
+
 void tsplp::BranchAndCutQueue::Push(
     double lowerBound, std::vector<Variable> fixedVariables0, std::vector<Variable> fixedVariables1)
 {
@@ -82,7 +105,8 @@ void tsplp::BranchAndCutQueue::Push(
 
         needsNotify = m_heap.empty() && m_workedOnCount > 0;
 
-        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
+        m_heap.push_back(
+            { lowerBound, std::move(fixedVariables0), std::move(fixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -116,11 +140,12 @@ void tsplp::BranchAndCutQueue::PushBranch(
         copyFixedVariables0.insert(
             copyFixedVariables0.end(), recursivelyFixed0.begin(), recursivelyFixed0.end());
 
-        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
+        m_heap.push_back(
+            { lowerBound, std::move(fixedVariables0), std::move(fixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
 
         m_heap.push_back(
-            { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1) });
+            { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -173,7 +198,7 @@ void tsplp::BranchAndCutQueue::Print() const
     std::unique_lock lock { m_mutex };
 
     std::cout << "BranchAndCutQueue:\nHeap:";
-    for (const auto& [lb, v0, v1] : m_heap)
+    for (const auto& [lb, v0, v1, r] : m_heap)
     {
         std::cout << "LB:" << lb << ", v0:";
         for (const auto& v : v0)
@@ -181,6 +206,7 @@ void tsplp::BranchAndCutQueue::Print() const
         std::cout << " v1:";
         for (const auto& v : v1)
             std::cout << v.GetId() << ",";
+        std::cout << " is result: " << r;
         std::cout << std::endl;
     }
 

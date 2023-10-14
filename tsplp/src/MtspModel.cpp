@@ -352,6 +352,20 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             auto& [sdata, nodeDoneNotifier] = *top;
 
+            if (sdata.IsResult)
+            {
+                const auto globalLowerBound
+                    = m_bestResult.UpdateLowerBound(queue.GetLowerBound()).Lower;
+                if (sdata.LowerBound > globalLowerBound)
+                {
+                    // As this was just popped but is not the global LB, this means other threads
+                    // are currently working on smaller LBs. Push it back to be reevaluated later.
+                    queue.PushResult(sdata.LowerBound);
+                }
+
+                continue;
+            }
+
             fixedVariables0 = std::move(sdata.FixedVariables0);
             fixedVariables1 = std::move(sdata.FixedVariables1);
 
@@ -414,6 +428,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                           << ": currentLowerBound=" << currentLowerBound
                           << " >= currentUpperBound=" << currentUpperBound << " skipping"
                           << std::endl;
+                queue.PushResult(currentLowerBound);
                 continue;
             }
 
@@ -492,14 +507,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
-                // make sure the this lower bound is set if it is the global one
-                m_bestResult.UpdateLowerBound(queue.GetLowerBound());
-
                 {
                     std::unique_lock lock { print_mutex };
                     std::cout << m_name << ", thread " << threadId
                               << ": non-fractional solution found: " << currentLowerBound
                               << std::endl;
+                    queue.PushResult(currentLowerBound);
                     continue;
                 }
             }

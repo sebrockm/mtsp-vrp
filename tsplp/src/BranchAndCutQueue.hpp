@@ -18,6 +18,7 @@ struct SData
     double LowerBound = -std::numeric_limits<double>::max();
     std::vector<Variable> FixedVariables0 {};
     std::vector<Variable> FixedVariables1 {};
+    bool IsResult = false;
     bool operator>(SData const& sd) const { return LowerBound > sd.LowerBound; }
 };
 
@@ -67,6 +68,7 @@ public:
 
     void ClearAll();
     void UpdateCurrentLowerBound(size_t threadId, double currentLowerBound);
+    void PushResult(double lowerBound);
     void Push(
         double lowerBound, std::vector<Variable> fixedVariables0,
         std::vector<Variable> fixedVariables1);

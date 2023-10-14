@@ -364,13 +364,20 @@ void tsplp::MtspModel::BranchAndCutSolve(
             switch (solutionStatus)
             {
             case Status::Unbounded:
-                throw std::logic_error("LP solution is unbounded. This must not happen. Maybe some "
-                                       "constraints are missing.");
+                throw std::logic_error(
+                    m_name
+                    + ": LP solution is unbounded. This must not happen. Maybe some "
+                      "constraints are missing.");
             case Status::Error:
-                throw std::logic_error("Unexpected error happened while solving LP.");
+                throw std::logic_error(m_name + ": Unexpected error happened while solving LP.");
             case Status::Timeout: // timeout will be handled at the beginning of the next iteration
             case Status::Infeasible: // fixation of some variable makes this infeasible, skip it
+            {
+                std::unique_lock lock { print_mutex };
+                std::cout << m_name << ", thread " << threadId << ": Infeasible, skipping."
+                          << std::endl;
                 continue;
+            }
             case Status::Optimal:
                 break;
             }
@@ -401,7 +408,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
             // currentLowerBound is not necessarily the global LB, but either way there is no need
             // trying to improve it further
             if (currentLowerBound >= currentUpperBound)
+            {
+                std::unique_lock lock { print_mutex };
+                std::cout << m_name << ", thread " << threadId
+                          << ": currentLowerBound >= currentUpperBound, skipping" << std::endl;
                 continue;
+            }
 
             // fix variables according to reduced costs
             for (auto v : model.GetBinaryVariables())
@@ -478,7 +490,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
-                continue;
+                {
+                    std::unique_lock lock { print_mutex };
+                    std::cout << m_name << ", thread " << threadId
+                              << ": non-fractional solution found" << std::endl;
+                    continue;
+                }
             }
 
             // As a last resort, split the problem on a fractional variable

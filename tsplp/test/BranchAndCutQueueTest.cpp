@@ -93,6 +93,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             {
                 CHECK_THROWS(q.Push(lb - 1, {}, {}));
                 CHECK_THROWS(q.PushBranch(lb - 1, {}, {}, tsplp::Variable { 0 }, {}));
+                CHECK_THROWS(q.PushResult(lb - 1));
             }
 
             AND_WHEN("SData is popped")
@@ -108,6 +109,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     CHECK(sdata.LowerBound == 12);
                     CHECK(sdata.FixedVariables0 == fixed0);
                     CHECK(sdata.FixedVariables1 == fixed1);
+                    CHECK_FALSE(sdata.IsResult);
 
                     AND_WHEN("improved data is pushed")
                     {
@@ -149,7 +151,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
             {
                 q.ClearAll();
 
-                THEN("lower doesn't change") { CHECK(q.GetLowerBound() == lb); }
+                THEN("lower bound doesn't change") { CHECK(q.GetLowerBound() == lb); }
 
                 THEN("Pop returns nullopt") { CHECK_FALSE(q.Pop(0).has_value()); }
 
@@ -169,6 +171,12 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                 THEN("PushBranch has no effect")
                 {
                     q.PushBranch(lb + 1, {}, {}, tsplp::Variable { 0 }, {});
+                    CHECK_FALSE(q.Pop(0).has_value());
+                }
+
+                THEN("PushResult has no effect")
+                {
+                    q.PushResult(lb + 1);
                     CHECK_FALSE(q.Pop(0).has_value());
                 }
             }
@@ -200,6 +208,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     CHECK(top.LowerBound == lb);
                     CHECK(top.FixedVariables0 == top1ExpectedFixed0);
                     CHECK(top.FixedVariables1 == fixed1);
+                    CHECK_FALSE(top.IsResult);
                 }
                 {
                     auto p = q.Pop(0);
@@ -216,9 +225,108 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     CHECK(top.LowerBound == lb);
                     CHECK(top.FixedVariables0 == top2ExpectedFixed0);
                     CHECK(top.FixedVariables1 == top2ExpectedFixed1);
+                    CHECK_FALSE(top.IsResult);
                 }
 
                 CHECK_FALSE(q.Pop(0).has_value());
+            }
+        }
+
+        WHEN("a result is pushed")
+        {
+            const double lb = 12;
+            q.PushResult(lb);
+
+            THEN("lower bound updates accordingly") { CHECK(q.GetLowerBound() == lb); }
+
+            THEN("pushing a worse lower bound than the current is an error")
+            {
+                CHECK_THROWS(q.Push(lb - 1, {}, {}));
+                CHECK_THROWS(q.PushBranch(lb - 1, {}, {}, tsplp::Variable { 0 }, {}));
+                CHECK_THROWS(q.PushResult(lb - 1));
+            }
+
+            AND_WHEN("SData is popped")
+            {
+                auto data = q.Pop(0);
+
+                THEN("popped data is marked as result")
+                {
+                    REQUIRE(data.has_value());
+
+                    auto [sdata, notifier] = std::move(*data);
+
+                    CHECK(sdata.LowerBound == 12);
+                    CHECK(sdata.IsResult);
+
+                    AND_WHEN("an improved result is pushed")
+                    {
+                        q.PushResult(sdata.LowerBound + 1);
+
+                        THEN("lower bound stays untouched, for now")
+                        {
+                            CHECK(q.GetLowerBound() == lb);
+                        }
+
+                        AND_WHEN("notifier goes out of scope")
+                        {
+                            {
+                                // move notifier to a variable that goes out of scope
+                                const auto movedNotifier = std::move(notifier);
+                            }
+
+                            THEN("lower bound updates") { CHECK(q.GetLowerBound() == lb + 1); }
+                        }
+                    }
+                }
+
+                THEN("lower bound stays") { CHECK(q.GetLowerBound() == lb); }
+
+                THEN("UpdateCurrentLowerBound with worse lb throws")
+                {
+                    CHECK_THROWS(q.UpdateCurrentLowerBound(0, lb - 1));
+                    CHECK(q.GetLowerBound() == lb);
+                }
+
+                THEN("UpdateCurrentLowerBound with better lb changes lb")
+                {
+                    q.UpdateCurrentLowerBound(0, lb + 1);
+                    CHECK(q.GetLowerBound() == lb + 1);
+                }
+            }
+
+            AND_WHEN("ClearAll is called")
+            {
+                q.ClearAll();
+
+                THEN("lower bound doesn't change") { CHECK(q.GetLowerBound() == lb); }
+
+                THEN("Pop returns nullopt") { CHECK_FALSE(q.Pop(0).has_value()); }
+
+                THEN("another ClearAll doesn't harm") { CHECK_NOTHROW(q.ClearAll()); }
+
+                THEN("updating the current lower bound throws")
+                {
+                    CHECK_THROWS(q.UpdateCurrentLowerBound(0, 13));
+                }
+
+                THEN("Push has no effect")
+                {
+                    q.Push(lb + 1, {}, {});
+                    CHECK_FALSE(q.Pop(0).has_value());
+                }
+
+                THEN("PushBranch has no effect")
+                {
+                    q.PushBranch(lb + 1, {}, {}, tsplp::Variable { 0 }, {});
+                    CHECK_FALSE(q.Pop(0).has_value());
+                }
+
+                THEN("PushResult has no effect")
+                {
+                    q.PushResult(lb + 1);
+                    CHECK_FALSE(q.Pop(0).has_value());
+                }
             }
         }
 
@@ -412,7 +520,14 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
     {
         tsplp::BranchAndCutQueue q(10);
 
-        const auto setup = [&](bool doClearAll) -> double
+        enum class DoneAction
+        {
+            DoNothing,
+            ClearAll,
+            PushResult
+        };
+
+        const auto setup = [&](DoneAction doneAction) -> double
         {
             using namespace std::chrono_literals;
 
@@ -435,7 +550,7 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     const auto global_lb = update_global_lb(q.GetLowerBound());
                     if (global_lb >= 8) // simulate timeout and crossing bounds
                     {
-                        if (doClearAll)
+                        if (doneAction == DoneAction::ClearAll)
                             q.ClearAll();
                         break;
                     }
@@ -449,12 +564,23 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     const auto& [data, n] = *node;
                     const auto lb = data.LowerBound;
 
+                    if (data.IsResult)
+                    {
+                        if (lb > update_global_lb(-max))
+                        {
+                            q.PushResult(lb);
+                        }
+                        continue;
+                    }
+
                     std::this_thread::sleep_for(10ms); // simulate solving lp
                     if (lb >= 4 && threadId % 2 == 1)
                         continue; // simulate infeasible solution
 
                     q.UpdateCurrentLowerBound(threadId, lb + 1);
                     update_global_lb(q.GetLowerBound());
+
+                    std::this_thread::sleep_for(10ms); // simulate running separation algorithms
 
                     if (static_cast<int>(lb) % 2 == 1)
                     {
@@ -465,6 +591,10 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
                     {
                         // for even lb's, push branch
                         q.PushBranch(lb + 1, {}, {}, tsplp::Variable { 0 }, {});
+                    }
+                    else if (doneAction == DoneAction::PushResult)
+                    {
+                        q.PushResult(lb + 1);
                     }
                 }
             };
@@ -482,14 +612,21 @@ SCENARIO("BranchAndCutQueue usage", "[BranchAndCutQueue]")
 
         WHEN("they are pushing and popping data with a ClearAll call at lb==8")
         {
-            const auto lb = setup(true);
+            const auto lb = setup(DoneAction::ClearAll);
 
             THEN("the lower bound is correct") { CHECK(lb == 8); }
         }
 
-        WHEN("they are pushing and popping data without ClearAll")
+        WHEN("they are pushing and popping data with PushResult at lb==8")
         {
-            const auto lb = setup(false);
+            const auto lb = setup(DoneAction::PushResult);
+
+            THEN("the lower bound is correct") { CHECK(lb == 8); }
+        }
+
+        WHEN("they are pushing and popping data with no action at lb==8")
+        {
+            const auto lb = setup(DoneAction::DoNothing);
 
             THEN("the lower bound is correct") { CHECK(lb == 8); }
         }

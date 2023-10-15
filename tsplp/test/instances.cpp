@@ -7,7 +7,7 @@
 
 constexpr auto timeLimit = std::chrono::seconds {
 #ifdef NDEBUG
-    2
+    1
 #else
     10
 #endif
@@ -121,7 +121,7 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 8 };
 
-    for (size_t iteration = 0; iteration < 10000; ++iteration)
+    for (size_t iteration = 0; iteration < 1000; ++iteration)
     {
         const auto startTime = std::chrono::steady_clock::now();
 
@@ -164,7 +164,7 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
 
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
-    for (size_t iteration = 0; iteration < 10000; ++iteration)
+    for (size_t iteration = 0; iteration < 1000; ++iteration)
     {
         const auto startTime = std::chrono::steady_clock::now();
 

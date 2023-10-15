@@ -76,7 +76,6 @@ public:
         double lowerBound, std::vector<Variable> fixedVariables0,
         std::vector<Variable> fixedVariables1, Variable branchingVariable,
         std::vector<Variable> recursivelyFixed0);
-    void Print() const;
 
 private:
     void NotifyNodeDone(size_t threadId);

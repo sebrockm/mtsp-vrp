@@ -45,12 +45,4 @@ MtspResult::Bounds MtspResult::UpdateLowerBound(double newLowerBound)
 
     return Bounds { .Lower = m_lowerBound, .Upper = m_upperBound };
 }
-
-void MtspResult::Print() const
-{
-    std::unique_lock lock { m_mutex };
-    std::cout << "MtspResult:\nLB:" << m_lowerBound << " UB:" << m_upperBound
-              << " is timeout hit: " << m_isTimeoutHit << std::endl
-              << std::endl;
-}
 }

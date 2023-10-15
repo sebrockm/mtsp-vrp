@@ -30,7 +30,5 @@ public:
     void SetTimeoutHit();
     Bounds UpdateUpperBound(double newUpperBound, std::vector<std::vector<size_t>>&& newPaths);
     Bounds UpdateLowerBound(double newLowerBound);
-
-    void Print() const;
 };
 }

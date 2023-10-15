@@ -3,7 +3,6 @@
 #include "Model.hpp"
 
 #include <algorithm>
-#include <iostream>
 
 tsplp::BranchAndCutQueue::BranchAndCutQueue(size_t threadCount)
     : m_workedOnLowerBounds(threadCount)
@@ -191,38 +190,4 @@ double tsplp::BranchAndCutQueue::CalculateLowerBound() const
               ->value();
 
     return std::min(lbHeap, lbWorkedOn);
-}
-
-void tsplp::BranchAndCutQueue::Print() const
-{
-    std::unique_lock lock { m_mutex };
-
-    std::cout << "BranchAndCutQueue:\nHeap:";
-    for (const auto& [lb, v0, v1, r] : m_heap)
-    {
-        std::cout << "LB:" << lb << ", v0:";
-        for (const auto& v : v0)
-            std::cout << v.GetId() << ",";
-        std::cout << " v1:";
-        for (const auto& v : v1)
-            std::cout << v.GetId() << ",";
-        std::cout << " is result: " << r;
-        std::cout << std::endl;
-    }
-
-    std::cout << "\nworked on LBs: ";
-    for (size_t i = 0; i < m_workedOnLowerBounds.size(); ++i)
-    {
-        if (m_workedOnLowerBounds[i])
-        {
-            std::cout << i << ":" << *m_workedOnLowerBounds[i];
-        }
-        else
-        {
-            std::cout << i << ":<>";
-        }
-        std::cout << " ";
-    }
-
-    std::cout << "\nis cleared: " << m_isCleared << std::endl << std::endl;
 }

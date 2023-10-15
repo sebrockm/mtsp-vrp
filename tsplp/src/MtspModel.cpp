@@ -305,8 +305,6 @@ void tsplp::MtspModel::BranchAndCutSolve(
     queue.Push(0, {}, {});
     ConstraintDeque constraints(threadCount);
 
-    std::mutex print_mutex;
-
     const auto threadLoop = [&](const size_t threadId)
     {
         auto model = m_model;
@@ -322,18 +320,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
             if (initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
-                std::unique_lock lock { print_mutex };
-                std::cout << m_name << ": thread " << threadId << " exited because bounds crossed"
-                          << std::endl;
                 break;
             }
 
             if (std::chrono::steady_clock::now() >= m_endTime)
             {
                 queue.ClearAll();
-                std::unique_lock lock { print_mutex };
-                std::cout << m_name << ": thread " << threadId << " exited because timeout"
-                          << std::endl;
                 break;
             }
 
@@ -344,9 +336,6 @@ void tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
             {
-                std::unique_lock lock { print_mutex };
-                std::cout << m_name << ": thread " << threadId
-                          << " exited because Pop returned nothing" << std::endl;
                 break;
             }
 
@@ -386,12 +375,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 throw std::logic_error(m_name + ": Unexpected error happened while solving LP.");
             case Status::Timeout: // timeout will be handled at the beginning of the next iteration
             case Status::Infeasible: // fixation of some variable makes this infeasible, skip it
-            {
-                std::unique_lock lock { print_mutex };
-                std::cout << m_name << ", thread " << threadId << ": Infeasible, skipping."
-                          << std::endl;
                 continue;
-            }
             case Status::Optimal:
                 break;
             }
@@ -423,11 +407,6 @@ void tsplp::MtspModel::BranchAndCutSolve(
             // trying to improve it further
             if (currentLowerBound >= currentUpperBound)
             {
-                std::unique_lock lock { print_mutex };
-                std::cout << m_name << ", thread " << threadId
-                          << ": currentLowerBound=" << currentLowerBound
-                          << " >= currentUpperBound=" << currentUpperBound << " skipping"
-                          << std::endl;
                 queue.PushResult(currentLowerBound);
                 continue;
             }
@@ -507,14 +486,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
-                {
-                    std::unique_lock lock { print_mutex };
-                    std::cout << m_name << ", thread " << threadId
-                              << ": non-fractional solution found: " << currentLowerBound
-                              << std::endl;
-                    queue.PushResult(currentLowerBound);
-                    continue;
-                }
+                queue.PushResult(currentLowerBound);
+                continue;
             }
 
             // As a last resort, split the problem on a fractional variable
@@ -541,9 +514,6 @@ void tsplp::MtspModel::BranchAndCutSolve(
     {
         if (std::chrono::steady_clock::now() < m_endTime)
         {
-            std::unique_lock lock { print_mutex };
-            queue.Print();
-            m_bestResult.Print();
             throw std::logic_error(
                 m_name + ": Logic Error: Timeout not reached, but no optimal solution found.");
         }

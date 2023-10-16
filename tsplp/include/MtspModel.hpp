@@ -3,6 +3,7 @@
 #include "LinearConstraint.hpp"
 #include "LinearVariableComposition.hpp"
 #include "Model.hpp"
+#include "MtspResult.hpp"
 #include "Variable.hpp"
 #include "WeightManager.hpp"
 
@@ -10,8 +11,6 @@
 
 #include <chrono>
 #include <functional>
-#include <limits>
-#include <mutex>
 #include <optional>
 #include <vector>
 
@@ -21,14 +20,6 @@ enum class OptimizationMode
 {
     Sum,
     Max
-};
-
-struct MtspResult
-{
-    std::vector<std::vector<size_t>> Paths {};
-    double LowerBound = -std::numeric_limits<double>::max();
-    double UpperBound = std::numeric_limits<double>::max();
-    bool IsTimeoutHit = false;
 };
 
 struct LinearObjective
@@ -56,24 +47,25 @@ private:
     LinearObjective m_objective;
 
     MtspResult m_bestResult {};
-    std::mutex m_bestResultMutex;
+
+    std::string m_name;
 
 public:
     MtspModel(
         xt::xtensor<size_t, 1> startPositions, xt::xtensor<size_t, 1> endPositions,
         xt::xtensor<double, 2> weights, OptimizationMode optimizationMode,
-        std::chrono::milliseconds timeout);
+        std::chrono::milliseconds timeout, std::string name = "Model");
 
 public:
-    [[nodiscard]] MtspResult BranchAndCutSolve(
+    void BranchAndCutSolve(
         std::optional<size_t> noOfThreads = std::nullopt,
         std::function<void(const xt::xtensor<double, 3>&)> fractionalCallback = nullptr);
 
-private:
-    [[nodiscard]] MtspResult CreateInitialResult() const;
+    [[nodiscard]] const MtspResult& GetResult() const { return m_bestResult; }
 
-    [[nodiscard]] MtspResult ExploitFractionalSolution(
-        const xt::xtensor<double, 3>& fractionalValues) const;
+private:
+    void CreateInitialResult();
+    double ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues);
 
     [[nodiscard]] std::vector<std::vector<size_t>> CreatePathsFromVariables(
         const Model& model) const;

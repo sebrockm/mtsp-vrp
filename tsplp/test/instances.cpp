@@ -41,12 +41,20 @@ TEST_CASE("br17.atsp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
-    auto result = model.BranchAndCutSolve();
+    const auto startTime = std::chrono::steady_clock::now();
 
-    REQUIRE(result.LowerBound == Approx(39));
-    REQUIRE(result.UpperBound == Approx(39));
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
+
+    const auto endTime = std::chrono::steady_clock::now();
+    CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+    CAPTURE(result.GetPaths());
+    CHECK(!result.IsTimeoutHit());
+    CHECK(result.GetBounds().Lower == Approx(39));
+    CHECK(result.GetBounds().Upper == Approx(39));
 }
 
 TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
@@ -77,12 +85,20 @@ TEST_CASE("br17.atsp 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
-    auto result = model.BranchAndCutSolve();
+    const auto startTime = std::chrono::steady_clock::now();
 
-    REQUIRE(result.LowerBound == Approx(39));
-    REQUIRE(result.UpperBound == Approx(39));
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
+
+    const auto endTime = std::chrono::steady_clock::now();
+    CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+    CAPTURE(result.GetPaths());
+    CHECK(!result.IsTimeoutHit());
+    CHECK(result.GetBounds().Lower == Approx(39));
+    CHECK(result.GetBounds().Upper == Approx(39));
 }
 
 TEST_CASE("ESC07.sop", "[instances]")
@@ -105,12 +121,28 @@ TEST_CASE("ESC07.sop", "[instances]")
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 8 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
-    auto result = model.BranchAndCutSolve();
+    for (size_t iteration = 0; iteration < 1000; ++iteration)
+    {
+        const auto startTime = std::chrono::steady_clock::now();
 
-    REQUIRE(result.LowerBound == Approx(2125));
-    REQUIRE(result.UpperBound == Approx(2125));
+        tsplp::MtspModel model {
+            startPositions,
+            endPositions,
+            weights,
+            tsplp::OptimizationMode::Sum,
+            timeLimit,
+            Catch::getResultCapture().getCurrentTestName() + std::to_string(iteration)
+        };
+        model.BranchAndCutSolve();
+        const auto& result = model.GetResult();
+
+        const auto endTime = std::chrono::steady_clock::now();
+        CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+        CAPTURE(result.GetPaths());
+        CAPTURE(iteration);
+        CHECK(result.GetBounds().Lower == Approx(2125));
+        CHECK(result.GetBounds().Upper == Approx(2125));
+    }
 }
 
 TEST_CASE("ESC07.sop start end same", "[instances]")
@@ -132,13 +164,28 @@ TEST_CASE("ESC07.sop start end same", "[instances]")
 
     xt::xtensor<int, 1> startPositions { 0 };
     xt::xtensor<int, 1> endPositions { 0 };
+    for (size_t iteration = 0; iteration < 1000; ++iteration)
+    {
+        const auto startTime = std::chrono::steady_clock::now();
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
-    auto result = model.BranchAndCutSolve();
+        tsplp::MtspModel model {
+            startPositions,
+            endPositions,
+            weights,
+            tsplp::OptimizationMode::Sum,
+            timeLimit,
+            Catch::getResultCapture().getCurrentTestName() + std::to_string(iteration)
+        };
+        model.BranchAndCutSolve();
+        const auto& result = model.GetResult();
 
-    REQUIRE(result.LowerBound == Approx(2125));
-    REQUIRE(result.UpperBound == Approx(2125));
+        const auto endTime = std::chrono::steady_clock::now();
+        CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+        CAPTURE(result.GetPaths());
+        CAPTURE(iteration);
+        CHECK(result.GetBounds().Lower == Approx(2125));
+        CHECK(result.GetBounds().Upper == Approx(2125));
+    }
 }
 
 TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
@@ -161,7 +208,7 @@ TEST_CASE("ESC07.sop 4 agents vrp incompatible", "[instances]")
     xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    REQUIRE_THROWS_AS(
+    CHECK_THROWS_AS(
         tsplp::MtspModel(
             startPositions, endPositions, weights, tsplp::OptimizationMode::Sum, timeLimit),
         tsplp::IncompatibleDependenciesException);
@@ -187,10 +234,18 @@ TEST_CASE("ESC07.sop 4 agents vrp", "[instances]")
     xt::xtensor<int, 1> startPositions { 0, 0, 0, 0 };
     xt::xtensor<int, 1> endPositions { 0, 0, 0, 0 };
 
-    tsplp::MtspModel model { startPositions, endPositions, weights, tsplp::OptimizationMode::Sum,
-                             timeLimit };
-    auto result = model.BranchAndCutSolve();
+    const auto startTime = std::chrono::steady_clock::now();
 
-    REQUIRE(result.LowerBound == Approx(1200));
-    REQUIRE(result.UpperBound == Approx(1200));
+    tsplp::MtspModel model { startPositions, endPositions,
+                             weights,        tsplp::OptimizationMode::Sum,
+                             timeLimit,      Catch::getResultCapture().getCurrentTestName() };
+    model.BranchAndCutSolve();
+    const auto& result = model.GetResult();
+
+    const auto endTime = std::chrono::steady_clock::now();
+    CAPTURE(std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime).count());
+    CAPTURE(result.GetPaths());
+    CHECK(!result.IsTimeoutHit());
+    CHECK(result.GetBounds().Lower == Approx(1200));
+    CHECK(result.GetBounds().Upper == Approx(1200));
 }

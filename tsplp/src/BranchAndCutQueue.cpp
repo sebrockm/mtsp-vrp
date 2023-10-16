@@ -3,9 +3,44 @@
 #include "Model.hpp"
 
 #include <algorithm>
-#include <cassert>
 
-tsplp::BranchAndCutQueue::BranchAndCutQueue() { m_heap.emplace_back(); }
+tsplp::BranchAndCutQueue::BranchAndCutQueue(size_t threadCount)
+    : m_workedOnLowerBounds(threadCount)
+{
+    if (threadCount == 0)
+        throw std::logic_error("Cannot have zero threads");
+}
+
+double tsplp::BranchAndCutQueue::GetLowerBound() const
+{
+    std::unique_lock lock { m_mutex };
+    return CalculateLowerBound();
+}
+
+std::optional<std::tuple<tsplp::SData, tsplp::NodeDoneNotifier>> tsplp::BranchAndCutQueue::Pop(
+    size_t threadId)
+{
+    if (threadId >= m_workedOnLowerBounds.size())
+        throw std::logic_error("Wrong threadId");
+
+    std::unique_lock lock { m_mutex };
+
+    while (!m_isCleared && m_heap.empty() && m_workedOnCount > 0)
+        m_cv.wait(lock);
+
+    if (m_isCleared || (m_heap.empty() && m_workedOnCount == 0))
+        return std::nullopt;
+
+    std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
+    auto popped = std::move(m_heap.back());
+    m_heap.pop_back();
+
+    m_workedOnLowerBounds.at(threadId) = popped.LowerBound;
+    ++m_workedOnCount;
+
+    return std::make_optional(std::make_tuple(
+        std::move(popped), NodeDoneNotifier { [this, threadId] { NotifyNodeDone(threadId); } }));
+}
 
 void tsplp::BranchAndCutQueue::ClearAll()
 {
@@ -17,87 +52,40 @@ void tsplp::BranchAndCutQueue::ClearAll()
     m_cv.notify_all();
 }
 
-void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
+void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double currentLowerBound)
+{
+    std::unique_lock lock { m_mutex };
+
+    if (!m_workedOnLowerBounds.at(threadId).has_value())
+        throw std::logic_error("Thread does not have a node popped");
+
+    if (currentLowerBound < *m_workedOnLowerBounds.at(threadId))
+        throw std::logic_error("Lower bound must not be decreased");
+
+    m_workedOnLowerBounds.at(threadId) = currentLowerBound;
+}
+
+void tsplp::BranchAndCutQueue::PushResult(double lowerBound)
 {
     bool needsNotify = false;
 
     {
         std::unique_lock lock { m_mutex };
-        [[maybe_unused]] const auto removedCount = m_currentlyWorkedOnLowerBounds.erase(threadId);
-        assert(removedCount == 1);
-        needsNotify = m_currentlyWorkedOnLowerBounds.empty();
+
+        if (m_isCleared)
+            return;
+
+        if (lowerBound < CalculateLowerBound())
+            throw std::logic_error("cannot push smaller lower bound");
+
+        needsNotify = m_heap.empty() && m_workedOnCount > 0;
+
+        m_heap.push_back({ lowerBound, {}, {}, true });
+        std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
     if (needsNotify)
-        m_cv.notify_all();
-}
-
-std::optional<double> tsplp::BranchAndCutQueue::GetLowerBound() const
-{
-    std::unique_lock lock { m_mutex };
-
-    const auto lbHeap
-        = m_heap.empty() ? std::nullopt : std::make_optional(m_heap.front().LowerBound);
-
-    const auto minIter = std::min_element(
-        begin(m_currentlyWorkedOnLowerBounds), end(m_currentlyWorkedOnLowerBounds),
-        [](auto p1, auto p2) { return p1.second < p2.second; });
-    const auto lbUsed = minIter == m_currentlyWorkedOnLowerBounds.end()
-        ? std::nullopt
-        : std::make_optional(minIter->second);
-
-    if (lbHeap.has_value() && lbUsed.has_value())
-        return std::min(lbHeap, lbUsed);
-
-    if (lbHeap.has_value() && !lbUsed.has_value())
-        return lbHeap;
-
-    if (!lbHeap.has_value() && lbUsed.has_value())
-        return lbUsed;
-
-    return std::nullopt;
-}
-
-void tsplp::BranchAndCutQueue::UpdateCurrentLowerBound(size_t threadId, double currentLowerBound)
-{
-    std::unique_lock lock { m_mutex };
-
-    assert(m_currentlyWorkedOnLowerBounds.contains(threadId));
-    m_currentlyWorkedOnLowerBounds[threadId] = currentLowerBound;
-}
-
-size_t tsplp::BranchAndCutQueue::GetSize() const
-{
-    std::unique_lock lock { m_mutex };
-
-    return m_heap.size();
-}
-
-size_t tsplp::BranchAndCutQueue::GetWorkedOnSize() const
-{
-    std::unique_lock lock { m_mutex };
-
-    return m_currentlyWorkedOnLowerBounds.size();
-}
-
-std::optional<tsplp::SData> tsplp::BranchAndCutQueue::Pop(size_t threadId)
-{
-    std::unique_lock lock { m_mutex };
-
-    while (!m_isCleared && m_heap.empty() && !m_currentlyWorkedOnLowerBounds.empty())
-        m_cv.wait(lock);
-
-    if (m_isCleared || (m_heap.empty() && m_currentlyWorkedOnLowerBounds.empty()))
-        return std::nullopt;
-
-    std::pop_heap(begin(m_heap), end(m_heap), m_comparer);
-
-    std::optional result = std::move(m_heap.back());
-    m_heap.pop_back();
-
-    m_currentlyWorkedOnLowerBounds.emplace(threadId, result->LowerBound);
-
-    return result;
+        m_cv.notify_one();
 }
 
 void tsplp::BranchAndCutQueue::Push(
@@ -111,9 +99,13 @@ void tsplp::BranchAndCutQueue::Push(
         if (m_isCleared)
             return;
 
-        needsNotify = m_heap.empty();
+        if (lowerBound < CalculateLowerBound())
+            throw std::logic_error("cannot push smaller lower bound");
 
-        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
+        needsNotify = m_heap.empty() && m_workedOnCount > 0;
+
+        m_heap.push_back(
+            { lowerBound, std::move(fixedVariables0), std::move(fixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -133,7 +125,10 @@ void tsplp::BranchAndCutQueue::PushBranch(
         if (m_isCleared)
             return;
 
-        needsNotify = m_heap.empty();
+        if (lowerBound < CalculateLowerBound())
+            throw std::logic_error("cannot push smaller lower bound");
+
+        needsNotify = m_heap.empty() && m_workedOnCount > 0;
 
         auto copyFixedVariables0 = fixedVariables0;
         auto copyFixedVariables1 = fixedVariables1;
@@ -144,11 +139,12 @@ void tsplp::BranchAndCutQueue::PushBranch(
         copyFixedVariables0.insert(
             copyFixedVariables0.end(), recursivelyFixed0.begin(), recursivelyFixed0.end());
 
-        m_heap.push_back({ lowerBound, std::move(fixedVariables0), std::move(fixedVariables1) });
+        m_heap.push_back(
+            { lowerBound, std::move(fixedVariables0), std::move(fixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
 
         m_heap.push_back(
-            { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1) });
+            { lowerBound, std::move(copyFixedVariables0), std::move(copyFixedVariables1), false });
         std::push_heap(begin(m_heap), end(m_heap), m_comparer);
     }
 
@@ -157,4 +153,41 @@ void tsplp::BranchAndCutQueue::PushBranch(
         m_cv.notify_one();
         m_cv.notify_one();
     }
+}
+
+void tsplp::BranchAndCutQueue::NotifyNodeDone(size_t threadId)
+{
+    bool needsNotify = false;
+
+    {
+        std::unique_lock lock { m_mutex };
+        if (!m_workedOnLowerBounds.at(threadId).has_value())
+            throw std::logic_error("Thread does not have a node popped");
+
+        m_workedOnLowerBounds.at(threadId) = std::nullopt;
+        --m_workedOnCount;
+        needsNotify = m_workedOnCount == 0 && !m_isCleared && m_heap.empty();
+    }
+
+    if (needsNotify)
+        m_cv.notify_all();
+}
+
+double tsplp::BranchAndCutQueue::CalculateLowerBound() const
+{
+    static constexpr auto max = std::numeric_limits<double>::max();
+
+    if (m_heap.empty() && m_workedOnCount == 0)
+        return -max;
+
+    const auto cmp = [](auto opt1, auto opt2) { return opt1.value_or(max) < opt2.value_or(max); };
+
+    const auto lbHeap = m_heap.empty() ? max : m_heap.front().LowerBound;
+
+    const auto lbWorkedOn = m_workedOnCount == 0
+        ? max
+        : std::min_element(m_workedOnLowerBounds.begin(), m_workedOnLowerBounds.end(), cmp)
+              ->value();
+
+    return std::min(lbHeap, lbWorkedOn);
 }

@@ -6,6 +6,8 @@
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xvectorize.hpp>
 #include <xtensor/xview.hpp>

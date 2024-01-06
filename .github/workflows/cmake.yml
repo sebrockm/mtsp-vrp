@@ -36,6 +36,10 @@ jobs:
     - name: Check compile commands
       run: cat ${{ github.workspace }}/build/compile_commands.json
 
+    - uses: mjp41/workaround8649@c8550b715ccdc17f89c8d5c28d7a48eeff9c94a8
+      with:
+        os: ubuntu-latest
+
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build-type }} -j 3
 

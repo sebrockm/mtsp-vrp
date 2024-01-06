@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: [Debug, RelWithDebInfo, Release]
-        compiler: [{c: gcc-11, cpp: g++-11, code-cov: true}, {c: gcc-12, cpp: g++-12}, {c: gcc-13, cpp: g++-13}, {c: clang-13, cpp: clang++-13}, {c: clang-14, cpp: clang++-14}, {c: clang-15, cpp: clang++-15}]
+        compiler: [{c: gcc-10, cpp: g++-10}, {c: gcc-11, cpp: g++-11, code-cov: true}, {c: clang-13, cpp: clang++-13}, {c: clang-14, cpp: clang++-14}, {c: clang-15, cpp: clang++-15}]
           
     runs-on: ubuntu-20.04
 
@@ -20,14 +20,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'recursive'
-
-    - name: Get CC
-      run: |
-        sudo apt update
-        sudo apt install software-properties-common
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-        sudo apt update
-        sudo apt install ${{ matrix.compiler.c }} ${{ matrix.compiler.cpp }}
 
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.2

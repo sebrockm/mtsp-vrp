@@ -100,6 +100,9 @@ foreach(CONFIG ${CONFIGS})
     )
 endforeach()
 
+# bypass bug in <chrono> libstdc++ used in github workflows
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+
 find_package(Boost 1.80)
 find_package(Catch2 2.13)
 find_package(coin-clp 1.17)
@@ -108,14 +111,14 @@ find_package(xtensor 0.23)
 # Code Coverage Configuration
 add_library(coverage_config INTERFACE)
 
-option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(CODE_COVERAGE " Enable coverage reporting " OFF)
 
-if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(CODE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES " GNU|Clang ")
     target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
     target_link_options(coverage_config INTERFACE --coverage)
 endif()
 
-option(USE_CLANG_TIDY "Use clang-tidy" OFF)
+option(USE_CLANG_TIDY " Use clang-tidy " OFF)
 
 if(USE_CLANG_TIDY)
     set(CMAKE_DISABLE_PRECOMPILE_HEADERS ON) # As it turns out it is quite difficlult to get pch right with clang-tidy

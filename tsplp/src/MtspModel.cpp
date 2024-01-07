@@ -342,8 +342,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
             {
-                SPDLOG_INFO(
-                    "{}: thread {} exited because Pop returned nothing..", m_name, threadId);
+                SPDLOG_INFO("{}: thread {} exited because Pop returned nothing.", m_name, threadId);
                 break;
             }
 

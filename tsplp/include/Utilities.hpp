@@ -12,6 +12,6 @@ private:
 public:
     StopWatch() noexcept;
 
-    std::chrono::milliseconds GetTime() const noexcept;
+    [[nodiscard]] std::chrono::milliseconds GetTime() const noexcept;
 };
 }

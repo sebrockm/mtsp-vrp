@@ -5,6 +5,7 @@
 #include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
+#include "Utilities.hpp"
 
 #include <spdlog/spdlog.h>
 
@@ -370,15 +371,11 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             constraints.PopToModel(threadId, model);
 
-            const auto modelSolveStartTime = std::chrono::steady_clock::now();
+            [[maybe_unused]] const utilities::StopWatch solveWatch;
             const auto solutionStatus = model.Solve(m_endTime);
-            const auto modelSolveEndTime = std::chrono::steady_clock::now();
             SPDLOG_INFO(
                 "{}, thread {}: Solved LP with {} constraints in {} ms.", m_name, threadId,
-                model.GetNumberOfConstraints(),
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    modelSolveEndTime - modelSolveStartTime)
-                    .count());
+                model.GetNumberOfConstraints(), solveWatch.GetTime().count());
 
             switch (solutionStatus)
             {
@@ -428,17 +425,12 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
                 if (2.5 * currentLowerBound > globalBounds.Upper)
                 {
-                    const auto beforeExploiting = std::chrono::steady_clock::now();
+                    [[maybe_unused]] const utilities::StopWatch watch;
                     const auto newUpper = ExploitFractionalSolution(fractionalValues);
-                    const auto afterExploiting = std::chrono::steady_clock::now();
                     SPDLOG_INFO(
                         "Explointing LB of {} took {} ms and resulted in objective of {} (prev. "
                         "global UB={}).",
-                        currentLowerBound,
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            afterExploiting - beforeExploiting)
-                            .count(),
-                        newUpper, globalBounds.Upper);
+                        currentLowerBound, watch.GetTime().count(), newUpper, globalBounds.Upper);
                 }
             }
 

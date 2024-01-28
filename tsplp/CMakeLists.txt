@@ -10,7 +10,7 @@ target_include_directories(tsplp PUBLIC include)
 find_package(Threads REQUIRED)
 
 target_link_libraries(tsplp
-	PRIVATE graph-algos coin-clp::coin-clp Boost::Boost coverage_config
+	PRIVATE graph-algos coin-clp::coin-clp Boost::Boost coverage_config spdlog::spdlog_header_only
 	PUBLIC xtensor::xtensor Threads::Threads)
 
 target_precompile_headers(tsplp

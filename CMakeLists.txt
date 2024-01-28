@@ -103,6 +103,7 @@ endforeach()
 find_package(Boost 1.80)
 find_package(Catch2 2.13)
 find_package(coin-clp 1.17)
+find_package(spdlog 1.12.0)
 find_package(xtensor 0.23)
 
 # Code Coverage Configuration

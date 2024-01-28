@@ -63,6 +63,11 @@ std::span<const tsplp::Variable> tsplp::Model::GetBinaryVariables() const
     return { m_variables.data(), m_variables.data() + m_numberOfBinaryVariables };
 }
 
+size_t tsplp::Model::GetNumberOfConstraints() const
+{
+    return static_cast<size_t>(m_spSimplexModel->getNumRows());
+}
+
 void tsplp::Model::SetObjective(const LinearVariableComposition& objective)
 {
     std::unique_lock lock { *m_spModelMutex };

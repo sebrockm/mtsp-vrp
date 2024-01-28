@@ -39,6 +39,7 @@ public:
     friend void swap(Model& m1, Model& m2) noexcept;
 
     [[nodiscard]] std::span<const Variable> GetBinaryVariables() const;
+    [[nodiscard]] size_t GetNumberOfConstraints() const;
     void SetObjective(const LinearVariableComposition& objective);
     template <typename RandIterator>
     void AddConstraints(RandIterator first, RandIterator last);

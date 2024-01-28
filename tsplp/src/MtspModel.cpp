@@ -5,6 +5,9 @@
 #include "Heuristics.hpp"
 #include "LinearConstraint.hpp"
 #include "SeparationAlgorithms.hpp"
+#include "Utilities.hpp"
+
+#include <spdlog/spdlog.h>
 
 #include <xtensor/xadapt.hpp>
 #include <xtensor/xvectorize.hpp>
@@ -320,12 +323,16 @@ void tsplp::MtspModel::BranchAndCutSolve(
             if (initialBounds.Lower >= initialBounds.Upper)
             {
                 queue.ClearAll();
+                SPDLOG_INFO(
+                    "{}: thread {} exited because bounds crossed [LB, UB] = [{}, {}].", m_name,
+                    threadId, initialBounds.Lower, initialBounds.Upper);
                 break;
             }
 
             if (std::chrono::steady_clock::now() >= m_endTime)
             {
                 queue.ClearAll();
+                SPDLOG_INFO("{}: thread {} exited because of timeout.", m_name, threadId);
                 break;
             }
 
@@ -336,6 +343,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             auto top = queue.Pop(threadId);
             if (!top.has_value())
             {
+                SPDLOG_INFO("{}: thread {} exited because Pop returned nothing.", m_name, threadId);
                 break;
             }
 
@@ -363,31 +371,47 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             constraints.PopToModel(threadId, model);
 
+            [[maybe_unused]] const utilities::StopWatch solveWatch;
             const auto solutionStatus = model.Solve(m_endTime);
+            SPDLOG_INFO(
+                "{}, thread {}: Solved LP with {} constraints in {} ms.", m_name, threadId,
+                model.GetNumberOfConstraints(), solveWatch.GetTime().count());
+
             switch (solutionStatus)
             {
             case Status::Unbounded:
+                SPDLOG_CRITICAL(
+                    "{}, thread {}: LP solution is unbounded. This must not happen. Maybe some "
+                    "constraints are missing.",
+                    m_name, threadId);
                 throw std::logic_error(
                     m_name
                     + ": LP solution is unbounded. This must not happen. Maybe some "
                       "constraints are missing.");
             case Status::Error:
+                SPDLOG_CRITICAL(
+                    "{}, thread {}: Unexpected error happened while solving LP.", m_name, threadId);
                 throw std::logic_error(m_name + ": Unexpected error happened while solving LP.");
             case Status::Timeout: // timeout will be handled at the beginning of the next iteration
             case Status::Infeasible: // fixation of some variable makes this infeasible, skip it
+                SPDLOG_INFO("{}, thread {}: Infeasible, skipping.", m_name, threadId);
                 continue;
             case Status::Optimal:
                 break;
             }
 
-            const auto currentLowerBound
-                = std::ceil(m_objective.Objective.Evaluate(model) - 1.e-10);
+            const auto objectiveValue = m_objective.Objective.Evaluate(model);
+            SPDLOG_INFO(
+                "{}, threadId {}: Objective value of solved LP: {}", m_name, threadId,
+                objectiveValue);
+
+            const auto currentLowerBound = std::ceil(objectiveValue - 1.e-10);
 
             queue.UpdateCurrentLowerBound(threadId, currentLowerBound);
 
-            auto currentUpperBound = m_bestResult.UpdateLowerBound(queue.GetLowerBound()).Upper;
+            auto globalBounds = m_bestResult.UpdateLowerBound(queue.GetLowerBound());
 
-            if (2.5 * currentLowerBound > currentUpperBound || fractionalCallback != nullptr)
+            if (2.5 * currentLowerBound > globalBounds.Upper || fractionalCallback != nullptr)
             {
                 const xt::xtensor<double, 3> fractionalValues
                     = xt::vectorize([&](Variable v) { return v.GetObjectiveValue(model); })(X);
@@ -399,33 +423,50 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 }
 
                 // don't exploit if there isn't a reasonable chance, 2.5 might be adjusted
-                if (2.5 * currentLowerBound > currentUpperBound)
-                    currentUpperBound = ExploitFractionalSolution(fractionalValues);
+                if (2.5 * currentLowerBound > globalBounds.Upper)
+                {
+                    [[maybe_unused]] const utilities::StopWatch watch;
+                    const auto newUpper = ExploitFractionalSolution(fractionalValues);
+                    SPDLOG_INFO(
+                        "{}, thread {}: Explointing LB of {} took {} ms and resulted in objective "
+                        "of {} (prev. global UB={}).",
+                        m_name, threadId, currentLowerBound, watch.GetTime().count(), newUpper,
+                        globalBounds.Upper);
+                }
             }
 
             // currentLowerBound is not necessarily the global LB, but either way there is no need
             // trying to improve it further
-            if (currentLowerBound >= currentUpperBound)
+            globalBounds = m_bestResult.GetBounds();
+            if (currentLowerBound >= globalBounds.Upper)
             {
+                SPDLOG_INFO(
+                    "{}, thread {}: currentLowerBound={} >= globalBounds.Upper={}. Pushing back to "
+                    "queue as result.",
+                    m_name, threadId, currentLowerBound, globalBounds.Upper);
                 queue.PushResult(currentLowerBound);
                 continue;
             }
 
             // fix variables according to reduced costs
+            size_t fixed0Count = 0;
+            size_t fixed1Count = 0;
+            size_t fixed0Recursivecount = 0;
             for (auto v : model.GetBinaryVariables())
             {
                 if (v.GetLowerBound(model) == 0.0 && v.GetUpperBound(model) == 1.0)
                 {
                     if (v.GetObjectiveValue(model) < 1.e-10
                         && currentLowerBound + v.GetReducedCosts(model)
-                            >= currentUpperBound + 1.e-10)
+                            >= globalBounds.Upper + 1.e-10)
                     {
                         fixedVariables0.push_back(v);
+                        ++fixed0Count;
                     }
                     else if (
                         v.GetObjectiveValue(model) > 1 - 1.e-10
                         && currentLowerBound - v.GetReducedCosts(model)
-                            >= currentUpperBound + 1.e-10)
+                            >= globalBounds.Upper + 1.e-10)
                     {
                         fixedVariables1.push_back(v);
 
@@ -433,12 +474,24 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         fixedVariables0.insert(
                             fixedVariables0.end(), recursivelyFixed0.begin(),
                             recursivelyFixed0.end());
+
+                        ++fixed1Count;
+                        fixed0Recursivecount += recursivelyFixed0.size();
                     }
                 }
             }
 
+            if (fixed0Count + fixed1Count > 0)
+            {
+                SPDLOG_INFO(
+                    "{}, thread {}: Due to reduced costs fixed {} variables to 0, {} to 1 and {} "
+                    "to 0 recursively.",
+                    m_name, threadId, fixed0Count, fixed1Count, fixed0Recursivecount);
+            }
+
             if (auto ucut = separator.Ucut(); ucut.has_value())
             {
+                SPDLOG_INFO("{}, thread {}: found UCut.", m_name, threadId);
                 constraints.Push(std::move(*ucut));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 continue;
@@ -446,6 +499,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto pisigma = separator.PiSigma(); pisigma.has_value())
             {
+                SPDLOG_INFO("{}, thread {}: found Pi Sigma cut.", m_name, threadId);
                 constraints.Push(std::move(*pisigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 continue;
@@ -453,6 +507,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto pi = separator.Pi(); pi.has_value())
             {
+                SPDLOG_INFO("{}, thread {}: found Pi cut.", m_name, threadId);
                 constraints.Push(std::move(*pi));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 continue;
@@ -460,6 +515,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto sigma = separator.Sigma(); sigma.has_value())
             {
+                SPDLOG_INFO("{}, thread {}: found Sigma cut.", m_name, threadId);
                 constraints.Push(std::move(*sigma));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
                 continue;
@@ -467,6 +523,8 @@ void tsplp::MtspModel::BranchAndCutSolve(
 
             if (auto combs = separator.TwoMatching(); !combs.empty())
             {
+                SPDLOG_INFO(
+                    "{}, thread {}: found {} Two-Matching cuts.", m_name, threadId, combs.size());
                 constraints.Push(
                     std::make_move_iterator(combs.begin()), std::make_move_iterator(combs.end()));
                 queue.Push(currentLowerBound, fixedVariables0, fixedVariables1);
@@ -486,11 +544,17 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         currentLowerBound, CreatePathsFromVariables(model));
                 }
 
+                SPDLOG_INFO(
+                    "{}, thread {}: non-fractional solution found with objective {}.", m_name,
+                    threadId, currentLowerBound);
                 queue.PushResult(currentLowerBound);
                 continue;
             }
 
             // As a last resort, split the problem on a fractional variable
+            SPDLOG_INFO(
+                "{}, thread {}: Branching on variable {} with value {}.", m_name, threadId,
+                fractionalVar->GetId(), fractionalVar->GetObjectiveValue(model));
             auto recursivelyFixed0 = CalculateRecursivelyFixableVariables(fractionalVar.value());
             queue.PushBranch(
                 currentLowerBound, fixedVariables0, fixedVariables1, fractionalVar.value(),
@@ -664,6 +728,8 @@ void tsplp::MtspModel::CreateInitialResult()
     m_bestResult.UpdateUpperBound(
         nearestInsertionObjective - twoOptImprovement,
         m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
+
+    SPDLOG_INFO("Created initial result with objective {}.", m_bestResult.GetBounds().Upper);
 }
 
 double tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>& fractionalValues)
@@ -682,10 +748,10 @@ double tsplp::MtspModel::ExploitFractionalSolution(const xt::xtensor<double, 3>&
     const auto exploitedObjective
         = CalculateObjective(m_optimizationMode, twoOptedPaths, m_weightManager.W());
 
-    return m_bestResult
-        .UpdateUpperBound(
-            exploitedObjective, m_weightManager.TransformPathsBack(std::move(twoOptedPaths)))
-        .Upper;
+    m_bestResult.UpdateUpperBound(
+        exploitedObjective, m_weightManager.TransformPathsBack(std::move(twoOptedPaths)));
+
+    return exploitedObjective;
 }
 
 tsplp::LinearObjective tsplp::CreateObjective(

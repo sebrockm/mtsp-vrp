@@ -394,7 +394,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                 throw std::logic_error(m_name + ": Unexpected error happened while solving LP.");
             case Status::Timeout: // timeout will be handled at the beginning of the next iteration
             case Status::Infeasible: // fixation of some variable makes this infeasible, skip it
-                SPDLOG_INFO("{}: thread {}: Infeasible, skipping.", m_name, threadId);
+                SPDLOG_INFO("{}, thread {}: Infeasible, skipping.", m_name, threadId);
                 continue;
             case Status::Optimal:
                 break;
@@ -428,9 +428,10 @@ void tsplp::MtspModel::BranchAndCutSolve(
                     [[maybe_unused]] const utilities::StopWatch watch;
                     const auto newUpper = ExploitFractionalSolution(fractionalValues);
                     SPDLOG_INFO(
-                        "Explointing LB of {} took {} ms and resulted in objective of {} (prev. "
-                        "global UB={}).",
-                        currentLowerBound, watch.GetTime().count(), newUpper, globalBounds.Upper);
+                        "{}, thread {}: Explointing LB of {} took {} ms and resulted in objective "
+                        "of {} (prev. global UB={}).",
+                        m_name, threadId, currentLowerBound, watch.GetTime().count(), newUpper,
+                        globalBounds.Upper);
                 }
             }
 
@@ -440,7 +441,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
             if (currentLowerBound >= globalBounds.Upper)
             {
                 SPDLOG_INFO(
-                    "{}: thread {}: currentLowerBound={} >= globalBounds.Upper={}. Pushing back to "
+                    "{}, thread {}: currentLowerBound={} >= globalBounds.Upper={}. Pushing back to "
                     "queue as result.",
                     m_name, threadId, currentLowerBound, globalBounds.Upper);
                 queue.PushResult(currentLowerBound);
@@ -448,6 +449,9 @@ void tsplp::MtspModel::BranchAndCutSolve(
             }
 
             // fix variables according to reduced costs
+            size_t fixed0Count = 0;
+            size_t fixed1Count = 0;
+            size_t fixed0Recursivecount = 0;
             for (auto v : model.GetBinaryVariables())
             {
                 if (v.GetLowerBound(model) == 0.0 && v.GetUpperBound(model) == 1.0)
@@ -457,6 +461,7 @@ void tsplp::MtspModel::BranchAndCutSolve(
                             >= globalBounds.Upper + 1.e-10)
                     {
                         fixedVariables0.push_back(v);
+                        ++fixed0Count;
                     }
                     else if (
                         v.GetObjectiveValue(model) > 1 - 1.e-10
@@ -469,8 +474,19 @@ void tsplp::MtspModel::BranchAndCutSolve(
                         fixedVariables0.insert(
                             fixedVariables0.end(), recursivelyFixed0.begin(),
                             recursivelyFixed0.end());
+
+                        ++fixed1Count;
+                        fixed0Recursivecount += recursivelyFixed0.size();
                     }
                 }
+            }
+
+            if (fixed0Count + fixed1Count > 0)
+            {
+                SPDLOG_INFO(
+                    "{}, thread {}: Due to reduced costs fixed {} variables to 0, {} to 1 and {} "
+                    "to 0 recursively.",
+                    m_name, threadId, fixed0Count, fixed1Count, fixed0Recursivecount);
             }
 
             if (auto ucut = separator.Ucut(); ucut.has_value())
